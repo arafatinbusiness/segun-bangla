@@ -1,0 +1,34 @@
+# Robots.txt for Segun Bangla News Portal
+# https://www.robotstxt.org/
+
+# Allow all bots by default
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /api/
+Disallow: /*.json$
+
+# Specific rules for common crawlers
+User-agent: Googlebot
+Allow: /
+Allow: /article/
+Allow: /category/
+
+User-agent: Bingbot
+Allow: /
+Allow: /article/
+Allow: /category/
+
+User-agent: Slurp
+Allow: /
+Allow: /article/
+Allow: /category/
+
+# Crawl delay for all bots (in seconds)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://example.com/sitemap.xml

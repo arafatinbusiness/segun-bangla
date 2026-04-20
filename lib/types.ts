@@ -1,0 +1,47 @@
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  color?: string
+  order: number
+}
+
+export interface Subcategory {
+  id: string
+  name: string
+  slug: string
+  categoryId: string
+  order: number
+}
+
+export interface Author {
+  id: string
+  name: string
+  email: string
+  bio?: string
+  imageUrl?: string
+}
+
+export interface Article {
+  id: string
+  title: string
+  slug: string
+  content: string
+  excerpt: string
+  imageUrl: string
+  categoryId: string
+  subcategoryId?: string
+  authorId: string
+  isLead: boolean
+  isSpecial: boolean
+  isFeatured: boolean
+  publishedAt: number // timestamp
+  updatedAt: number // timestamp
+  viewCount: number
+  tags?: string[]
+}
+
+export interface FirestoreArticle extends Article {
+  docId: string
+}

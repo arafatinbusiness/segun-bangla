@@ -1,0 +1,12 @@
+// Firestore Security Rules
+// Simple rules for development - allows all read/write operations
+// WARNING: These are insecure for production!
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow all operations during development
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
