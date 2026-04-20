@@ -65,7 +65,7 @@ export async function updateUserLastLogin(uid: string): Promise<void> {
     })
   } catch (error) {
     console.error('[v0] Error updating last login:', error)
-    throw error
+    // Don't throw - lastLogin is not critical, only log the error
   }
 }
 

@@ -81,8 +81,6 @@ function mapAuthError(error: any): AuthError {
     'auth/user-not-found': 'ব্যবহারকারী পাওয়া যায়নি',
     'auth/wrong-password': 'ভুল পাসওয়ার্ড',
     'auth/operation-not-allowed': 'অপারেশন অনুমোদিত নয়',
-    'auth/configuration-not-found': 'Firebase Authentication সক্রিয় করা হয়নি। Firebase Console-এ গিয়ে Authentication সক্রিয় করুন।',
-    'auth/invalid-credential': 'ভুল ইমেইল বা পাসওয়ার্ড। অথবা ব্যবহারকারী বিদ্যমান নেই।',
   }
 
   return {

@@ -1,0 +1,94 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && 
+             request.auth.token.custom_admin_role == 'admin';
+    }
+    
+    function isAuthor() {
+      let role = request.auth.token.custom_admin_role;
+      return isSignedIn() && (role == 'author' || role == 'admin');
+    }
+    
+    function isOwnFile(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    // ============================================================================
+    // ARTICLE IMAGES - Articles/{articleId}/
+    // ============================================================================
+    match /articles/{articleId}/{allPaths=**} {
+      
+      // Everyone can read article images
+      allow read: if true;
+      
+      // Authors and admins can upload article images
+      allow create: if isAuthor() && isValidImage();
+      
+      // Authors can delete their own article images, admins can delete any
+      allow delete: if isAuthor() || isAdmin();
+    }
+
+    // ============================================================================
+    // USER AVATARS - avatars/{userId}/
+    // ============================================================================
+    match /avatars/{userId}/{allPaths=**} {
+      
+      // Everyone can read user avatars (public profile pictures)
+      allow read: if true;
+      
+      // Users can upload/update their own avatar
+      allow create: if isOwnFile(userId) && isValidImage();
+      allow update: if isOwnFile(userId) && isValidImage();
+      
+      // Users can delete their own avatar
+      allow delete: if isOwnFile(userId);
+      
+      // Admins can delete any avatar
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // CATEGORY IMAGES - categories/{categoryId}/
+    // ============================================================================
+    match /categories/{categoryId}/{allPaths=**} {
+      
+      // Everyone can read category images
+      allow read: if true;
+      
+      // Only admins can manage category images
+      allow create: if isAdmin() && isValidImage();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // BACKUP/ARCHIVE FILES - backups/{allPaths=**}
+    // ============================================================================
+    match /backups/{allPaths=**} {
+      
+      // Only admins can access backups
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // DEFAULT DENY - All other access is denied
+    // ============================================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
