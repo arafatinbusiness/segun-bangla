@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAllCategories } from '@/lib/services/categories'
+import { getAllCategories } from '@/lib/services/category-queries'
+import { createArticle } from '@/lib/services/article-mutations'
 import { ArticleForm } from '@/components/admin/article-form'
 import { useEffect } from 'react'
+import { useAuth } from '@/lib/auth-context'
 import type { Category } from '@/lib/types'
 
 function NewArticlePage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -29,11 +32,17 @@ function NewArticlePage() {
 
   const handleSubmit = async (data: any) => {
     try {
-      // Here you would call a function to create the article in Firebase
-      console.log('নতুন নিবন্ধ তৈরি করছি:', data)
-      // For now, we'll just show a message and redirect
-      alert('নিবন্ধ সফলভাবে তৈরি হয়েছে')
-      router.push('/admin/articles')
+      const articleData = {
+        ...data,
+        authorId: user?.uid || 'unknown',
+      }
+      const articleId = await createArticle(articleData)
+      if (articleId) {
+        alert('নিবন্ধ সফলভাবে তৈরি হয়েছে')
+        router.push('/admin/articles')
+      } else {
+        alert('নিবন্ধ তৈরিতে ত্রুটি হয়েছে')
+      }
     } catch (error) {
       console.error('ত্রুটি নিবন্ধ তৈরি করছি:', error)
       alert('নিবন্ধ তৈরিতে ত্রুটি হয়েছে')

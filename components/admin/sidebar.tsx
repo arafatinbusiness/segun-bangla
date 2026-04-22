@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { logoutUser } from '@/lib/services/auth'
 import {
   BarChart3,
   FileText,
@@ -11,7 +12,9 @@ import {
   Users,
   Home,
   ChevronRight,
+  LogOut,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const navItems = [
   {
@@ -48,6 +51,16 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser()
+      router.push('/')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
 
   return (
     <aside className="w-64 border-r bg-muted/50 p-6">
@@ -85,6 +98,16 @@ export function AdminSidebar() {
       <div className="mt-8 pt-8 border-t">
         <p className="text-xs text-muted-foreground font-medium mb-3">সংস্করণ</p>
         <p className="text-xs text-muted-foreground">1.0.0</p>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-4 gap-2"
+          onClick={handleLogout}
+        >
+          <LogOut className="w-4 h-4" />
+          লগ আউট
+        </Button>
       </div>
     </aside>
   )

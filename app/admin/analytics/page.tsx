@@ -1,17 +1,47 @@
-import { getRecentArticles } from '@/lib/services/articles'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getRecentArticles } from '@/lib/services/article-queries'
 import { Card } from '@/components/ui/card'
-import { TrendingUp, TrendingDown, Eye, Clock } from 'lucide-react'
+import { TrendingUp, Eye, Clock } from 'lucide-react'
+import type { FirestoreArticle } from '@/lib/types'
 
-async function AnalyticsPage() {
-  const articles = await getRecentArticles(100)
+function AnalyticsPage() {
+  const [articles, setArticles] = useState<FirestoreArticle[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const topArticles = articles
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const data = await getRecentArticles(100)
+        setArticles(data)
+      } catch (error) {
+        console.error('Error fetching analytics data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchArticles()
+  }, [])
+
+  const topArticles = [...articles]
     .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
     .slice(0, 10)
 
   const totalViews = articles.reduce((sum, a) => sum + (a.viewCount || 0), 0)
   const avgViews = articles.length > 0 ? Math.round(totalViews / articles.length) : 0
   const maxViews = Math.max(...articles.map(a => a.viewCount || 0), 0)
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">বিশ্লেষণ</h1>
+          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">

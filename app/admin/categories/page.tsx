@@ -1,11 +1,41 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Trash2, Edit2 } from 'lucide-react'
 import Link from 'next/link'
+import type { Category } from '@/lib/types'
 
-async function CategoriesPage() {
-  const categories = await getAllCategories()
+function CategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await getAllCategories()
+        setCategories(data)
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">বিভাগ পরিচালনা</h1>
+          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

@@ -1,11 +1,41 @@
-import { getRecentArticles } from '@/lib/services/articles'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getRecentArticles } from '@/lib/services/article-queries'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Trash2, Edit2, Eye } from 'lucide-react'
 import Link from 'next/link'
+import type { FirestoreArticle } from '@/lib/types'
 
-async function ArticlesPage() {
-  const articles = await getRecentArticles(100)
+function ArticlesPage() {
+  const [articles, setArticles] = useState<FirestoreArticle[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const data = await getRecentArticles(100)
+        setArticles(data)
+      } catch (error) {
+        console.error('Error fetching articles:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchArticles()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">নিবন্ধ পরিচালনা</h1>
+          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

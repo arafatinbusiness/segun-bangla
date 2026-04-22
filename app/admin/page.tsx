@@ -1,18 +1,51 @@
-import { getRecentArticles } from '@/lib/services/articles'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { getRecentArticles } from '@/lib/services/article-queries'
 import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { FileText, Folder, TrendingUp, Eye } from 'lucide-react'
+import type { FirestoreArticle } from '@/lib/types'
+import type { Category } from '@/lib/types'
 
-async function AdminDashboard() {
-  const [articles, categories] = await Promise.all([
-    getRecentArticles(100),
-    getAllCategories(),
-  ])
+function AdminDashboard() {
+  const [articles, setArticles] = useState<FirestoreArticle[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [articlesData, categoriesData] = await Promise.all([
+          getRecentArticles(100),
+          getAllCategories(),
+        ])
+        setArticles(articlesData)
+        setCategories(categoriesData)
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   const totalArticles = articles.length
   const totalCategories = categories.length
   const totalViews = articles.reduce((sum, a) => sum + (a.viewCount || 0), 0)
   const avgViews = totalArticles > 0 ? Math.round(totalViews / totalArticles) : 0
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">ড্যাশবোর্ড</h1>
+          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">

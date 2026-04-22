@@ -1,37 +1,63 @@
-import { Metadata } from 'next'
-import { searchArticles } from '@/lib/services/articles'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { searchArticles } from '@/lib/services/article-queries'
 import { getAllCategories } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
 import { SearchClient } from '@/components/search-client'
+import type { FirestoreArticle } from '@/lib/types'
+import type { Category } from '@/lib/types'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 60
+function SearchPage() {
+  const searchParams = useSearchParams()
+  const q = searchParams?.get('q') || undefined
 
-interface SearchPageProps {
-  searchParams: Promise<{
-    q?: string
-    category?: string
-    sort?: string
-    date?: string
-  }>
-}
+  const [categories, setCategories] = useState<Category[]>([])
+  const [results, setResults] = useState<FirestoreArticle[]>([])
+  const [loading, setLoading] = useState(true)
 
-export async function generateMetadata(
-  { searchParams }: SearchPageProps,
-): Promise<Metadata> {
-  const { q } = await searchParams
-  return {
-    title: q ? `"${q}" সন্ধান ফলাফল - সেগুন বাংলা` : 'অনুসন্ধান - সেগুন বাংলা',
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesData, resultsData] = await Promise.all([
+          getAllCategories(),
+          q ? searchArticles(q, 50) : Promise.resolve([]),
+        ])
+        setCategories(categoriesData)
+        setResults(resultsData)
+      } catch (error) {
+        console.error('[v0] Error loading search page:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [q])
+
+  if (loading) {
+    return (
+      <>
+        <Header categories={[]} />
+        <main className="min-h-screen bg-background">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-muted rounded w-1/3"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="h-40 bg-muted rounded-lg"></div>
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </>
+    )
   }
-}
-
-async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q } = await searchParams
-  const [categories, results] = await Promise.all([
-    getAllCategories(),
-    q ? searchArticles(q, 50) : Promise.resolve([]),
-  ])
 
   return (
     <>
@@ -45,7 +71,7 @@ async function SearchPage({ searchParams }: SearchPageProps) {
             </h1>
             {q && (
               <p className="text-lg text-muted-foreground">
-                &quot;{q}&quot; এর জন্য {results.length} ফলাফল পাওয়া গেছে
+                "{q}" এর জন্য {results.length} ফলাফল পাওয়া গেছে
               </p>
             )}
           </div>
