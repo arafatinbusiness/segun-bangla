@@ -55,7 +55,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" className="bg-background">
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <AuthProvider>
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}

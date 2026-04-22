@@ -60,9 +60,26 @@ export async function updateUserProfile(uid: string, updates: Partial<UserProfil
 
 export async function updateUserLastLogin(uid: string): Promise<void> {
   try {
-    await updateDoc(doc(db, USERS_COLLECTION, uid), {
-      lastLogin: Date.now(),
-    })
+    // First check if the document exists
+    const userDoc = await getDoc(doc(db, USERS_COLLECTION, uid))
+    
+    if (userDoc.exists()) {
+      // Document exists, update lastLogin
+      await updateDoc(doc(db, USERS_COLLECTION, uid), {
+        lastLogin: Date.now(),
+      })
+    } else {
+      // Document doesn't exist, create a basic profile with lastLogin
+      // This can happen if user was created directly in Firebase Auth
+      console.warn('[v0] User profile not found, creating basic profile for uid:', uid)
+      await setDoc(doc(db, USERS_COLLECTION, uid), {
+        uid,
+        email: '', // Will be updated when we have more info
+        role: 'user',
+        createdAt: Date.now(),
+        lastLogin: Date.now(),
+      })
+    }
   } catch (error) {
     console.error('[v0] Error updating last login:', error)
     // Don't throw - lastLogin is not critical, only log the error

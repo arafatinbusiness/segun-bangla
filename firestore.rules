@@ -8,12 +8,16 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isAuthor() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isSignedIn() && (userRole == 'author' || userRole == 'admin');
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'author' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
     
     function isOwnUser(uid) {
@@ -30,24 +34,25 @@ service cloud.firestore {
     match /users/{userId} {
       
       // Anyone can create their own user profile during registration
+      // Allow minimal profile creation for auto-created users
       allow create: if isOwnUser(userId) && 
                       request.resource.data.uid == userId &&
                       request.resource.data.role == 'user' &&
-                      request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt']);
+                      request.resource.data.keys().hasAll(['uid', 'role', 'createdAt']);
       
-      // Users can read their own profile or public profile info
-      allow read: if isOwnUser(userId) || 
-                     (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)));
+      // Users can read their own profile
+      allow read: if isOwnUser(userId);
       
-      // Users can update their own profile (but not role) - allows safe fields like lastLogin, displayName, photoURL
+      // Users can update their own profile (including lastLogin)
       allow update: if isOwnUser(userId) && 
                        !('role' in request.resource.data.diff().changedKeys()) &&
-                       !('uid' in request.resource.data.diff().changedKeys()) &&
-                       !('email' in request.resource.data.diff().changedKeys()) &&
-                       !('createdAt' in request.resource.data.diff().changedKeys());
+                       !('uid' in request.resource.data.diff().changedKeys());
       
       // Only admins can change user roles
       allow update: if isAdmin() && 'role' in request.resource.data.diff().changedKeys();
+      
+      // Admins can read all user profiles
+      allow read: if isAdmin();
       
       // Admins can delete users
       allow delete: if isAdmin();
@@ -141,10 +146,12 @@ service cloud.firestore {
     match /articles/{articleId}/comments/{commentId} {
       
       // Everyone can read published comments on published articles
-      allow read: if get(/databases/$(database)/documents/articles/$(articleId)).data.publishedAt <= request.time.toMillis();
+      allow read: if exists(/databases/$(database)/documents/articles/$(articleId)) &&
+                       get(/databases/$(database)/documents/articles/$(articleId)).data.publishedAt <= request.time.toMillis();
       
       // Signed-in users can create comments on published articles
       allow create: if isSignedIn() &&
+                       exists(/databases/$(database)/documents/articles/$(articleId)) &&
                        get(/databases/$(database)/documents/articles/$(articleId)).data.publishedAt <= request.time.toMillis() &&
                        request.resource.data.keys().hasAll(['text', 'userId', 'createdAt']) &&
                        request.resource.data.userId == request.auth.uid;
