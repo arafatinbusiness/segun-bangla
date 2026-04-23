@@ -69,8 +69,10 @@ service cloud.firestore {
     // ============================================================================
     match /articles/{articleId} {
       
-      // Public can read only published articles (status-based, no time check)
-      allow read: if resource.data.status == 'published';
+      // Public can read published articles (status-based, no time check)
+      // Also allows reading articles without status field (backward compatibility)
+      allow read: if resource.data.status == 'published' || 
+                     (!('status' in resource.data) && resource.data.publishedAt <= request.time.toMillis());
       
       // Admins and authors can read all articles (draft, published, scheduled)
       allow read: if isAuthor();
