@@ -82,6 +82,25 @@ export async function getFeaturedArticles(limitCount: number = 3): Promise<Fires
   }
 }
 
+export async function getSpecialArticles(limitCount: number = 4): Promise<FirestoreArticle[]> {
+  try {
+    const q = query(
+      collection(db, ARTICLES_COLLECTION),
+      where('isSpecial', '==', true),
+      orderBy('publishedAt', 'desc'),
+      limit(limitCount)
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      docId: doc.id,
+    })) as FirestoreArticle[]
+  } catch (error) {
+    console.error('[v0] Error fetching special articles:', error)
+    return []
+  }
+}
+
 export async function getArticlesByCategory(
   categoryId: string,
   pageSize: number = 12,

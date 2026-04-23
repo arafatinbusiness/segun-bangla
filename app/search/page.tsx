@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { searchArticles } from '@/lib/services/article-queries'
 import { getAllCategories } from '@/lib/services/categories'
@@ -10,7 +10,7 @@ import { SearchClient } from '@/components/search-client'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category } from '@/lib/types'
 
-function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams()
   const q = searchParams?.get('q') || undefined
 
@@ -81,6 +81,33 @@ function SearchPage() {
         </div>
       </main>
     </>
+  )
+}
+
+function SearchPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Header categories={[]} />
+        <main className="min-h-screen bg-background">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-muted rounded w-1/3"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="h-40 bg-muted rounded-lg"></div>
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </>
+    }>
+      <SearchPageContent />
+    </Suspense>
   )
 }
 
