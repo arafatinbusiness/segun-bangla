@@ -69,10 +69,13 @@ service cloud.firestore {
     // ============================================================================
     match /articles/{articleId} {
       
-      // Public can read published articles
-      allow read: if resource.data.publishedAt <= request.time.toMillis();
-      
-      // Admins and authors can read all articles (draft and published)
+      // Public read access for published articles
+      // Addition: explicitly checking if publishedAt exists
+      allow read: if resource != null && 
+                     resource.data.publishedAt != null && 
+                     resource.data.publishedAt <= request.time.toMillis();
+
+      // Admin/Author bypass
       allow read: if isAuthor();
       
       // Authors and admins can create articles
