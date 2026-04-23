@@ -148,6 +148,24 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           </Select>
         </div>
 
+        {/* Status */}
+        <div className="space-y-2">
+          <Label htmlFor="status" className="text-foreground">স্ট্যাটাস</Label>
+          <Select 
+            value={formData.status || 'draft'} 
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value as 'draft' | 'published' | 'scheduled' }))}
+          >
+            <SelectTrigger id="status" className="w-full">
+              <SelectValue placeholder="স্ট্যাটাস নির্বাচন করুন" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">খসড়া (Draft)</SelectItem>
+              <SelectItem value="published">প্রকাশিত (Published)</SelectItem>
+              <SelectItem value="scheduled">নির্ধারিত (Scheduled)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Checkboxes */}
         <div className="space-y-3 border-t pt-6">
           <div className="flex items-center space-x-2">

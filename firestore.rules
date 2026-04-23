@@ -69,13 +69,10 @@ service cloud.firestore {
     // ============================================================================
     match /articles/{articleId} {
       
-      // Public read access for published articles
-      // Addition: explicitly checking if publishedAt exists
-      allow read: if resource != null && 
-                     resource.data.publishedAt != null && 
-                     resource.data.publishedAt <= request.time.toMillis();
-
-      // Admin/Author bypass
+      // Public can read only published articles (status-based, no time check)
+      allow read: if resource.data.status == 'published';
+      
+      // Admins and authors can read all articles (draft, published, scheduled)
       allow read: if isAuthor();
       
       // Authors and admins can create articles
@@ -89,11 +86,12 @@ service cloud.firestore {
       // Authors can delete their own articles, admins can delete any
       allow delete: if (isAuthor() && resource.data.authorId == request.auth.uid) || isAdmin();
       
-      // Admins can update article status (featured, special, lead)
+      // Admins can update article status (featured, special, lead, and publish status)
       allow update: if isAdmin() && 
                        ('isFeatured' in request.resource.data.diff(resource.data).changedKeys() ||
                         'isSpecial' in request.resource.data.diff(resource.data).changedKeys() ||
-                        'isLead' in request.resource.data.diff(resource.data).changedKeys());
+                        'isLead' in request.resource.data.diff(resource.data).changedKeys() ||
+                        'status' in request.resource.data.diff(resource.data).changedKeys());
     }
 
     // ============================================================================

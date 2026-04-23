@@ -4,7 +4,16 @@
       "collectionGroup": "articles",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "publishedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "articles",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "isFeatured", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     },
@@ -13,6 +22,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "isLead", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     },
@@ -21,6 +31,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "isSpecial", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     },
@@ -29,6 +40,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "categoryId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     },
@@ -37,6 +49,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "subcategoryId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     },
@@ -45,13 +58,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "slug", "order": "ASCENDING" },
-        { "fieldPath": "publishedAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "articles",
-      "queryScope": "COLLECTION",
-      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     }

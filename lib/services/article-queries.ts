@@ -18,7 +18,7 @@ export async function getArticleBySlug(slug: string): Promise<FirestoreArticle |
     const q = query(
       collection(db, ARTICLES_COLLECTION), 
       where('slug', '==', slug),
-      where('publishedAt', '<=', Date.now())
+      where('status', '==', 'published')
     )
     const snapshot = await getDocs(q)
     if (snapshot.empty) return null
@@ -53,7 +53,7 @@ export async function getLeadArticles(limitCount: number = 5): Promise<Firestore
     const q = query(
       collection(db, ARTICLES_COLLECTION),
       where('isLead', '==', true),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )
@@ -73,7 +73,7 @@ export async function getFeaturedArticles(limitCount: number = 3): Promise<Fires
     const q = query(
       collection(db, ARTICLES_COLLECTION),
       where('isFeatured', '==', true),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )
@@ -93,7 +93,7 @@ export async function getSpecialArticles(limitCount: number = 4): Promise<Firest
     const q = query(
       collection(db, ARTICLES_COLLECTION),
       where('isSpecial', '==', true),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )
@@ -117,7 +117,7 @@ export async function getArticlesByCategory(
     const q = query(
       collection(db, ARTICLES_COLLECTION),
       where('categoryId', '==', categoryId),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(pageSize)
     )
@@ -140,7 +140,7 @@ export async function getArticlesBySubcategory(
     const q = query(
       collection(db, ARTICLES_COLLECTION),
       where('subcategoryId', '==', subcategoryId),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(pageSize)
     )
@@ -162,7 +162,7 @@ export async function searchArticles(
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(pageSize)
     )
@@ -189,7 +189,7 @@ export async function getRecentArticles(limitCount: number = 10): Promise<Firest
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )
@@ -208,7 +208,7 @@ export async function getAllArticles(limitCount: number = 1000): Promise<Firesto
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
-      where('publishedAt', '<=', Date.now()),
+      where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )

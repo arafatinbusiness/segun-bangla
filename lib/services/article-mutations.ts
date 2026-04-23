@@ -9,6 +9,7 @@ export async function createArticle(articleData: Partial<Article>): Promise<stri
     const now = Date.now()
     const docRef = await addDoc(collection(db, ARTICLES_COLLECTION), {
       ...articleData,
+      status: articleData.status || 'draft',
       publishedAt: now,
       updatedAt: now,
       viewCount: 0,

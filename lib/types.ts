@@ -33,6 +33,7 @@ export interface Article {
   categoryId: string
   subcategoryId?: string
   authorId: string
+  status: 'draft' | 'published' | 'scheduled'
   isLead: boolean
   isSpecial: boolean
   isFeatured: boolean
