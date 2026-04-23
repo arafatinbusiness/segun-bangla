@@ -72,9 +72,6 @@ service cloud.firestore {
       // Public can read published articles
       allow read: if resource.data.publishedAt <= request.time.toMillis();
       
-      // Authenticated users can read published articles
-      allow read: if isSignedIn() && resource.data.publishedAt <= request.time.toMillis();
-      
       // Admins and authors can read all articles (draft and published)
       allow read: if isAuthor();
       
