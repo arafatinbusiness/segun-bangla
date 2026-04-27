@@ -167,6 +167,7 @@ export async function searchArticles(
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
+      where('status', '==', 'published'),
       where('publishedAt', '<=', Date.now()),
       orderBy('publishedAt', 'desc'),
       limit(pageSize)
@@ -181,9 +182,8 @@ export async function searchArticles(
     const lowerSearch = searchTerm.toLowerCase()
     return results.filter(
       (article) =>
-        article.status === 'published' &&
-        (article.title.toLowerCase().includes(lowerSearch) ||
-        article.excerpt.toLowerCase().includes(lowerSearch))
+        article.title.toLowerCase().includes(lowerSearch) ||
+        article.excerpt.toLowerCase().includes(lowerSearch)
     )
   } catch (error) {
     console.error('[v0] Error searching articles:', error)
@@ -195,17 +195,16 @@ export async function getRecentArticles(limitCount: number = 10): Promise<Firest
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
+      where('status', '==', 'published'),
       where('publishedAt', '<=', Date.now()),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )
     const snapshot = await getDocs(q)
-    const articles = snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc) => ({
       ...doc.data(),
       docId: doc.id,
     })) as FirestoreArticle[]
-    // Filter by published status in JavaScript to avoid requiring a composite index
-    return articles.filter(article => article.status === 'published')
   } catch (error) {
     console.error('[v0] Error fetching recent articles:', error)
     return []
@@ -216,17 +215,16 @@ export async function getAllArticles(limitCount: number = 1000): Promise<Firesto
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
+      where('status', '==', 'published'),
       where('publishedAt', '<=', Date.now()),
       orderBy('publishedAt', 'desc'),
       limit(limitCount)
     )
     const snapshot = await getDocs(q)
-    const articles = snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc) => ({
       ...doc.data(),
       docId: doc.id,
     })) as FirestoreArticle[]
-    // Filter by published status in JavaScript to avoid requiring a composite index
-    return articles.filter(article => article.status === 'published')
   } catch (error) {
     console.error('[v0] Error fetching all articles:', error)
     return []
