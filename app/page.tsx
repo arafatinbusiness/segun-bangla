@@ -108,7 +108,7 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
           {/* 1. Three-Column Hero Grid */}
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {/* Left Sidebar (20-25%) */}
+            {/* Left Sidebar - Ad + SP-1 + SP-3 */}
             <div className="space-y-4">
               {/* Advertisement Slot */}
               <Card className="p-6 bg-muted flex items-center justify-center min-h-32">
@@ -145,7 +145,7 @@ function HomePage() {
               )}
             </div>
 
-            {/* Center Column - Lead Article (50-60%) */}
+            {/* Center Column - Lead Article */}
             <div className="md:col-span-2">
               {mainArticle && (
                 <article className="group relative h-64 md:h-96 rounded-lg overflow-hidden bg-muted">
@@ -168,7 +168,7 @@ function HomePage() {
               )}
             </div>
 
-            {/* Right Sidebar (20-25%) */}
+            {/* Right Sidebar - Ad + SP-2 + SP-4 */}
             <div className="space-y-4">
               {/* Advertisement Slot */}
               <Card className="p-6 bg-muted flex items-center justify-center min-h-32">

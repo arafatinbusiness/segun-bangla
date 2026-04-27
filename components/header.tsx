@@ -81,13 +81,8 @@ export function Header({ categories }: HeaderProps) {
 
         {/* Category Navigation */}
         <nav className={`${mobileMenuOpen ? 'block' : 'hidden'} md:block border-t md:border-t-0 pt-4 md:pt-0`}>
+          {/* First Row - first 8 categories */}
           <div className="flex flex-col md:flex-row gap-1 md:gap-6 overflow-x-auto pb-2">
-            <Link
-              href="/"
-              className="text-sm font-medium text-foreground hover:text-foreground/80 whitespace-nowrap py-2 md:py-0"
-            >
-              হোম
-            </Link>
             {categories.slice(0, 8).map((category) => (
               <Link
                 key={category.id}
@@ -98,6 +93,26 @@ export function Header({ categories }: HeaderProps) {
               </Link>
             ))}
           </div>
+          {/* Second Row - remaining categories + সব দেখুন */}
+          {categories.length > 8 && (
+            <div className="flex flex-col md:flex-row gap-1 md:gap-6 overflow-x-auto pb-2 pt-2 md:pt-2 border-t md:border-t border-border mt-2">
+              {categories.slice(8).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/category/${category.slug}`}
+                  className="text-sm font-medium text-foreground hover:text-foreground/80 whitespace-nowrap py-2 md:py-0"
+                >
+                  {category.name}
+                </Link>
+              ))}
+              <Link
+                href="/search"
+                className="text-sm font-medium text-primary hover:text-primary/80 whitespace-nowrap py-2 md:py-0 font-semibold"
+              >
+                সব দেখুন →
+              </Link>
+            </div>
+          )}
         </nav>
       </div>
     </header>
