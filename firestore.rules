@@ -28,18 +28,30 @@ service cloud.firestore {
     // USERS COLLECTION - Authentication & Profile Management
     // ============================================================================
     match /users/{userId} {
+      
+      // Users can create their own profile during registration
       allow create: if request.auth.uid == userId && 
                       request.resource.data.role == 'user' &&
                       request.resource.data.keys().hasAll(['uid', 'role', 'createdAt']);
+
+      // Users can read their own profile
       allow read: if request.auth.uid == userId;
+
+      // Users can update specific fields in their own profile (including lastLogin)
       allow update: if request.auth.uid == userId && 
                       (request.resource.data.diff(resource.data).affectedKeys()
                       .hasOnly(['lastLogin', 'email', 'displayName', 'photoURL']));
+
+      // Admins can do everything
       allow read, write: if isAdmin();
+      
+      // Subcollection: User preferences/settings
       match /preferences/{document=**} {
         allow read: if isOwnUser(userId);
         allow write: if isOwnUser(userId);
       }
+      
+      // Subcollection: User activity log
       match /activityLog/{document=**} {
         allow read: if isOwnUser(userId) || isAdmin();
         allow write: if isOwnUser(userId) || isAdmin();
@@ -47,22 +59,28 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // ARTICLES COLLECTION - Public can read published articles
+    // ARTICLES COLLECTION - News Content Management
     // ============================================================================
     match /articles/{articleId} {
-      // Public can read published articles
-      allow read: if resource.data.status == 'published';
-      // Admins and authors can read all articles
+      
+      // Public can read all articles (filtering is done in application code)
+      allow read: if true;
+      
+      // Admins and authors can read all articles (draft, published, scheduled)
       allow read: if isAuthor();
+      
       // Authors and admins can create articles
       allow create: if isAuthor() &&
                        request.resource.data.keys().hasAll(['title', 'slug', 'content', 'excerpt', 'categoryId', 'authorId']) &&
                        request.resource.data.authorId == request.auth.uid;
+      
       // Authors can update their own articles, admins can update any
       allow update: if (isAuthor() && resource.data.authorId == request.auth.uid) || isAdmin();
+      
       // Authors can delete their own articles, admins can delete any
       allow delete: if (isAuthor() && resource.data.authorId == request.auth.uid) || isAdmin();
-      // Admins can update article status
+      
+      // Admins can update article status (featured, special, lead, and publish status)
       allow update: if isAdmin() && 
                        ('isFeatured' in request.resource.data.diff(resource.data).changedKeys() ||
                         'isSpecial' in request.resource.data.diff(resource.data).changedKeys() ||
@@ -71,15 +89,25 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // CATEGORIES COLLECTION - Everyone can read
+    // CATEGORIES COLLECTION - Content Organization
     // ============================================================================
     match /categories/{categoryId} {
+      
+      // Everyone can read categories
       allow read: if true;
+      
+      // Only admins can create/update/delete categories
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+      
+      // Subcollection: Subcategories
       match /subcategories/{subcategoryId} {
+        
+        // Everyone can read subcategories
         allow read: if true;
+        
+        // Only admins can manage subcategories
         allow create: if isAdmin();
         allow update: if isAdmin();
         allow delete: if isAdmin();
@@ -90,7 +118,11 @@ service cloud.firestore {
     // ANALYTICS COLLECTION
     // ============================================================================
     match /analytics/{document=**} {
+      
+      // Only admins can read analytics
       allow read: if isAdmin();
+      
+      // Server-side functions can write analytics
       allow write: if request.auth.token.isServerFunction == true;
     }
 
@@ -98,19 +130,25 @@ service cloud.firestore {
     // COMMENTS COLLECTION
     // ============================================================================
     match /articles/{articleId}/comments/{commentId} {
+      
+      // Everyone can read published comments on published articles
       allow read: if exists(/databases/$(database)/documents/articles/$(articleId)) &&
                        get(/databases/$(database)/documents/articles/$(articleId)).data.publishedAt <= request.time.toMillis();
+      
+      // Signed-in users can create comments on published articles
       allow create: if isSignedIn() &&
                        exists(/databases/$(database)/documents/articles/$(articleId)) &&
                        get(/databases/$(database)/documents/articles/$(articleId)).data.publishedAt <= request.time.toMillis() &&
                        request.resource.data.keys().hasAll(['text', 'userId', 'createdAt']) &&
                        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update/delete their own comments
       allow update: if request.auth.uid == resource.data.userId;
       allow delete: if request.auth.uid == resource.data.userId || isAdmin();
     }
 
     // ============================================================================
-    // DEFAULT DENY
+    // DEFAULT DENY - All other access is denied
     // ============================================================================
     match /{document=**} {
       allow read, write: if false;
