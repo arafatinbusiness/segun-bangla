@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { Article, Category } from '@/lib/types'
+import { getSubcategoriesByCategory } from '@/lib/services/categories'
+import { RichTextEditor } from '@/components/admin/rich-text-editor'
+import type { Article, Category, Subcategory } from '@/lib/types'
 
 interface ArticleFormProps {
   article?: Article
@@ -26,12 +28,37 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       excerpt: '',
       imageUrl: '',
       categoryId: '',
+      subcategoryId: '',
       isLead: false,
       isSpecial: false,
+      status: 'published',
     }
   )
 
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [subcategoriesLoading, setSubcategoriesLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    if (formData.categoryId) {
+      setSubcategoriesLoading(true)
+      getSubcategoriesByCategory(formData.categoryId)
+        .then((subs) => {
+          setSubcategories(subs)
+          // If editing and the article has a subcategoryId, keep it
+          // If the subcategory is no longer valid, clear it
+          if (formData.subcategoryId && !subs.find(s => s.id === formData.subcategoryId)) {
+            setFormData((prev) => ({ ...prev, subcategoryId: '' }))
+          }
+        })
+        .catch((err) => console.error('Error loading subcategories:', err))
+        .finally(() => setSubcategoriesLoading(false))
+    } else {
+      setSubcategories([])
+      setFormData((prev) => ({ ...prev, subcategoryId: '' }))
+    }
+  }, [formData.categoryId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -39,7 +66,11 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
   }
 
   const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, categoryId: value }))
+    setFormData((prev) => ({ ...prev, categoryId: value, subcategoryId: '' }))
+  }
+
+  const handleSubcategoryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, subcategoryId: value }))
   }
 
   const handleCheckChange = (name: string, checked: boolean) => {
@@ -56,41 +87,68 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     }
   }
 
+  // Generate slug from title - strips all special characters including %
+  const generateSlug = () => {
+    if (!formData.title || formData.slug) return
+    const slug = formData.title
+      .toLowerCase()
+      // Remove Bengali and other non-ASCII characters
+      .replace(/[^\w\s-]/g, '')
+      // Replace whitespace with hyphens
+      .replace(/\s+/g, '-')
+      // Collapse multiple hyphens
+      .replace(/-+/g, '-')
+      // Remove leading/trailing hyphens
+      .replace(/^-+|-+$/g, '')
+      .trim()
+    setFormData((prev) => ({ ...prev, slug }))
+  }
+
   return (
     <Card className="p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Title */}
         <div className="space-y-2">
-          <Label htmlFor="title" className="text-foreground">শিরোনাম</Label>
+          <Label htmlFor="title" className="text-foreground font-semibold">শিরোনাম</Label>
           <Input
             id="title"
             name="title"
             value={formData.title || ''}
-            onChange={handleChange}
+            onChange={(e) => {
+              handleChange(e)
+              if (!article) generateSlug()
+            }}
             placeholder="নিবন্ধ শিরোনাম প্রবেশ করুন"
-            className="w-full"
+            className="w-full text-lg"
             required
           />
         </div>
 
         {/* Slug */}
         <div className="space-y-2">
-          <Label htmlFor="slug" className="text-foreground">স্লাগ (URL)</Label>
-          <Input
-            id="slug"
-            name="slug"
-            value={formData.slug || ''}
-            onChange={handleChange}
-            placeholder="article-slug"
-            className="w-full"
-            required
-          />
+          <Label htmlFor="slug" className="text-foreground font-semibold">স্লাগ (URL)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="slug"
+              name="slug"
+              value={formData.slug || ''}
+              onChange={handleChange}
+              placeholder="article-slug"
+              className="w-full"
+              required
+            />
+            {!article && (
+              <Button type="button" variant="outline" size="sm" onClick={generateSlug} className="shrink-0">
+                অটো
+              </Button>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">URL এ ব্যবহৃত হবে (উদা: /article/article-slug)</p>
         </div>
 
         {/* Excerpt */}
         <div className="space-y-2">
-          <Label htmlFor="excerpt" className="text-foreground">সংক্ষিপ্ত বর্ণনা</Label>
+          <Label htmlFor="excerpt" className="text-foreground font-semibold">সংক্ষিপ্ত বর্ণনা</Label>
           <Textarea
             id="excerpt"
             name="excerpt"
@@ -102,24 +160,19 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           />
         </div>
 
-        {/* Content */}
+        {/* Content - Rich Text Editor */}
         <div className="space-y-2">
-          <Label htmlFor="content" className="text-foreground">বিষয়বস্তু</Label>
-          <Textarea
-            id="content"
-            name="content"
+          <Label className="text-foreground font-semibold">বিষয়বস্তু</Label>
+          <RichTextEditor
             value={formData.content || ''}
-            onChange={handleChange}
-            placeholder="নিবন্ধের সম্পূর্ণ বিষয়বস্তু"
-            rows={10}
-            className="w-full font-mono text-sm"
-            required
+            onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
+            minHeight="500px"
           />
         </div>
 
         {/* Image URL */}
         <div className="space-y-2">
-          <Label htmlFor="imageUrl" className="text-foreground">ছবির URL</Label>
+          <Label htmlFor="imageUrl" className="text-foreground font-semibold">প্রধান ছবির URL</Label>
           <Input
             id="imageUrl"
             name="imageUrl"
@@ -129,11 +182,23 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             placeholder="https://example.com/image.jpg"
             className="w-full"
           />
+          {formData.imageUrl && (
+            <div className="relative h-32 w-full rounded-lg overflow-hidden bg-muted mt-2">
+              <img
+                src={formData.imageUrl}
+                alt="প্রিভিউ"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none'
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Category */}
         <div className="space-y-2">
-          <Label htmlFor="category" className="text-foreground">বিভাগ</Label>
+          <Label htmlFor="category" className="text-foreground font-semibold">বিভাগ</Label>
           <Select value={formData.categoryId || ''} onValueChange={handleSelectChange}>
             <SelectTrigger id="category" className="w-full">
               <SelectValue placeholder="বিভাগ নির্বাচন করুন" />
@@ -148,9 +213,46 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           </Select>
         </div>
 
+        {/* Subcategory - shown only when category has subcategories */}
+        {formData.categoryId && subcategories.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="subcategory" className="text-foreground font-semibold">
+              উপবিভাগ
+              <span className="text-xs text-muted-foreground ml-2">(আবশ্যক)</span>
+            </Label>
+            <Select value={formData.subcategoryId || ''} onValueChange={handleSubcategoryChange}>
+              <SelectTrigger id="subcategory" className="w-full">
+                <SelectValue placeholder="উপবিভাগ নির্বাচন করুন" />
+              </SelectTrigger>
+              <SelectContent>
+                {subcategories.map((sub) => (
+                  <SelectItem key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!formData.subcategoryId && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                এই বিভাগে উপবিভাগ রয়েছে। অনুগ্রহ করে একটি উপবিভাগ নির্বাচন করুন।
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Subcategory loading state */}
+        {formData.categoryId && subcategoriesLoading && (
+          <div className="space-y-2">
+            <Label className="text-foreground font-semibold">উপবিভাগ</Label>
+            <div className="h-10 rounded-lg border bg-muted/30 flex items-center px-3 text-sm text-muted-foreground">
+              উপবিভাগ লোড হচ্ছে...
+            </div>
+          </div>
+        )}
+
         {/* Status */}
         <div className="space-y-2">
-          <Label htmlFor="status" className="text-foreground">স্ট্যাটাস</Label>
+          <Label htmlFor="status" className="text-foreground font-semibold">স্ট্যাটাস</Label>
           <Select 
             value={formData.status || 'draft'} 
             onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value as 'draft' | 'published' | 'scheduled' }))}
@@ -159,34 +261,55 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
               <SelectValue placeholder="স্ট্যাটাস নির্বাচন করুন" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="draft">খসড়া (Draft)</SelectItem>
-              <SelectItem value="published">প্রকাশিত (Published)</SelectItem>
-              <SelectItem value="scheduled">নির্ধারিত (Scheduled)</SelectItem>
+              <SelectItem value="draft">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                  খসড়া (Draft)
+                </div>
+              </SelectItem>
+              <SelectItem value="published">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  প্রকাশিত (Published)
+                </div>
+              </SelectItem>
+              <SelectItem value="scheduled">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  নির্ধারিত (Scheduled)
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Checkboxes */}
-        <div className="space-y-3 border-t pt-6">
-          <div className="flex items-center space-x-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6">
+          <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/30 transition-colors">
             <Checkbox
               id="isLead"
               checked={formData.isLead || false}
               onCheckedChange={(checked) => handleCheckChange('isLead', checked as boolean)}
             />
-            <Label htmlFor="isLead" className="text-foreground cursor-pointer">
-              প্রধান নিবন্ধ হিসাবে চিহ্নিত করুন
-            </Label>
+            <div>
+              <Label htmlFor="isLead" className="text-foreground cursor-pointer font-medium">
+                প্রধান নিবন্ধ
+              </Label>
+              <p className="text-xs text-muted-foreground">হোমপেজের প্রধান স্লাইডারে দেখাবে</p>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/30 transition-colors">
             <Checkbox
               id="isSpecial"
               checked={formData.isSpecial || false}
               onCheckedChange={(checked) => handleCheckChange('isSpecial', checked as boolean)}
             />
-            <Label htmlFor="isSpecial" className="text-foreground cursor-pointer">
-              বিশেষ নিবন্ধ হিসাবে চিহ্নিত করুন
-            </Label>
+            <div>
+              <Label htmlFor="isSpecial" className="text-foreground cursor-pointer font-medium">
+                বিশেষ নিবন্ধ
+              </Label>
+              <p className="text-xs text-muted-foreground">হোমপেজের সাইডবারে দেখাবে</p>
+            </div>
           </div>
         </div>
 
@@ -194,10 +317,17 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         <div className="flex gap-4 pt-6 border-t">
           <Button
             type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-[140px]"
             disabled={submitting || isLoading}
           >
-            {submitting || isLoading ? 'সংরক্ষণ করছি...' : 'সংরক্ষণ করুন'}
+            {submitting || isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                সংরক্ষণ করছি...
+              </span>
+            ) : (
+              'সংরক্ষণ করুন'
+            )}
           </Button>
           <Button
             type="button"

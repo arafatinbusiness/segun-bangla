@@ -1,30 +1,115 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getAllCategories } from '@/lib/services/categories'
+import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
+import { deleteCategory, createSubcategory, deleteSubcategory } from '@/lib/services/category-mutations'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Trash2, Edit2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Trash2, Edit2, Plus, Folder, Search, ChevronDown, ChevronRight, Hash, AlertTriangle, X, Check, Subscript } from 'lucide-react'
 import Link from 'next/link'
-import type { Category } from '@/lib/types'
+import type { Category, Subcategory } from '@/lib/types'
 
 function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
+  const [subcategories, setSubcategories] = useState<Record<string, Subcategory[]>>({})
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [newSubName, setNewSubName] = useState('')
+  const [newSubSlug, setNewSubSlug] = useState('')
+  const [addingSubTo, setAddingSubTo] = useState<string | null>(null)
+  const [submittingSub, setSubmittingSub] = useState(false)
+  const [deleteSubConfirm, setDeleteSubConfirm] = useState<string | null>(null)
+
+  const fetchData = async () => {
+    try {
+      const data = await getAllCategories()
+      setCategories(data)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await getAllCategories()
-        setCategories(data)
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchCategories()
+    fetchData()
   }, [])
+
+  const loadSubcategories = async (categoryId: string) => {
+    if (subcategories[categoryId]) return
+    const subs = await getSubcategoriesByCategory(categoryId)
+    setSubcategories((prev) => ({ ...prev, [categoryId]: subs }))
+  }
+
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cat.slug.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleDelete = async (categoryId: string) => {
+    setDeleting(true)
+    try {
+      await deleteCategory(categoryId)
+      setCategories((prev) => prev.filter((c) => c.id !== categoryId))
+      setDeleteConfirm(null)
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      alert('বিভাগ মুছতে ত্রুটি হয়েছে')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleAddSubcategory = async (categoryId: string) => {
+    if (!newSubName.trim() || !newSubSlug.trim()) return
+    setSubmittingSub(true)
+    try {
+      const subId = await createSubcategory(categoryId, {
+        name: newSubName.trim(),
+        slug: newSubSlug.trim(),
+        order: (subcategories[categoryId]?.length || 0) + 1,
+      })
+      if (subId) {
+        const subs = await getSubcategoriesByCategory(categoryId)
+        setSubcategories((prev) => ({ ...prev, [categoryId]: subs }))
+        setNewSubName('')
+        setNewSubSlug('')
+        setAddingSubTo(null)
+      }
+    } catch (error) {
+      console.error('Error creating subcategory:', error)
+      alert('উপবিভাগ তৈরিতে ত্রুটি হয়েছে')
+    } finally {
+      setSubmittingSub(false)
+    }
+  }
+
+  const handleDeleteSubcategory = async (categoryId: string, subcategoryId: string) => {
+    try {
+      await deleteSubcategory(categoryId, subcategoryId)
+      const subs = await getSubcategoriesByCategory(categoryId)
+      setSubcategories((prev) => ({ ...prev, [categoryId]: subs }))
+      setDeleteSubConfirm(null)
+    } catch (error) {
+      console.error('Error deleting subcategory:', error)
+      alert('উপবিভাগ মুছতে ত্রুটি হয়েছে')
+    }
+  }
+
+  const generateSubSlug = () => {
+    if (!newSubName || newSubSlug) return
+    const slug = newSubName
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+    setNewSubSlug(slug)
+  }
 
   if (loading) {
     return (
@@ -39,52 +124,245 @@ function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">বিভাগ পরিচালনা</h1>
-          <p className="text-muted-foreground mt-2">সমস্ত বিভাগ দেখুন এবং পরিচালনা করুন</p>
+          <p className="text-muted-foreground mt-1">মোট {categories.length}টি বিভাগ</p>
         </div>
         <Link href="/admin/categories/new">
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            নতুন বিভাগ তৈরি করুন
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+            <Plus className="w-4 h-4" />
+            নতুন বিভাগ
           </Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categories.map((category) => (
-          <Card key={category.id} className="p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-foreground">{category.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{category.slug}</p>
+      {/* Search */}
+      <Card className="p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="বিভাগ খুঁজুন..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </Card>
+
+      {/* Categories Grid */}
+      {filteredCategories.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredCategories.map((category) => (
+            <Card key={category.id} className="p-5 hover:shadow-md transition-all group">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: category.color || '#e5e7eb' }}
+                  >
+                    <Folder className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-foreground truncate">{category.name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">/{category.slug}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1 ml-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Link href={`/admin/categories/${category.id}`}>
+                    <button className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </Link>
+                  {deleteConfirm === category.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDelete(category.id!)}
+                        disabled={deleting}
+                        className="p-1.5 text-red-600 hover:text-red-700 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(null)}
+                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setDeleteConfirm(category.id!)}
+                      className="p-1.5 text-muted-foreground hover:text-red-600 transition-colors rounded-lg hover:bg-muted"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2 ml-4">
-                <Link href={`/admin/categories/${category.id}`}>
-                  <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                </Link>
-                <button className="p-2 text-muted-foreground hover:text-red-600 transition-colors">
-                  <Trash2 className="w-4 h-4" />
+
+              {/* Description */}
+              {category.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  {category.description}
+                </p>
+              )}
+
+              {/* Meta Info */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
+                <div className="flex items-center gap-2">
+                  <Hash className="w-3 h-3" />
+                  <span>ক্রম {category.order || 0}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const newId = expandedId === category.id ? null : category.id!
+                    setExpandedId(newId)
+                    if (newId) loadSubcategories(newId)
+                  }}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  {expandedId === category.id ? (
+                    <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
+                  <span>উপবিভাগ</span>
                 </button>
               </div>
-            </div>
-            {category.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {category.description}
-              </p>
-            )}
-            <div className="mt-4 pt-4 border-t flex justify-between text-xs text-muted-foreground">
-              <span>স্লাগ: {category.slug}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
 
-      {categories.length === 0 && (
+              {/* Subcategories */}
+              {expandedId === category.id && (
+                <div className="mt-3 pt-3 border-t space-y-2">
+                  {/* Existing subcategories */}
+                  {(subcategories[category.id] || []).length > 0 ? (
+                    <div className="space-y-1">
+                      {subcategories[category.id].map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group/sub"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{sub.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">/{sub.slug}</p>
+                          </div>
+                          <div className="flex gap-1 shrink-0 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                            {deleteSubConfirm === sub.id ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleDeleteSubcategory(category.id!, sub.id!)}
+                                  className="p-1 text-red-600 hover:text-red-700 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                >
+                                  <AlertTriangle className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteSubConfirm(null)}
+                                  className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setDeleteSubConfirm(sub.id!)}
+                                className="p-1 text-muted-foreground hover:text-red-600 rounded hover:bg-muted"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-muted/30 text-center">
+                      <p className="text-xs text-muted-foreground">কোন উপবিভাগ নেই</p>
+                    </div>
+                  )}
+
+                  {/* Add subcategory form */}
+                  {addingSubTo === category.id ? (
+                    <div className="space-y-2 p-3 rounded-lg border bg-card">
+                      <Input
+                        placeholder="উপবিভাগের নাম"
+                        value={newSubName}
+                        onChange={(e) => {
+                          setNewSubName(e.target.value)
+                          if (!newSubSlug) generateSubSlug()
+                        }}
+                        className="text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="slug-name"
+                          value={newSubSlug}
+                          onChange={(e) => setNewSubSlug(e.target.value)}
+                          className="text-sm flex-1"
+                        />
+                        <Button type="button" variant="outline" size="sm" onClick={generateSubSlug} className="shrink-0">
+                          অটো
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => handleAddSubcategory(category.id!)}
+                          disabled={submittingSub || !newSubName.trim() || !newSubSlug.trim()}
+                        >
+                          <Check className="w-3 h-3" />
+                          {submittingSub ? 'সংরক্ষণ...' : 'সংরক্ষণ'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setAddingSubTo(null)
+                            setNewSubName('')
+                            setNewSubSlug('')
+                          }}
+                        >
+                          বাতিল
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-8 text-xs gap-1"
+                      onClick={() => setAddingSubTo(category.id!)}
+                    >
+                      <Plus className="w-3 h-3" />
+                      উপবিভাগ যোগ করুন
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : (
         <Card className="p-12 text-center">
-          <p className="text-muted-foreground">কোন বিভাগ পাওয়া যায়নি</p>
+          <Folder className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">কোন বিভাগ পাওয়া যায়নি</h3>
+          <p className="text-muted-foreground mb-6">
+            {searchQuery
+              ? 'আপনার অনুসন্ধানের সাথে মিলে এমন কোন বিভাগ নেই'
+              : 'এখনও কোন বিভাগ তৈরি করা হয়নি'}
+          </p>
+          {!searchQuery && (
+            <Link href="/admin/categories/new">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+                <Plus className="w-4 h-4" />
+                প্রথম বিভাগ তৈরি করুন
+              </Button>
+            </Link>
+          )}
         </Card>
       )}
     </div>

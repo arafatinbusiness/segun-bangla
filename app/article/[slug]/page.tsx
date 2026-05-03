@@ -11,7 +11,9 @@ import type { Category } from '@/lib/types'
 
 function ArticlePage() {
   const params = useParams()
-  const slug = params?.slug as string
+  // Decode URL-encoded characters (e.g., %25 -> %) so slugs with special chars work
+  const rawSlug = params?.slug as string
+  const slug = rawSlug ? decodeURIComponent(rawSlug) : ''
 
   const [article, setArticle] = useState<FirestoreArticle | null>(null)
   const [recentArticles, setRecentArticles] = useState<FirestoreArticle[]>([])
@@ -130,11 +132,11 @@ function ArticlePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-lg text-muted-foreground mb-6 font-semibold">
+                  <p className="text-lg text-foreground mb-6 font-semibold">
                     {article.excerpt}
                   </p>
-                  <div className="text-foreground leading-relaxed whitespace-pre-wrap">
-                    {article.content}
+                  <div className="prose prose-sm max-w-none dark:prose-invert text-foreground leading-relaxed">
+                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
                   </div>
                 </div>
 

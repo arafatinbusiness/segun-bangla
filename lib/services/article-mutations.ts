@@ -1,4 +1,4 @@
-import { collection, addDoc } from 'firebase/firestore'
+import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { Article } from '../types'
 
@@ -19,6 +19,33 @@ export async function createArticle(articleData: Partial<Article>): Promise<stri
     return docRef.id
   } catch (error) {
     console.error('[v0] Error creating article:', error)
+    throw error
+  }
+}
+
+export async function updateArticle(articleId: string, articleData: Partial<Article>): Promise<boolean> {
+  try {
+    const docRef = doc(db, ARTICLES_COLLECTION, articleId)
+    await updateDoc(docRef, {
+      ...articleData,
+      updatedAt: Date.now(),
+    })
+    console.log('[v0] Article updated successfully:', articleId)
+    return true
+  } catch (error) {
+    console.error('[v0] Error updating article:', error)
+    throw error
+  }
+}
+
+export async function deleteArticle(articleId: string): Promise<boolean> {
+  try {
+    const docRef = doc(db, ARTICLES_COLLECTION, articleId)
+    await deleteDoc(docRef)
+    console.log('[v0] Article deleted successfully:', articleId)
+    return true
+  } catch (error) {
+    console.error('[v0] Error deleting article:', error)
     throw error
   }
 }

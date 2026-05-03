@@ -46,3 +46,25 @@ export interface Article {
 export interface FirestoreArticle extends Article {
   docId: string
 }
+
+export interface Advertisement {
+  id?: string
+  docId?: string
+  title: string
+  slotName: string
+  type: 'image' | 'html'
+  imageUrl?: string
+  linkUrl?: string
+  htmlCode?: string
+  isActive: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+export interface AdSlot {
+  id?: string
+  docId?: string
+  name: string
+  description?: string
+  createdAt: number
+}

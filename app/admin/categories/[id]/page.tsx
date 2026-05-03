@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createCategory } from '@/lib/services/category-mutations'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { getAllCategories } from '@/lib/services/categories'
+import { updateCategory } from '@/lib/services/category-mutations'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,9 +11,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { ArrowLeft, Palette } from 'lucide-react'
 import Link from 'next/link'
+import type { Category } from '@/lib/types'
 
-function NewCategoryPage() {
+function EditCategoryPage() {
+  const params = useParams()
   const router = useRouter()
+  const categoryId = params?.id as string
+
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -20,7 +25,35 @@ function NewCategoryPage() {
     color: '#2563eb',
     order: 0,
   })
+  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    const fetchCategory = async () => {
+      try {
+        const cats = await getAllCategories()
+        const cat = cats.find((c) => c.id === categoryId)
+        if (!cat) {
+          setNotFound(true)
+          return
+        }
+        setFormData({
+          name: cat.name || '',
+          slug: cat.slug || '',
+          description: cat.description || '',
+          color: cat.color || '#2563eb',
+          order: cat.order || 0,
+        })
+      } catch (error) {
+        console.error('Error fetching category:', error)
+        setNotFound(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (categoryId) fetchCategory()
+  }, [categoryId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -33,7 +66,7 @@ function NewCategoryPage() {
   }
 
   const generateSlug = () => {
-    if (!formData.name || formData.slug) return
+    if (!formData.name) return
     const slug = formData.name
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
@@ -47,19 +80,42 @@ function NewCategoryPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const categoryId = await createCategory(formData)
-      if (categoryId) {
-        alert('বিভাগ সফলভাবে তৈরি হয়েছে')
-        router.push('/admin/categories')
-      } else {
-        alert('বিভাগ তৈরিতে ত্রুটি হয়েছে')
-      }
+      await updateCategory(categoryId, formData)
+      alert('বিভাগ সফলভাবে আপডেট হয়েছে')
+      router.push('/admin/categories')
     } catch (error) {
-      console.error('ত্রুটি বিভাগ তৈরি করছি:', error)
-      alert('বিভাগ তৈরিতে ত্রুটি হয়েছে')
+      console.error('Error updating category:', error)
+      alert('বিভাগ আপডেট করতে ত্রুটি হয়েছে')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">বিভাগ সম্পাদনা</h1>
+          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (notFound) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link href="/admin/categories" className="p-2 rounded-lg hover:bg-muted transition-colors">
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">বিভাগ পাওয়া যায়নি</h1>
+            <p className="text-muted-foreground mt-1">এই বিভাগটি বিদ্যমান নেই বা সরানো হয়েছে</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -73,8 +129,8 @@ function NewCategoryPage() {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">নতুন বিভাগ তৈরি করুন</h1>
-          <p className="text-muted-foreground mt-1">একটি নতুন বিভাগ তৈরি করতে ফর্মটি পূরণ করুন</p>
+          <h1 className="text-3xl font-bold text-foreground">বিভাগ সম্পাদনা</h1>
+          <p className="text-muted-foreground mt-1">"{formData.name}" সম্পাদনা করুন</p>
         </div>
       </div>
 
@@ -87,11 +143,8 @@ function NewCategoryPage() {
               id="name"
               name="name"
               value={formData.name}
-              onChange={(e) => {
-                handleChange(e)
-                if (!formData.slug) generateSlug()
-              }}
-              placeholder="বিভাগের নাম (যেমন: জাতীয়, আন্তর্জাতিক)"
+              onChange={handleChange}
+              placeholder="বিভাগের নাম"
               className="w-full"
               required
             />
@@ -114,7 +167,6 @@ function NewCategoryPage() {
                 অটো
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">URL এ ব্যবহৃত হবে (যেমন: /category/national)</p>
           </div>
 
           {/* Description */}
@@ -125,7 +177,7 @@ function NewCategoryPage() {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="বিভাগের সংক্ষিপ্ত বিবরণ"
+              placeholder="বিভাগের বিবরণ"
               rows={3}
               className="w-full"
             />
@@ -136,16 +188,14 @@ function NewCategoryPage() {
             <div className="space-y-2">
               <Label htmlFor="color" className="text-foreground font-semibold">রঙ</Label>
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Input
-                    id="color"
-                    name="color"
-                    type="color"
-                    value={formData.color}
-                    onChange={handleChange}
-                    className="w-14 h-10 p-1 cursor-pointer"
-                  />
-                </div>
+                <Input
+                  id="color"
+                  name="color"
+                  type="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  className="w-14 h-10 p-1 cursor-pointer"
+                />
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-muted-foreground">
                   <Palette className="w-4 h-4" />
                   {formData.color}
@@ -161,10 +211,8 @@ function NewCategoryPage() {
                 type="number"
                 value={formData.order}
                 onChange={handleNumberChange}
-                placeholder="0"
                 className="w-full"
               />
-              <p className="text-xs text-muted-foreground">ছোট সংখ্যা আগে দেখাবে</p>
             </div>
           </div>
 
@@ -181,8 +229,8 @@ function NewCategoryPage() {
                 </span>
               </div>
               <div>
-                <p className="font-medium text-foreground">{formData.name || 'বিভাগের নাম'}</p>
-                <p className="text-xs text-muted-foreground">/{formData.slug || 'category-slug'}</p>
+                <p className="font-medium text-foreground">{formData.name}</p>
+                <p className="text-xs text-muted-foreground">/{formData.slug}</p>
               </div>
             </div>
           </div>
@@ -200,7 +248,7 @@ function NewCategoryPage() {
                   সংরক্ষণ করছি...
                 </span>
               ) : (
-                'সংরক্ষণ করুন'
+                'আপডেট করুন'
               )}
             </Button>
             <Button
@@ -217,4 +265,4 @@ function NewCategoryPage() {
   )
 }
 
-export default NewCategoryPage
+export default EditCategoryPage

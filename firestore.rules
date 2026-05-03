@@ -115,6 +115,33 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // ADVERTISEMENTS COLLECTION - Ad Management
+    // ============================================================================
+    match /advertisements/{adId} {
+      
+      // Everyone can read active advertisements (for displaying on home page)
+      allow read: if true;
+      
+      // Only admins can create/update/delete advertisements
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // AD SLOTS COLLECTION - Ad Slot Management
+    // ============================================================================
+    match /adSlots/{slotId} {
+      
+      // Everyone can read ad slots
+      allow read: if true;
+      
+      // Only admins can create/delete ad slots
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
     // ANALYTICS COLLECTION
     // ============================================================================
     match /analytics/{document=**} {

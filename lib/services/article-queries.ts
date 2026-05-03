@@ -7,6 +7,7 @@ import {
   getDocs,
   getDoc,
   doc,
+  startAfter,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { FirestoreArticle } from '../types'
@@ -228,5 +229,39 @@ export async function getAllArticles(limitCount: number = 1000): Promise<Firesto
   } catch (error) {
     console.error('[v0] Error fetching all articles:', error)
     return []
+  }
+}
+
+export async function getAdminArticles(
+  limitCount: number = 20,
+  lastDoc?: any
+): Promise<{ articles: FirestoreArticle[]; lastVisible: any; hasMore: boolean }> {
+  try {
+    let q
+    if (lastDoc) {
+      q = query(
+        collection(db, ARTICLES_COLLECTION),
+        orderBy('updatedAt', 'desc'),
+        startAfter(lastDoc),
+        limit(limitCount)
+      )
+    } else {
+      q = query(
+        collection(db, ARTICLES_COLLECTION),
+        orderBy('updatedAt', 'desc'),
+        limit(limitCount)
+      )
+    }
+    const snapshot = await getDocs(q)
+    const articles = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      docId: doc.id,
+    })) as FirestoreArticle[]
+    const lastVisible = snapshot.docs[snapshot.docs.length - 1]
+    const hasMore = snapshot.docs.length === limitCount
+    return { articles, lastVisible, hasMore }
+  } catch (error) {
+    console.error('[v0] Error fetching admin articles:', error)
+    return { articles: [], lastVisible: null, hasMore: false }
   }
 }
