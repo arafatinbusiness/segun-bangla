@@ -64,8 +64,11 @@ function SubcategoryPage() {
 
         for (let i = 0; i < decodedSegments.length; i++) {
           const segmentSlug = decodedSegments[i]
+          // Try exact match first, then try replacing hyphens with spaces
+          // (since slugs in DB may have spaces but URLs use hyphens)
           const match = currentLevel.find(
-            s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase()
+            s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase() ||
+                 s.slug?.trim().toLowerCase() === segmentSlug.replace(/-/g, ' ').toLowerCase()
           )
           if (!match) {
             console.error('[v0] Subcategory not found at level', i, ':', segmentSlug)
