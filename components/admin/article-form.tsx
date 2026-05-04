@@ -8,8 +8,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { SlugInput } from '@/components/ui/slug-input'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
+import { generateCleanSlug } from '@/lib/slug-utils'
 import type { Article, Category, Subcategory } from '@/lib/types'
 
 interface ArticleFormProps {
@@ -17,6 +19,43 @@ interface ArticleFormProps {
   categories: Category[]
   onSubmit: (data: Partial<Article>) => Promise<void>
   isLoading?: boolean
+}
+
+// Recursive component to render subcategory tree with indentation
+function SubcategoryTreeItem({
+  subcategory,
+  allSubcategories,
+  depth,
+}: {
+  subcategory: Subcategory
+  allSubcategories: Subcategory[]
+  depth: number
+}) {
+  const children = allSubcategories.filter((s) => s.parentId === subcategory.id)
+  const prefix = depth > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(depth) + '└ ' : ''
+
+  return (
+    <>
+      <SelectItem key={subcategory.id} value={subcategory.id!}>
+        <span className="flex items-center gap-1">
+          {depth > 0 && (
+            <span className="text-muted-foreground" style={{ marginLeft: `${depth * 12}px` }}>
+              └
+            </span>
+          )}
+          <span>{subcategory.name}</span>
+        </span>
+      </SelectItem>
+      {children.map((child) => (
+        <SubcategoryTreeItem
+          key={child.id}
+          subcategory={child}
+          allSubcategories={allSubcategories}
+          depth={depth + 1}
+        />
+      ))}
+    </>
+  )
 }
 
 export function ArticleForm({ article, categories, onSubmit, isLoading }: ArticleFormProps) {
@@ -125,26 +164,15 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         </div>
 
         {/* Slug */}
-        <div className="space-y-2">
-          <Label htmlFor="slug" className="text-foreground font-semibold">স্লাগ (URL)</Label>
-          <div className="flex gap-2">
-            <Input
-              id="slug"
-              name="slug"
-              value={formData.slug || ''}
-              onChange={handleChange}
-              placeholder="article-slug"
-              className="w-full"
-              required
-            />
-            {!article && (
-              <Button type="button" variant="outline" size="sm" onClick={generateSlug} className="shrink-0">
-                অটো
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">URL এ ব্যবহৃত হবে (উদা: /article/article-slug)</p>
-        </div>
+        <SlugInput
+          value={formData.slug || ''}
+          onChange={(value) => setFormData((prev) => ({ ...prev, slug: value }))}
+          onAutoGenerate={() => generateCleanSlug(formData.title || '')}
+          required
+          disabled={!!article}
+          basePath="/article/"
+          placeholder="article-slug"
+        />
 
         {/* Excerpt */}
         <div className="space-y-2">
@@ -170,30 +198,34 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           />
         </div>
 
-        {/* Image URL */}
+        {/* Image URL with compact preview */}
         <div className="space-y-2">
           <Label htmlFor="imageUrl" className="text-foreground font-semibold">প্রধান ছবির URL</Label>
-          <Input
-            id="imageUrl"
-            name="imageUrl"
-            type="url"
-            value={formData.imageUrl || ''}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            className="w-full"
-          />
-          {formData.imageUrl && (
-            <div className="relative h-32 w-full rounded-lg overflow-hidden bg-muted mt-2">
-              <img
-                src={formData.imageUrl}
-                alt="প্রিভিউ"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none'
-                }}
+          <div className="flex gap-3 items-start">
+            <div className="flex-1">
+              <Input
+                id="imageUrl"
+                name="imageUrl"
+                type="url"
+                value={formData.imageUrl || ''}
+                onChange={handleChange}
+                placeholder="https://example.com/image.jpg"
+                className="w-full"
               />
             </div>
-          )}
+            {formData.imageUrl && (
+              <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted border shrink-0">
+                <img
+                  src={formData.imageUrl}
+                  alt="প্রিভিউ"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>'
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Category */}
@@ -225,11 +257,17 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 <SelectValue placeholder="উপবিভাগ নির্বাচন করুন" />
               </SelectTrigger>
               <SelectContent>
-                {subcategories.map((sub) => (
-                  <SelectItem key={sub.id} value={sub.id}>
-                    {sub.name}
-                  </SelectItem>
-                ))}
+                {/* Render root subcategories (no parentId) */}
+                {subcategories
+                  .filter((sub) => !sub.parentId)
+                  .map((sub) => (
+                    <SubcategoryTreeItem
+                      key={sub.id}
+                      subcategory={sub}
+                      allSubcategories={subcategories}
+                      depth={0}
+                    />
+                  ))}
               </SelectContent>
             </Select>
             {!formData.subcategoryId && (

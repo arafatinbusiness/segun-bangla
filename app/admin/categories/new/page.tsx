@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { SlugInput } from '@/components/ui/slug-input'
 import { ArrowLeft, Palette } from 'lucide-react'
 import Link from 'next/link'
+import { generateCleanSlug } from '@/lib/slug-utils'
 
 function NewCategoryPage() {
   const router = useRouter()
@@ -98,24 +100,14 @@ function NewCategoryPage() {
           </div>
 
           {/* Slug */}
-          <div className="space-y-2">
-            <Label htmlFor="slug" className="text-foreground font-semibold">স্লাগ (URL)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="slug"
-                name="slug"
-                value={formData.slug}
-                onChange={handleChange}
-                placeholder="category-slug"
-                className="w-full"
-                required
-              />
-              <Button type="button" variant="outline" size="sm" onClick={generateSlug} className="shrink-0">
-                অটো
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">URL এ ব্যবহৃত হবে (যেমন: /category/national)</p>
-          </div>
+          <SlugInput
+            value={formData.slug}
+            onChange={(value) => setFormData((prev) => ({ ...prev, slug: value }))}
+            onAutoGenerate={() => generateCleanSlug(formData.name)}
+            required
+            basePath="/category/"
+            placeholder="category-slug"
+          />
 
           {/* Description */}
           <div className="space-y-2">

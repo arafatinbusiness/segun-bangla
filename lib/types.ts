@@ -12,6 +12,7 @@ export interface Subcategory {
   name: string
   slug: string
   categoryId: string
+  parentId?: string | null
   order: number
 }
 

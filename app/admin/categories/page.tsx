@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
-import { deleteCategory, createSubcategory, deleteSubcategory } from '@/lib/services/category-mutations'
+import { deleteCategory, updateCategory, createSubcategory, deleteSubcategory } from '@/lib/services/category-mutations'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Plus, Folder, Search, ChevronDown, ChevronRight, Hash, AlertTriangle, X, Check, Subscript } from 'lucide-react'
+import { Trash2, Edit2, Plus, Folder, Search, ChevronDown, ChevronRight, Hash, AlertTriangle, X, Check, ArrowUp, ArrowDown } from 'lucide-react'
 import Link from 'next/link'
 import type { Category, Subcategory } from '@/lib/types'
 
@@ -23,6 +23,9 @@ function CategoriesPage() {
   const [addingSubTo, setAddingSubTo] = useState<string | null>(null)
   const [submittingSub, setSubmittingSub] = useState(false)
   const [deleteSubConfirm, setDeleteSubConfirm] = useState<string | null>(null)
+  const [editingOrder, setEditingOrder] = useState<string | null>(null)
+  const [orderValue, setOrderValue] = useState<number>(0)
+  const [savingOrder, setSavingOrder] = useState(false)
 
   const fetchData = async () => {
     try {
@@ -214,7 +217,58 @@ function CategoriesPage() {
               <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
                 <div className="flex items-center gap-2">
                   <Hash className="w-3 h-3" />
-                  <span>ক্রম {category.order || 0}</span>
+                  {editingOrder === category.id ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        value={orderValue}
+                        onChange={(e) => setOrderValue(parseInt(e.target.value) || 0)}
+                        className="w-16 h-7 text-xs"
+                        min={0}
+                        autoFocus
+                      />
+                      <button
+                        onClick={async () => {
+                          setSavingOrder(true)
+                          try {
+                            await updateCategory(category.id!, { order: orderValue })
+                            setCategories((prev) =>
+                              prev.map((c) =>
+                                c.id === category.id ? { ...c, order: orderValue } : c
+                              )
+                            )
+                            setEditingOrder(null)
+                          } catch (error) {
+                            console.error('Error updating order:', error)
+                            alert('ক্রম আপডেট করতে ত্রুটি হয়েছে')
+                          } finally {
+                            setSavingOrder(false)
+                          }
+                        }}
+                        disabled={savingOrder}
+                        className="p-1 text-green-600 hover:text-green-700 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => setEditingOrder(null)}
+                        className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditingOrder(category.id!)
+                        setOrderValue(category.order || 0)
+                      }}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors group/order"
+                    >
+                      <span>ক্রম {category.order || 0}</span>
+                      <Edit2 className="w-2.5 h-2.5 opacity-0 group-hover/order:opacity-100 transition-opacity" />
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={() => {

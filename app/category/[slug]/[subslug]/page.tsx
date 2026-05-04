@@ -3,19 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { getCategoryBySlug, getSubcategoriesByCategory, getAllCategories } from '@/lib/services/categories'
-import { getArticlesByCategory } from '@/lib/services/article-queries'
+import { getArticlesBySubcategory } from '@/lib/services/article-queries'
 import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category, Subcategory } from '@/lib/types'
 
-function CategoryPage() {
+function SubcategoryPage() {
   const params = useParams()
   const slug = params?.slug as string
+  const subslug = params?.subslug as string
 
   const [category, setCategory] = useState<Category | null>(null)
   const [allCategories, setAllCategories] = useState<Category[]>([])
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [currentSubcategory, setCurrentSubcategory] = useState<Subcategory | null>(null)
+  const [childSubcategories, setChildSubcategories] = useState<Subcategory[]>([])
   const [articles, setArticles] = useState<FirestoreArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -23,15 +26,12 @@ function CategoryPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const decodedSlug = decodeURIComponent(slug).trim()
-        console.log('[v0] Fetching category by slug:', decodedSlug)
         const [categoryData, allCategoriesData] = await Promise.all([
-          getCategoryBySlug(decodedSlug),
+          getCategoryBySlug(slug),
           getAllCategories(),
         ])
 
         if (!categoryData) {
-          console.error('[v0] Category not found for slug:', decodedSlug)
           setNotFound(true)
           return
         }
@@ -39,25 +39,41 @@ function CategoryPage() {
         setCategory(categoryData)
         setAllCategories(allCategoriesData)
 
-        const [subcategoriesData, articlesData] = await Promise.all([
-          getSubcategoriesByCategory(categoryData.id),
-          getArticlesByCategory(categoryData.id),
-        ])
-
+        const subcategoriesData = await getSubcategoriesByCategory(categoryData.id)
         setSubcategories(subcategoriesData)
+
+        // Find the current subcategory by slug (case-insensitive, trimmed)
+        const decodedSubslug = decodeURIComponent(subslug).trim()
+        const currentSub = subcategoriesData.find(
+          s => s.slug?.trim().toLowerCase() === decodedSubslug.toLowerCase()
+        )
+        if (!currentSub) {
+          console.error('[v0] Subcategory not found:', { slug, subslug, decodedSubslug, availableSlugs: subcategoriesData.map(s => s.slug) })
+          setNotFound(true)
+          return
+        }
+
+        setCurrentSubcategory(currentSub)
+
+        // Get child subcategories (sub-subcategories)
+        const children = subcategoriesData.filter(s => s.parentId === currentSub.id)
+        setChildSubcategories(children)
+
+        // Get articles for this subcategory
+        const articlesData = await getArticlesBySubcategory(currentSub.id!)
         setArticles(articlesData)
       } catch (error) {
-        console.error('[v0] Error loading category page:', error)
+        console.error('[v0] Error loading subcategory page:', error)
         setNotFound(true)
       } finally {
         setLoading(false)
       }
     }
 
-    if (slug) {
+    if (slug && subslug) {
       fetchData()
     }
-  }, [slug])
+  }, [slug, subslug])
 
   if (loading) {
     return (
@@ -82,7 +98,7 @@ function CategoryPage() {
     )
   }
 
-  if (notFound || !category) {
+  if (notFound || !category || !currentSubcategory) {
     return (
       <>
         <Header categories={allCategories} />
@@ -105,35 +121,42 @@ function CategoryPage() {
       <Header categories={allCategories} />
       <main className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Category Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2 text-foreground">
-              {category.name}
-            </h1>
-            {category.description && (
-              <p className="text-lg text-muted-foreground">
-                {category.description}
-              </p>
-            )}
+          {/* Breadcrumb */}
+          <div className="mb-6 text-sm text-muted-foreground">
+            <a href="/" className="hover:text-primary">হোম</a>
+            <span className="mx-2">/</span>
+            <a href={`/category/${category.slug}`} className="hover:text-primary">{category.name}</a>
+            <span className="mx-2">/</span>
+            <span className="text-foreground font-medium">{currentSubcategory.name}</span>
           </div>
 
-          {/* Subcategories */}
-          {subcategories.length > 0 && (
+          {/* Subcategory Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2 text-foreground">
+              {currentSubcategory.name}
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              {category.name} এর অধীনে {currentSubcategory.name}
+            </p>
+          </div>
+
+          {/* Child Subcategories (sub-subcategories) */}
+          {childSubcategories.length > 0 && (
             <div className="mb-8">
               <div className="flex gap-2 overflow-x-auto pb-2">
                 <a
-                  href={`/category/${category.slug}`}
+                  href={`/category/${category.slug}/${currentSubcategory.slug}`}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded whitespace-nowrap"
                 >
                   সব
                 </a>
-                {subcategories.slice(0, 10).map((sub) => (
+                {childSubcategories.map((child) => (
                   <a
-                    key={sub.id}
-                    href={`/category/${category.slug}/${sub.slug}`}
+                    key={child.id}
+                    href={`/category/${category.slug}/${child.slug}`}
                     className="px-4 py-2 bg-muted text-muted-foreground rounded whitespace-nowrap hover:bg-muted/80"
                   >
-                    {sub.name}
+                    {child.name}
                   </a>
                 ))}
               </div>
@@ -151,7 +174,7 @@ function CategoryPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>
+              <p className="text-muted-foreground">এই উপবিভাগে কোন নিবন্ধ পাওয়া যায়নি।</p>
             </div>
           )}
         </div>
@@ -160,4 +183,4 @@ function CategoryPage() {
   )
 }
 
-export default CategoryPage
+export default SubcategoryPage

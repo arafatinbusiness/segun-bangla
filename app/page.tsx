@@ -105,6 +105,32 @@ function HomePage() {
     <>
       <Header categories={categories} />
       <main className="min-h-screen bg-background">
+        {/* Top Ad Grid - Between Nav and Lead News */}
+        <section className="max-w-7xl mx-auto px-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <AdRenderer
+              slotName="top-ad-1"
+              className="min-h-24"
+              imageClassName="rounded-lg overflow-hidden bg-muted"
+            />
+            <AdRenderer
+              slotName="top-ad-2"
+              className="min-h-24"
+              imageClassName="rounded-lg overflow-hidden bg-muted"
+            />
+            <AdRenderer
+              slotName="top-ad-3"
+              className="min-h-24"
+              imageClassName="rounded-lg overflow-hidden bg-muted"
+            />
+            <AdRenderer
+              slotName="top-ad-4"
+              className="min-h-24"
+              imageClassName="rounded-lg overflow-hidden bg-muted"
+            />
+          </div>
+        </section>
+
         <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
           {/* 1. Three-Column Hero Grid */}
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
