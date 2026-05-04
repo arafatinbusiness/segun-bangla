@@ -21,7 +21,7 @@ interface ArticleFormProps {
   isLoading?: boolean
 }
 
-// Recursive component to render subcategory tree with indentation
+// Recursive component to render subcategory tree with text-based indentation
 function SubcategoryTreeItem({
   subcategory,
   allSubcategories,
@@ -32,19 +32,13 @@ function SubcategoryTreeItem({
   depth: number
 }) {
   const children = allSubcategories.filter((s) => s.parentId === subcategory.id)
-  const prefix = depth > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(depth) + '└ ' : ''
+  // Use text-based indentation since SelectItem doesn't support rich HTML
+  const indent = depth > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(depth) + '└ ' : ''
 
   return (
     <>
       <SelectItem key={subcategory.id} value={subcategory.id!}>
-        <span className="flex items-center gap-1">
-          {depth > 0 && (
-            <span className="text-muted-foreground" style={{ marginLeft: `${depth * 12}px` }}>
-              └
-            </span>
-          )}
-          <span>{subcategory.name}</span>
-        </span>
+        {indent}{subcategory.name}
       </SelectItem>
       {children.map((child) => (
         <SubcategoryTreeItem

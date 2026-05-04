@@ -1,4 +1,4 @@
-CLIENT_STATIC_FILES_RUNTIME_WEBPACK.i will ddo it from FirebaseError.you need to do Nothing_You_Could_Do'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
@@ -8,18 +8,18 @@ import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category, Subcategory } from '@/lib/types'
-import { Nothing_You_Could_Do } from 'next/font/google'
 
 function SubcategoryPage() {
   const params = useParams()
   const slug = params?.slug as string
-  const subslug = params?.subslug as string
+  const subslug = params?.subslug as string[] | undefined
 
   const [category, setCategory] = useState<Category | null>(null)
   const [allCategories, setAllCategories] = useState<Category[]>([])
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [currentSubcategory, setCurrentSubcategory] = useState<Subcategory | null>(null)
   const [childSubcategories, setChildSubcategories] = useState<Subcategory[]>([])
+  const [breadcrumbPath, setBreadcrumbPath] = useState<Subcategory[]>([])
   const [articles, setArticles] = useState<FirestoreArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -43,25 +43,55 @@ function SubcategoryPage() {
         const subcategoriesData = await getSubcategoriesByCategory(categoryData.id)
         setSubcategories(subcategoriesData)
 
-        // Find the current subcategory by slug (case-insensitive, trimmed)
-        const decodedSubslug = decodeURIComponent(subslug).trim()
-        const currentSub = subcategoriesData.find(
-          s => s.slug?.trim().toLowerCase() === decodedSubslug.toLowerCase()
-        )
-        if (!currentSub) {
-          console.error('[v0] Subcategory not found:', { slug, subslug, decodedSubslug, availableSlugs: subcategoriesData.map(s => s.slug) })
+        // If no subslug segments, this is the category page - shouldn't happen but handle gracefully
+        if (!subslug || subslug.length === 0) {
           setNotFound(true)
           return
         }
 
-        setCurrentSubcategory(currentSub)
+        // Traverse the hierarchy using parentId to find the deepest subcategory
+        // The URL segments are: /category/slug/level1/level2/level3/...
+        // We need to find the chain: root subcategory → child → grandchild → ...
+        const decodedSegments = subslug.map(s => decodeURIComponent(s).trim())
 
-        // Get child subcategories (sub-subcategories)
-        const children = subcategoriesData.filter(s => s.parentId === currentSub.id)
+        // Find the first-level subcategory (parentId is null or undefined)
+        let currentLevel: Subcategory[] = subcategoriesData.filter(
+          s => !s.parentId || s.parentId === ''
+        )
+
+        let foundSub: Subcategory | null = null
+        const path: Subcategory[] = []
+
+        for (let i = 0; i < decodedSegments.length; i++) {
+          const segmentSlug = decodedSegments[i]
+          const match = currentLevel.find(
+            s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase()
+          )
+          if (!match) {
+            console.error('[v0] Subcategory not found at level', i, ':', segmentSlug)
+            setNotFound(true)
+            return
+          }
+          foundSub = match
+          path.push(match)
+          // Get children for next level
+          currentLevel = subcategoriesData.filter(s => s.parentId === match.id)
+        }
+
+        if (!foundSub) {
+          setNotFound(true)
+          return
+        }
+
+        setCurrentSubcategory(foundSub)
+        setBreadcrumbPath(path)
+
+        // Get child subcategories (next level down)
+        const children = subcategoriesData.filter(s => s.parentId === foundSub.id)
         setChildSubcategories(children)
 
         // Get articles for this subcategory
-        const articlesData = await getArticlesBySubcategory(currentSub.id!)
+        const articlesData = await getArticlesBySubcategory(foundSub.id!)
         setArticles(articlesData)
       } catch (error) {
         console.error('[v0] Error loading subcategory page:', error)
@@ -127,8 +157,23 @@ function SubcategoryPage() {
             <a href="/" className="hover:text-primary">হোম</a>
             <span className="mx-2">/</span>
             <a href={`/category/${category.slug}`} className="hover:text-primary">{category.name}</a>
-            <span className="mx-2">/</span>
-            <span className="text-foreground font-medium">{currentSubcategory.name}</span>
+            {breadcrumbPath.map((sub, index) => {
+              // Build the URL path up to this level
+              const pathSoFar = breadcrumbPath.slice(0, index + 1).map(s => s.slug).join('/')
+              const isLast = index === breadcrumbPath.length - 1
+              return (
+                <span key={sub.id}>
+                  <span className="mx-2">/</span>
+                  {isLast ? (
+                    <span className="text-foreground font-medium">{sub.name}</span>
+                  ) : (
+                    <a href={`/category/${category.slug}/${pathSoFar}`} className="hover:text-primary">
+                      {sub.name}
+                    </a>
+                  )}
+                </span>
+              )
+            })}
           </div>
 
           {/* Subcategory Header */}
@@ -141,12 +186,12 @@ function SubcategoryPage() {
             </p>
           </div>
 
-          {/* Child Subcategories (sub-subcategories) */}
+          {/* Child Subcategories (next level down) */}
           {childSubcategories.length > 0 && (
             <div className="mb-8">
               <div className="flex gap-2 overflow-x-auto pb-2">
                 <a
-                  href={`/category/${category.slug}/${currentSubcategory.slug}`}
+                  href={`/category/${category.slug}/${subslug?.join('/')}`}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded whitespace-nowrap"
                 >
                   সব
@@ -154,7 +199,7 @@ function SubcategoryPage() {
                 {childSubcategories.map((child) => (
                   <a
                     key={child.id}
-                    href={`/category/${category.slug}/${child.slug}`}
+                    href={`/category/${category.slug}/${subslug?.join('/')}/${child.slug}`}
                     className="px-4 py-2 bg-muted text-muted-foreground rounded whitespace-nowrap hover:bg-muted/80"
                   >
                     {child.name}
