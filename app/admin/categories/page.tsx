@@ -26,6 +26,7 @@ function CategoriesPage() {
   const [editingOrder, setEditingOrder] = useState<string | null>(null)
   const [orderValue, setOrderValue] = useState<number>(0)
   const [savingOrder, setSavingOrder] = useState(false)
+  const [orderConflict, setOrderConflict] = useState<{ categoryId: string; name: string } | null>(null)
 
   const fetchData = async () => {
     try {
@@ -222,36 +223,84 @@ function CategoriesPage() {
                       <Input
                         type="number"
                         value={orderValue}
-                        onChange={(e) => setOrderValue(parseInt(e.target.value) || 0)}
-                        className="w-16 h-7 text-xs"
+                        onChange={(e) => {
+                          const newVal = parseInt(e.target.value) || 0
+                          setOrderValue(newVal)
+                          // Check for conflict
+                          const conflict = categories.find(
+                            (c) => c.id !== category.id && c.order === newVal
+                          )
+                          setOrderConflict(
+                            conflict
+                              ? { categoryId: conflict.id!, name: conflict.name }
+                              : null
+                          )
+                        }}
+                        className={`w-16 h-7 text-xs ${orderConflict ? 'border-amber-500 focus-visible:ring-amber-500' : ''}`}
                         min={0}
                         autoFocus
                       />
-                      <button
-                        onClick={async () => {
-                          setSavingOrder(true)
-                          try {
-                            await updateCategory(category.id!, { order: orderValue })
-                            setCategories((prev) =>
-                              prev.map((c) =>
-                                c.id === category.id ? { ...c, order: orderValue } : c
+                      {orderConflict ? (
+                        <button
+                          onClick={async () => {
+                            setSavingOrder(true)
+                            try {
+                              // Swap: give the conflicting category the old order value
+                              const oldOrder = category.order || 0
+                              await updateCategory(orderConflict.categoryId, { order: oldOrder })
+                              await updateCategory(category.id!, { order: orderValue })
+                              setCategories((prev) =>
+                                prev.map((c) => {
+                                  if (c.id === category.id) return { ...c, order: orderValue }
+                                  if (c.id === orderConflict.categoryId) return { ...c, order: oldOrder }
+                                  return c
+                                })
                               )
-                            )
-                            setEditingOrder(null)
-                          } catch (error) {
-                            console.error('Error updating order:', error)
-                            alert('ক্রম আপডেট করতে ত্রুটি হয়েছে')
-                          } finally {
-                            setSavingOrder(false)
-                          }
-                        }}
-                        disabled={savingOrder}
-                        className="p-1 text-green-600 hover:text-green-700 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
-                      >
-                        <Check className="w-3 h-3" />
-                      </button>
+                              setEditingOrder(null)
+                              setOrderConflict(null)
+                            } catch (error) {
+                              console.error('Error swapping order:', error)
+                              alert('ক্রম অদলবদল করতে ত্রুটি হয়েছে')
+                            } finally {
+                              setSavingOrder(false)
+                            }
+                          }}
+                          disabled={savingOrder}
+                          className="p-1 text-amber-600 hover:text-amber-700 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 text-[10px] font-medium"
+                          title="অদলবদল করুন"
+                        >
+                          অদলবদল
+                        </button>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            setSavingOrder(true)
+                            try {
+                              await updateCategory(category.id!, { order: orderValue })
+                              setCategories((prev) =>
+                                prev.map((c) =>
+                                  c.id === category.id ? { ...c, order: orderValue } : c
+                                )
+                              )
+                              setEditingOrder(null)
+                            } catch (error) {
+                              console.error('Error updating order:', error)
+                              alert('ক্রম আপডেট করতে ত্রুটি হয়েছে')
+                            } finally {
+                              setSavingOrder(false)
+                            }
+                          }}
+                          disabled={savingOrder}
+                          className="p-1 text-green-600 hover:text-green-700 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => setEditingOrder(null)}
+                        onClick={() => {
+                          setEditingOrder(null)
+                          setOrderConflict(null)
+                        }}
                         className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
                       >
                         <X className="w-3 h-3" />
@@ -262,6 +311,7 @@ function CategoriesPage() {
                       onClick={() => {
                         setEditingOrder(category.id!)
                         setOrderValue(category.order || 0)
+                        setOrderConflict(null)
                       }}
                       className="flex items-center gap-1 hover:text-foreground transition-colors group/order"
                     >
