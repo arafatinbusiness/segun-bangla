@@ -136,18 +136,42 @@ export function validateSlug(slug: string): SlugValidation {
 
 /**
  * Generates a clean slug from a title/name string
- * Handles Bengali and other non-ASCII text by using a timestamp fallback
+ * Handles Bengali and other non-ASCII text by transliterating to English
  */
 export function generateCleanSlug(text: string): string {
-  const slug = text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special chars
-    .replace(/\s+/g, '-')     // Spaces to hyphens
-    .replace(/-+/g, '-')      // Collapse hyphens
-    .replace(/^-+|-+$/g, '')  // Trim hyphens
+  // Check if text contains non-ASCII characters (Bengali, Arabic, etc.)
+  const hasNonAscii = /[^\x00-\x7F]/.test(text)
 
-  // If slug is empty (e.g., all Bengali text was stripped), generate a timestamp-based slug
+  let slug: string
+
+  if (hasNonAscii) {
+    // Use transliteration library to convert Bengali to English
+    try {
+      // Dynamic import to avoid issues with server-side rendering
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { slugify } = require('transliteration')
+      slug = slugify(text)
+    } catch {
+      // Fallback: strip non-ASCII and use timestamp
+      slug = text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    }
+  } else {
+    slug = text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove special chars
+      .replace(/\s+/g, '-')     // Spaces to hyphens
+      .replace(/-+/g, '-')      // Collapse hyphens
+      .replace(/^-+|-+$/g, '')  // Trim hyphens
+  }
+
+  // If slug is still empty (fallback), generate a timestamp-based slug
   if (!slug) {
     const now = new Date()
     const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`

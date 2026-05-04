@@ -120,28 +120,11 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     }
   }
 
-  // Generate slug from title - strips all special characters including %
+  // Generate slug from title - uses transliteration for Bengali text
   const generateSlug = () => {
     if (!formData.title || formData.slug) return
-    const slug = formData.title
-      .toLowerCase()
-      // Remove Bengali and other non-ASCII characters
-      .replace(/[^\w\s-]/g, '')
-      // Replace whitespace with hyphens
-      .replace(/\s+/g, '-')
-      // Collapse multiple hyphens
-      .replace(/-+/g, '-')
-      // Remove leading/trailing hyphens
-      .replace(/^-+|-+$/g, '')
-      .trim()
-    // If slug is empty (e.g., all Bengali text was stripped), generate a timestamp-based slug
-    if (!slug) {
-      const now = new Date()
-      const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
-      setFormData((prev) => ({ ...prev, slug: `article-${timestamp}` }))
-    } else {
-      setFormData((prev) => ({ ...prev, slug }))
-    }
+    const slug = generateCleanSlug(formData.title)
+    setFormData((prev) => ({ ...prev, slug }))
   }
 
   return (
