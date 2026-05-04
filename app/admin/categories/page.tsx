@@ -6,6 +6,7 @@ import { deleteCategory, updateCategory, createSubcategory, deleteSubcategory } 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Trash2, Edit2, Plus, Folder, Search, ChevronDown, ChevronRight, Hash, AlertTriangle, X, Check, ArrowUp, ArrowDown } from 'lucide-react'
 import Link from 'next/link'
 import type { Category, Subcategory } from '@/lib/types'
@@ -20,6 +21,7 @@ function CategoriesPage() {
   const [deleting, setDeleting] = useState(false)
   const [newSubName, setNewSubName] = useState('')
   const [newSubSlug, setNewSubSlug] = useState('')
+  const [newSubParentId, setNewSubParentId] = useState<string>('')
   const [addingSubTo, setAddingSubTo] = useState<string | null>(null)
   const [submittingSub, setSubmittingSub] = useState(false)
   const [deleteSubConfirm, setDeleteSubConfirm] = useState<string | null>(null)
@@ -75,6 +77,7 @@ function CategoriesPage() {
       const subId = await createSubcategory(categoryId, {
         name: newSubName.trim(),
         slug: newSubSlug.trim(),
+        parentId: newSubParentId || null,
         order: (subcategories[categoryId]?.length || 0) + 1,
       })
       if (subId) {
@@ -82,6 +85,7 @@ function CategoriesPage() {
         setSubcategories((prev) => ({ ...prev, [categoryId]: subs }))
         setNewSubName('')
         setNewSubSlug('')
+        setNewSubParentId('')
         setAddingSubTo(null)
       }
     } catch (error) {
@@ -340,45 +344,64 @@ function CategoriesPage() {
               {/* Subcategories */}
               {expandedId === category.id && (
                 <div className="mt-3 pt-3 border-t space-y-2">
-                  {/* Existing subcategories */}
+                  {/* Existing subcategories - show with hierarchy */}
                   {(subcategories[category.id] || []).length > 0 ? (
                     <div className="space-y-1">
-                      {subcategories[category.id].map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group/sub"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{sub.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">/{sub.slug}</p>
-                          </div>
-                          <div className="flex gap-1 shrink-0 opacity-0 group-hover/sub:opacity-100 transition-opacity">
-                            {deleteSubConfirm === sub.id ? (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleDeleteSubcategory(category.id!, sub.id!)}
-                                  className="p-1 text-red-600 hover:text-red-700 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
-                                >
-                                  <AlertTriangle className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => setDeleteSubConfirm(null)}
-                                  className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setDeleteSubConfirm(sub.id!)}
-                                className="p-1 text-muted-foreground hover:text-red-600 rounded hover:bg-muted"
+                      {/* Recursive subcategory display */}
+                      {(() => {
+                        const renderSubTree = (parentId: string | null, depth: number) => {
+                          const children = subcategories[category.id].filter(
+                            s => (s.parentId || null) === parentId
+                          )
+                          if (children.length === 0) return null
+                          return children.map((sub) => (
+                            <div key={sub.id}>
+                              <div
+                                className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group/sub"
+                                style={{ marginLeft: `${depth * 16}px` }}
                               >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                                <div className="min-w-0 flex items-center gap-2">
+                                  {depth > 0 && (
+                                    <span className="text-muted-foreground text-xs shrink-0">└</span>
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground truncate">{sub.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">/{sub.slug}</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1 shrink-0 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                                  {deleteSubConfirm === sub.id ? (
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => handleDeleteSubcategory(category.id!, sub.id!)}
+                                        className="p-1 text-red-600 hover:text-red-700 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                      >
+                                        <AlertTriangle className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setDeleteSubConfirm(null)}
+                                        className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => setDeleteSubConfirm(sub.id!)}
+                                      className="p-1 text-muted-foreground hover:text-red-600 rounded hover:bg-muted"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              {/* Render children recursively */}
+                              {renderSubTree(sub.id!, depth + 1)}
+                            </div>
+                          ))
+                        }
+                        return renderSubTree(null, 0)
+                      })()}
                     </div>
                   ) : (
                     <div className="p-3 rounded-lg bg-muted/30 text-center">
@@ -409,6 +432,36 @@ function CategoriesPage() {
                           অটো
                         </Button>
                       </div>
+                      {/* Parent subcategory selector */}
+                      {subcategories[category.id] && subcategories[category.id].length > 0 && (
+                        <div>
+                          <Select value={newSubParentId} onValueChange={setNewSubParentId}>
+                            <SelectTrigger className="text-sm w-full">
+                              <SelectValue placeholder="প্যারেন্ট উপবিভাগ (ঐচ্ছিক)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">কোনটি নয় (মূল স্তর)</SelectItem>
+                              {(() => {
+                                const renderSubOptions = (parentId: string | null, depth: number) => {
+                                  const children = subcategories[category.id].filter(
+                                    s => (s.parentId || null) === parentId
+                                  )
+                                  if (children.length === 0) return null
+                                  return children.map((sub) => (
+                                    <div key={sub.id}>
+                                      <SelectItem value={sub.id!}>
+                                        {'\u00A0\u00A0'.repeat(depth)}{sub.name}
+                                      </SelectItem>
+                                      {renderSubOptions(sub.id!, depth + 1)}
+                                    </div>
+                                  ))
+                                }
+                                return renderSubOptions(null, 0)
+                              })()}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           type="button"
@@ -428,6 +481,7 @@ function CategoriesPage() {
                             setAddingSubTo(null)
                             setNewSubName('')
                             setNewSubSlug('')
+                            setNewSubParentId('')
                           }}
                         >
                           বাতিল
