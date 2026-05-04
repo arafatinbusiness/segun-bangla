@@ -435,12 +435,12 @@ function CategoriesPage() {
                       {/* Parent subcategory selector */}
                       {subcategories[category.id] && subcategories[category.id].length > 0 && (
                         <div>
-                          <Select value={newSubParentId} onValueChange={setNewSubParentId}>
+                          <Select value={newSubParentId || '__none__'} onValueChange={(val) => setNewSubParentId(val === '__none__' ? '' : val)}>
                             <SelectTrigger className="text-sm w-full">
                               <SelectValue placeholder="প্যারেন্ট উপবিভাগ (ঐচ্ছিক)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">কোনটি নয় (মূল স্তর)</SelectItem>
+                              <SelectItem value="__none__">কোনটি নয় (মূল স্তর)</SelectItem>
                               {(() => {
                                 const renderSubOptions = (parentId: string | null, depth: number) => {
                                   const children = subcategories[category.id].filter(

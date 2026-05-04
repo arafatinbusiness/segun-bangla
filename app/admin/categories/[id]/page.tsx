@@ -534,14 +534,14 @@ function EditCategoryPage() {
                 </div>
                 {/* Parent selector */}
                 <Select
-                  value={newSubParentId || ''}
-                  onValueChange={(val) => setNewSubParentId(val || undefined)}
+                  value={newSubParentId || '__none__'}
+                  onValueChange={(val) => setNewSubParentId(val === '__none__' ? undefined : val)}
                 >
                   <SelectTrigger className="text-sm h-8">
                     <SelectValue placeholder="প্যারেন্ট (ঐচ্ছিক)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">কোনটি নয় (মূল উপবিভাগ)</SelectItem>
+                    <SelectItem value="__none__">কোনটি নয় (মূল উপবিভাগ)</SelectItem>
                     {getParentOptions().map(p => (
                       <SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>
                     ))}
@@ -601,14 +601,14 @@ function EditCategoryPage() {
                       className="text-sm"
                     />
                     <Select
-                      value={editSubParentId ?? ''}
-                      onValueChange={(val) => setEditSubParentId(val || null)}
+                      value={editSubParentId || '__none__'}
+                      onValueChange={(val) => setEditSubParentId(val === '__none__' ? null : val)}
                     >
                       <SelectTrigger className="text-sm h-8">
                         <SelectValue placeholder="প্যারেন্ট (ঐচ্ছিক)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">কোনটি নয় (মূল উপবিভাগ)</SelectItem>
+                        <SelectItem value="__none__">কোনটি নয় (মূল উপবিভাগ)</SelectItem>
                         {getParentOptions(editingSubId).map(p => (
                           <SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>
                         ))}
