@@ -136,13 +136,23 @@ export function validateSlug(slug: string): SlugValidation {
 
 /**
  * Generates a clean slug from a title/name string
+ * Handles Bengali and other non-ASCII text by using a timestamp fallback
  */
 export function generateCleanSlug(text: string): string {
-  return text
+  const slug = text
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, '') // Remove special chars
     .replace(/\s+/g, '-')     // Spaces to hyphens
     .replace(/-+/g, '-')      // Collapse hyphens
     .replace(/^-+|-+$/g, '')  // Trim hyphens
+
+  // If slug is empty (e.g., all Bengali text was stripped), generate a timestamp-based slug
+  if (!slug) {
+    const now = new Date()
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    return `article-${timestamp}`
+  }
+
+  return slug
 }

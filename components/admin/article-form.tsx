@@ -134,7 +134,14 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       // Remove leading/trailing hyphens
       .replace(/^-+|-+$/g, '')
       .trim()
-    setFormData((prev) => ({ ...prev, slug }))
+    // If slug is empty (e.g., all Bengali text was stripped), generate a timestamp-based slug
+    if (!slug) {
+      const now = new Date()
+      const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+      setFormData((prev) => ({ ...prev, slug: `article-${timestamp}` }))
+    } else {
+      setFormData((prev) => ({ ...prev, slug }))
+    }
   }
 
   return (
