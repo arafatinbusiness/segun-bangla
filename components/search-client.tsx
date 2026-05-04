@@ -84,7 +84,7 @@ export function SearchClient({ categories, initialQuery, results: initialResults
       params.set('q', filters.query)
       if (filters.category) params.set('category', filters.category)
       if (filters.sortBy !== 'recent') params.set('sort', filters.sortBy)
-      if (filters.dateRange !== 'all') params.set('date', filters.dateRange)
+      if (filters.dateRange && filters.dateRange !== 'all') params.set('date', filters.dateRange)
 
       router.push(`/search?${params.toString()}`)
     } catch (error) {
@@ -109,11 +109,11 @@ export function SearchClient({ categories, initialQuery, results: initialResults
         <div>
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-foreground">
-              ফলাফল ({results.length})
+              {appliedFilters?.query ? `ফলাফল (${results.length})` : `সব নিবন্ধ (${results.length})`}
             </h2>
-            {appliedFilters && (
+            {appliedFilters?.query && (
               <p className="text-muted-foreground text-sm mt-2">
-                &quot;{appliedFilters.query}&quot; এর জন্য {results.length} নিবন্ধ পাওয়া গেছে
+                "{appliedFilters.query}" এর জন্য {results.length} নিবন্ধ পাওয়া গেছে
               </p>
             )}
           </div>
@@ -126,7 +126,7 @@ export function SearchClient({ categories, initialQuery, results: initialResults
       ) : appliedFilters ? (
         <div className="text-center py-12">
           <p className="text-lg text-muted-foreground mb-4">
-            &quot;{appliedFilters.query}&quot; এর জন্য কোন নিবন্ধ পাওয়া যায়নি।
+            "{appliedFilters.query}" এর জন্য কোন নিবন্ধ পাওয়া যায়নি।
           </p>
           <p className="text-muted-foreground">
             অন্য কোন শব্দ চেষ্টা করুন বা ফিল্টার পরিবর্তন করুন।

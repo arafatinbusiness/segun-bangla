@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { searchArticles } from '@/lib/services/article-queries'
+import { searchArticles, getAllArticles } from '@/lib/services/article-queries'
 import { getAllCategories } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
@@ -23,7 +23,7 @@ function SearchPageContent() {
       try {
         const [categoriesData, resultsData] = await Promise.all([
           getAllCategories(),
-          q ? searchArticles(q, 50) : Promise.resolve([]),
+          q ? searchArticles(q, 50) : getAllArticles(50),
         ])
         setCategories(categoriesData)
         setResults(resultsData)
