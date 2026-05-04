@@ -1,4 +1,4 @@
-'use client'
+CLIENT_STATIC_FILES_RUNTIME_WEBPACK.i will ddo it from FirebaseError.you need to do Nothing_You_Could_Do'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
@@ -8,6 +8,7 @@ import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category, Subcategory } from '@/lib/types'
+import { Nothing_You_Could_Do } from 'next/font/google'
 
 function SubcategoryPage() {
   const params = useParams()
