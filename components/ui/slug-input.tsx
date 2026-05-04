@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,9 @@ interface SlugInputProps {
   basePath?: string
 }
 
+// Hardcoded production domain for URL preview
+const SITE_DOMAIN = 'www.segunbangla.com'
+
 export function SlugInput({
   value,
   onChange,
@@ -30,14 +33,6 @@ export function SlugInput({
 }: SlugInputProps) {
   const [validation, setValidation] = useState<SlugValidation | null>(null)
   const [touched, setTouched] = useState(false)
-  const [domain, setDomain] = useState('')
-
-  useEffect(() => {
-    // Get the full domain dynamically from window.location
-    if (typeof window !== 'undefined') {
-      setDomain(window.location.origin)
-    }
-  }, [])
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,9 +123,7 @@ export function SlugInput({
       {/* URL Preview - shows full domain URL */}
       {value && (
         <p className="text-xs text-muted-foreground font-mono">
-          {domain && (
-            <span className="text-muted-foreground/60">{domain}</span>
-          )}
+          <span className="text-muted-foreground/60">{SITE_DOMAIN}</span>
           {basePath}
           <span className={hasErrors ? 'text-red-500' : 'text-primary'}>
             {value}
