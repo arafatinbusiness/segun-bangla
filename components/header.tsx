@@ -3,6 +3,14 @@
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
+
+// ─── Deployment Version Marker ──────────────────────────────────────────────
+// Change this value manually before each deployment to verify the client
+// is seeing the latest version. Ask the client: "What version do you see?"
+// DEPLOY_VERSION = 'v1'  // Initial deployment
+// DEPLOY_VERSION = 'v2'  // After menu redesign
+const DEPLOY_VERSION = 'v2'
+// ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'
@@ -110,8 +118,11 @@ export function Header({ categories }: HeaderProps) {
       {!scrolled && (
         <div className="bg-[#1A1A1A] text-white text-sm">
           <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-8">
-            <div className="text-xs text-white/70">
-              {currentDate}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/70">{currentDate}</span>
+              <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-1.5 py-0.5 rounded">
+                {DEPLOY_VERSION}
+              </span>
             </div>
             <div className="flex gap-4 items-center text-xs">
               {isAuthenticated ? (
