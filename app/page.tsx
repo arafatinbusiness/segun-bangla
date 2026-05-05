@@ -147,34 +147,62 @@ function HomePage() {
               {specialArticlesList[0] && (
                 <article className="group">
                   <a href={`/article/${specialArticlesList[0].slug}`}>
-                    <div className="relative h-40 w-full overflow-hidden rounded bg-muted mb-3">
+                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                       <img
                         src={specialArticlesList[0].imageUrl}
                         alt={specialArticlesList[0].title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                      {specialArticlesList[0].source || 'বিশেষ'}
+                    </span>
+                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                       {specialArticlesList[0].title}
                     </h3>
+                    <p
+                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {specialArticlesList[0].excerpt}
+                    </p>
                   </a>
                 </article>
               )}
               
               {/* Special News SP-3 */}
               {specialArticlesList[2] && (
-                <article className="group pt-4 border-t">
+                <article className="group pt-4 border-t border-[#f0f0f0]">
                   <a href={`/article/${specialArticlesList[2].slug}`}>
-                    <div className="relative h-32 w-full overflow-hidden rounded bg-muted mb-3">
+                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                       <img
                         src={specialArticlesList[2].imageUrl}
                         alt={specialArticlesList[2].title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <h3 className="font-semibold text-sm line-clamp-3 group-hover:text-primary transition-colors">
+                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                      {specialArticlesList[2].source || 'বিশেষ'}
+                    </span>
+                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                       {specialArticlesList[2].title}
                     </h3>
+                    <p
+                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {specialArticlesList[2].excerpt}
+                    </p>
                   </a>
                 </article>
               )}
@@ -216,34 +244,62 @@ function HomePage() {
               {specialArticlesList[1] && (
                 <article className="group">
                   <a href={`/article/${specialArticlesList[1].slug}`}>
-                    <div className="relative h-40 w-full overflow-hidden rounded bg-muted mb-3">
+                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                       <img
                         src={specialArticlesList[1].imageUrl}
                         alt={specialArticlesList[1].title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                      {specialArticlesList[1].source || 'বিশেষ'}
+                    </span>
+                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                       {specialArticlesList[1].title}
                     </h3>
+                    <p
+                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {specialArticlesList[1].excerpt}
+                    </p>
                   </a>
                 </article>
               )}
               
               {/* Special News SP-4 */}
               {specialArticlesList[3] && (
-                <article className="group pt-4 border-t">
+                <article className="group pt-4 border-t border-[#f0f0f0]">
                   <a href={`/article/${specialArticlesList[3].slug}`}>
-                    <div className="relative h-32 w-full overflow-hidden rounded bg-muted mb-3">
+                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                       <img
                         src={specialArticlesList[3].imageUrl}
                         alt={specialArticlesList[3].title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <h3 className="font-semibold text-sm line-clamp-3 group-hover:text-primary transition-colors">
+                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                      {specialArticlesList[3].source || 'বিশেষ'}
+                    </span>
+                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                       {specialArticlesList[3].title}
                     </h3>
+                    <p
+                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {specialArticlesList[3].excerpt}
+                    </p>
                   </a>
                 </article>
               )}
@@ -251,20 +307,34 @@ function HomePage() {
           </section>
 
           {/* 2. Transitional Grid (Middle Row) - SP-5 to SP-8 */}
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
             {transitionalArticles.map((article, index) => (
               <article key={article.docId} className="group">
                 <a href={`/article/${article.slug}`}>
-                  <div className="relative h-48 w-full overflow-hidden rounded-lg bg-muted mb-4">
+                  <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                     <img
                       src={article.imageUrl}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                  <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                    {article.source || 'বিশেষ'}
+                  </span>
+                  <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                     {article.title}
                   </h3>
+                  <p
+                    className="text-[#444444] text-xs mt-1 leading-relaxed"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {article.excerpt}
+                  </p>
                 </a>
               </article>
             ))}
@@ -277,57 +347,71 @@ function HomePage() {
             const listCategoryArticles = categoryArticles.slice(1, 7)
             
             return (
-              <section key={category.id} className="mb-8">
+              <section key={category.id} className="mb-6">
                 {/* Category Header */}
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-foreground border-b pb-3 flex-1">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-[#000000] border-l-4 border-[#FF0000] pl-3 flex-1">
                     {category.name}
                   </h2>
                   <a
                     href={`/category/${category.slug}`}
-                    className="text-primary hover:underline text-sm font-medium ml-4 whitespace-nowrap"
+                    className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider"
                   >
                     সব দেখুন →
                   </a>
                 </div>
 
                 {/* Multi-Ad Break - 3 ads per category row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <AdRenderer
                     slotName={`category-row-${catIndex + 1}-1`}
-                    className="min-h-20"
-                    imageClassName="rounded-lg overflow-hidden bg-muted"
+                    className="min-h-16"
+                    imageClassName="rounded overflow-hidden bg-gray-50"
                   />
                   <AdRenderer
                     slotName={`category-row-${catIndex + 1}-2`}
-                    className="min-h-20"
-                    imageClassName="rounded-lg overflow-hidden bg-muted"
+                    className="min-h-16"
+                    imageClassName="rounded overflow-hidden bg-gray-50"
                   />
                   <AdRenderer
                     slotName={`category-row-${catIndex + 1}-3`}
-                    className="min-h-20"
-                    imageClassName="rounded-lg overflow-hidden bg-muted"
+                    className="min-h-16"
+                    imageClassName="rounded overflow-hidden bg-gray-50"
                   />
                 </div>
 
                 {/* Lead + List Combo */}
                 {categoryArticles.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     {/* Lead Thumbnail + Heading (First Column) */}
                     {leadCategoryArticle && (
                       <div className="md:col-span-1">
                         <article className="group">
                           <a href={`/article/${leadCategoryArticle.slug}`}>
-                            <div className="relative h-40 w-full overflow-hidden rounded bg-muted mb-3">
+                            <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                               <img
                                 src={leadCategoryArticle.imageUrl}
                                 alt={leadCategoryArticle.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                             </div>
-                            <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                            <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                              {category.name}
+                            </span>
+                            <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                               {leadCategoryArticle.title}
                             </h3>
+                            <p
+                              className="text-[#444444] text-xs mt-1 leading-relaxed"
+                              style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {leadCategoryArticle.excerpt}
+                            </p>
                           </a>
                         </article>
                       </div>
@@ -335,20 +419,34 @@ function HomePage() {
 
                     {/* Stacked Articles with Images (Next Three Columns) */}
                     <div className="md:col-span-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {listCategoryArticles.map((article, index) => (
                           <article key={article.docId} className="group">
                             <a href={`/article/${article.slug}`}>
-                              <div className="relative h-32 w-full overflow-hidden rounded bg-muted mb-2">
+                              <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                                 <img
                                   src={article.imageUrl}
                                   alt={article.title}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>
-                              <h4 className="font-semibold text-sm line-clamp-3 group-hover:text-primary transition-colors">
+                              <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                                {category.name}
+                              </span>
+                              <h4 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                                 {article.title}
                               </h4>
+                              <p
+                                className="text-[#444444] text-xs mt-1 leading-relaxed"
+                                style={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                {article.excerpt}
+                              </p>
                             </a>
                           </article>
                         ))}
@@ -356,9 +454,14 @@ function HomePage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>
+                  <div className="text-center py-8">
+                    <p className="text-[#444444]">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>
                   </div>
+                )}
+
+                {/* Faint separator between category sections */}
+                {catIndex < 2 && (
+                  <hr className="border-t border-[#f0f0f0] mt-6" />
                 )}
               </section>
             )

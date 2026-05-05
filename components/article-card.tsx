@@ -67,7 +67,7 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
   return (
     <article className="group">
       <Link href={`/article/${article.slug}`}>
-        <div className="relative h-40 w-full overflow-hidden rounded bg-muted mb-3">
+        <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
           <Image
             src={article.imageUrl}
             alt={article.title}
@@ -76,11 +76,14 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           />
         </div>
-        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+        <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+          {article.source || 'বিশেষ'}
+        </span>
+        <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
           {article.title}
         </h3>
       </Link>
-      <p className="text-xs text-muted-foreground mt-2">{publishDate}</p>
+      <p className="text-xs text-[#444444] mt-2">{publishDate}</p>
     </article>
   )
 }
