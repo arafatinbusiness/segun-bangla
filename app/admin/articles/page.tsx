@@ -7,8 +7,9 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image } from 'lucide-react'
 import Link from 'next/link'
+import { generateAndDownloadSocialCard } from '@/lib/social-card-generator'
 import type { FirestoreArticle, Category } from '@/lib/types'
 
 const PAGE_SIZE = 20
@@ -246,6 +247,33 @@ function ArticlesPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                         </Link>
+                        <button
+                          onClick={() => {
+                            const dateStr = article.publishedAt
+                              ? new Date(article.publishedAt).toLocaleDateString('bn-BD', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric',
+                                })
+                              : new Date().toLocaleDateString('bn-BD', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric',
+                                })
+                            generateAndDownloadSocialCard(
+                              {
+                                title: article.title,
+                                date: dateStr,
+                                imageUrl: article.imageUrl,
+                              },
+                              `social-card-${article.slug}.png`
+                            )
+                          }}
+                          className="p-2 text-muted-foreground hover:text-purple-600 transition-colors rounded-lg hover:bg-muted"
+                          title="সোশ্যাল কার্ড তৈরি করুন"
+                        >
+                          <Image className="w-4 h-4" />
+                        </button>
                         <Link href={`/admin/articles/${article.docId}`}>
                           <button className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted" title="সম্পাদনা">
                             <Edit2 className="w-4 h-4" />
