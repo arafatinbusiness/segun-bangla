@@ -329,6 +329,20 @@ function HomePage() {
             ))}
           </section>
 
+          {/* Bottom Banner Ad - Between Head Section and Category News */}
+          <section className="mb-8">
+            <div className="relative border border-gray-200 rounded-lg bg-[#F8F9FA] overflow-hidden">
+              <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">
+                Advertisement
+              </span>
+              <AdRenderer
+                slotName="bottom-banner"
+                className="w-full min-h-[120px] md:min-h-[100px] flex items-center justify-center"
+                imageClassName="w-full h-full object-contain"
+              />
+            </div>
+          </section>
+
           {/* 3. Category Specific Rows */}
           {categories.slice(0, 3).map((category, catIndex) => {
             const categoryArticles = allArticles.filter(article => article.categoryId === category.id).slice(0, 7)
@@ -455,15 +469,6 @@ function HomePage() {
               </section>
             )
           })}
-
-          {/* Large Advertisement Section - bottom-banner */}
-          <section className="mb-8">
-            <AdRenderer
-              slotName="bottom-banner"
-              className="min-h-40"
-              imageClassName="rounded-lg overflow-hidden bg-muted w-full"
-            />
-          </section>
 
           {/* Additional Recent Articles */}
           <section className="mb-8">
