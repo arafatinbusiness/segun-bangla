@@ -195,7 +195,7 @@ function EditCategoryPage() {
   }
 
   const generateSubSlug = () => {
-    if (!newSubName || newSubSlug) return
+    if (!newSubName) return
     const slug = newSubName
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
@@ -203,6 +203,17 @@ function EditCategoryPage() {
       .replace(/-+/g, '-')
       .trim()
     setNewSubSlug(slug)
+  }
+
+  const generateEditSubSlug = () => {
+    if (!editSubName) return
+    const slug = editSubName
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+    setEditSubSlug(slug)
   }
 
   const handleAddSub = async () => {
@@ -594,12 +605,17 @@ function EditCategoryPage() {
                       placeholder="নাম"
                       className="text-sm"
                     />
-                    <Input
-                      value={editSubSlug}
-                      onChange={(e) => setEditSubSlug(e.target.value)}
-                      placeholder="slug"
-                      className="text-sm"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        value={editSubSlug}
+                        onChange={(e) => setEditSubSlug(e.target.value)}
+                        placeholder="slug"
+                        className="text-sm flex-1"
+                      />
+                      <Button type="button" variant="outline" size="sm" onClick={generateEditSubSlug} className="shrink-0">
+                        অটো
+                      </Button>
+                    </div>
                     <Select
                       value={editSubParentId || '__none__'}
                       onValueChange={(val) => setEditSubParentId(val === '__none__' ? null : val)}
