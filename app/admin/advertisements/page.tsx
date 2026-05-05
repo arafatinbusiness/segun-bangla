@@ -166,6 +166,33 @@ function AdvertisementsPage() {
                 placeholder="যেমন: left-sidebar, category-row, bottom-banner"
                 className="w-full"
               />
+              <p className="text-xs text-muted-foreground">
+                ⚠️ স্লটের নাম অবশ্যই হোমপেজে ব্যবহৃত নামের সাথে হুবহু মিলতে হবে। নিচের বাটনে ক্লিক করে দ্রুত স্লট তৈরি করুন:
+              </p>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {[
+                  { name: 'top-ad-1', desc: 'শীর্ষ লিডারবোর্ড (নেভিগেশনের নিচে, ফুল-উইডথ)' },
+                  { name: 'left-sidebar', desc: 'হিরো গ্রিডের বাম পাশের সাইডবার' },
+                  { name: 'right-sidebar', desc: 'হিরো গ্রিডের ডান পাশের সাইডবার' },
+                  { name: 'bottom-banner', desc: 'পেজের নিচের বড় ব্যানার' },
+                ].map((slot) => (
+                  <button
+                    key={slot.name}
+                    type="button"
+                    onClick={() => {
+                      setNewSlotName(slot.name)
+                      setNewSlotDesc(slot.desc)
+                    }}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      newSlotName === slot.name
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-card text-foreground border-border hover:border-primary/50'
+                    }`}
+                  >
+                    {slot.name}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="slotDesc" className="text-foreground font-medium">বিবরণ (ঐচ্ছিক)</Label>

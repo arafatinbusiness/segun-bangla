@@ -31,7 +31,9 @@ export function AdRenderer({ slotName, className = '', imageClassName = '', html
     return () => { mounted = false }
   }, [slotName])
 
-  if (loading || ads.length === 0) return null
+  if (loading) return <div className={className} />
+
+  if (ads.length === 0) return <div className={className} />
 
   return (
     <>

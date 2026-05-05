@@ -49,8 +49,7 @@ export async function getAdvertisementsBySlot(slotName: string): Promise<Adverti
     const q = query(
       collection(db, ADS_COLLECTION),
       where('slotName', '==', slotName),
-      where('isActive', '==', true),
-      orderBy('createdAt', 'desc')
+      where('isActive', '==', true)
     )
     const snapshot = await getDocs(q)
     return snapshot.docs.map((doc) => ({

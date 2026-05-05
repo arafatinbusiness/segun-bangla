@@ -105,28 +105,17 @@ function HomePage() {
     <>
       <Header categories={categories} />
       <main className="min-h-screen bg-background">
-        {/* Top Ad Grid - Between Nav and Lead News */}
-        <section className="max-w-7xl mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Top Leaderboard Ad - Between Nav and Lead News */}
+        <section className="max-w-7xl mx-auto px-4 py-5 md:py-6">
+          <div className="relative border border-gray-200 rounded-lg bg-[#F8F9FA] overflow-hidden">
+            {/* "Advertisement" label */}
+            <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">
+              Advertisement
+            </span>
             <AdRenderer
               slotName="top-ad-1"
-              className="min-h-24"
-              imageClassName="rounded-lg overflow-hidden bg-muted"
-            />
-            <AdRenderer
-              slotName="top-ad-2"
-              className="min-h-24"
-              imageClassName="rounded-lg overflow-hidden bg-muted"
-            />
-            <AdRenderer
-              slotName="top-ad-3"
-              className="min-h-24"
-              imageClassName="rounded-lg overflow-hidden bg-muted"
-            />
-            <AdRenderer
-              slotName="top-ad-4"
-              className="min-h-24"
-              imageClassName="rounded-lg overflow-hidden bg-muted"
+              className="w-full min-h-[100px] md:min-h-[90px] flex items-center justify-center"
+              imageClassName="w-full h-full object-contain"
             />
           </div>
         </section>

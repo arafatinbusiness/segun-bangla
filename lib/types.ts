@@ -49,6 +49,8 @@ export interface FirestoreArticle extends Article {
   docId: string
 }
 
+export type AdShape = 'leaderboard' | 'rectangle' | 'square' | 'skyscraper' | 'wide' | 'custom'
+
 export interface Advertisement {
   id?: string
   docId?: string
@@ -59,9 +61,13 @@ export interface Advertisement {
   linkUrl?: string
   htmlCode?: string
   isActive: boolean
+  adShape?: AdShape
+  adWidth?: number
+  adHeight?: number
   createdAt: number
   updatedAt: number
 }
+
 
 export interface AdSlot {
   id?: string
