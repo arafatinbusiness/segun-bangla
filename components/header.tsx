@@ -176,29 +176,32 @@ export function Header({ categories }: HeaderProps) {
       <div className="border-t border-[#E8E8E8]">
         <div className="max-w-7xl mx-auto px-4">
           <nav className="flex items-center justify-center gap-0">
-            {categories.map((category) => (
-              <div
+            {categories.slice(0, 12).map((category) => (
+              <Link
                 key={category.id}
-                className="relative"
+                href={`/category/${category.slug}`}
+                className={`
+                  relative flex items-center gap-1 px-4 py-3 text-base font-bold
+                  transition-colors duration-150 whitespace-nowrap
+                  ${activeCategory === category.id
+                    ? 'text-[#8B0000]'
+                    : 'text-[#1A1A1A] hover:text-[#8B0000]'
+                  }
+                `}
                 onMouseEnter={() => handleMouseEnter(category.id)}
                 onMouseLeave={handleMouseLeave}
               >
-                <Link
-                  href={`/category/${category.slug}`}
-                  className={`
-                    flex items-center gap-1 px-4 py-3 text-base font-bold
-                    transition-colors duration-150 whitespace-nowrap
-                    ${activeCategory === category.id
-                      ? 'text-[#8B0000]'
-                      : 'text-[#1A1A1A] hover:text-[#8B0000]'
-                    }
-                  `}
-                >
-                  {category.name}
-                  <ChevronDown className="w-3 h-3 opacity-50" />
-                </Link>
-              </div>
+                {category.name}
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </Link>
             ))}
+            {/* "সব দেখুন" - 13th item linking to all categories */}
+            <Link
+              href="/search"
+              className="flex items-center gap-1 px-4 py-3 text-base font-bold text-[#8B0000] hover:text-[#1A1A1A] transition-colors duration-150 whitespace-nowrap"
+            >
+              সব দেখুন
+            </Link>
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#E8E8E8]">
               <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors">
                 <Search size={16} />
