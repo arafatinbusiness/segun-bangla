@@ -317,48 +317,61 @@ export function Header({ categories }: HeaderProps) {
         </div>
       )}
 
-      {/* Mobile Categories - Always visible first few, toggle for more */}
+      {/* Mobile Categories - First 4 visible, rest in three-dots dropdown */}
       <div className="md:hidden border-t border-[#E8E8E8]">
-        <div className="px-4 py-2 flex flex-wrap gap-1">
-          {categories.slice(0, 5).map((category) => (
+        <div className="px-4 py-2 flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {categories.slice(0, 4).map((category) => (
             <Link
               key={category.id}
               href={`/category/${category.slug}`}
-              className="px-3 py-1.5 text-xs font-bold text-[#1A1A1A] bg-gray-100 rounded-full hover:text-[#8B0000] hover:bg-gray-200 transition-colors"
+              className="px-3 py-1.5 text-xs font-bold text-[#1A1A1A] bg-gray-100 rounded-full hover:text-[#8B0000] hover:bg-gray-200 transition-colors whitespace-nowrap shrink-0"
             >
               {category.name}
             </Link>
           ))}
-          {categories.length > 5 && (
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="px-3 py-1.5 text-xs font-bold text-[#8B0000] bg-red-50 rounded-full hover:bg-red-100 transition-colors"
-            >
-              {mobileMenuOpen ? 'সংকুচিত করুন' : `+ আরও ${categories.length - 5}`}
-            </button>
+          {categories.length > 4 && (
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="w-8 h-8 flex items-center justify-center text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="আরও বিভাগ"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+                </svg>
+              </button>
+              {mobileMenuOpen && (
+                <>
+                  {/* Backdrop to close on tap outside */}
+                  <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1 max-h-[70vh] overflow-y-auto">
+                    {categories.slice(4).map((category) => (
+                      <Link
+                        key={category.id}
+                        href={`/category/${category.slug}`}
+                        className="block px-4 py-2.5 text-sm text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-50 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                    <div className="border-t border-gray-100 mt-1 pt-1">
+                      <Link
+                        href="/search"
+                        className="block px-4 py-2.5 text-sm text-[#8B0000] font-bold hover:bg-gray-50 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        সার্চ
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
-        {mobileMenuOpen && (
-          <div className="px-4 pb-3 space-y-1">
-            {categories.slice(5).map((category) => (
-              <Link
-                key={category.id}
-                href={`/category/${category.slug}`}
-                className="block py-2 text-sm text-[#1A1A1A] hover:text-[#8B0000]"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {category.name}
-              </Link>
-            ))}
-            <Link
-              href="/search"
-              className="block py-2 text-sm text-[#1A1A1A] hover:text-[#8B0000]"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              সার্চ
-            </Link>
-          </div>
-        )}
       </div>
     </header>
   )
