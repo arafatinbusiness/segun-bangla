@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { getAdminArticles } from '@/lib/services/article-queries'
 import { deleteArticle } from '@/lib/services/article-mutations'
 import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video } from 'lucide-react'
 import Link from 'next/link'
 import { generateAndDownloadSocialCard } from '@/lib/social-card-generator'
+import type { SocialCardFormat } from '@/lib/social-card-generator'
 import type { FirestoreArticle, Category } from '@/lib/types'
 
 const PAGE_SIZE = 20
@@ -27,6 +28,9 @@ function ArticlesPage() {
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageCursors, setPageCursors] = useState<any[]>([null]) // cursor for each page
+  const [generating, setGenerating] = useState(false)
+  const [progressMsg, setProgressMsg] = useState('')
+  const generatingRef = useRef(false)
 
   const fetchData = useCallback(async (page: number) => {
     if (page === 1) {
@@ -110,6 +114,46 @@ function ArticlesPage() {
       alert('নিবন্ধ মুছতে ত্রুটি হয়েছে')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleGenerateCard = async (article: FirestoreArticle, format: SocialCardFormat, label: string) => {
+    if (generatingRef.current) return
+    generatingRef.current = true
+    setGenerating(true)
+    setProgressMsg(`সোশ্যাল কার্ড তৈরি হচ্ছে (${label})...`)
+    
+    try {
+      const dateStr = article.publishedAt
+        ? new Date(article.publishedAt).toLocaleDateString('bn-BD', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('bn-BD', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+      
+      const formatLabels: Record<SocialCardFormat, string> = {
+        facebook: 'ফেসবুক',
+        square: 'ইনস্টাগ্রাম',
+        story: 'স্টোরি/টিকটক',
+      }
+      
+      await generateAndDownloadSocialCard(
+        { title: article.title, date: dateStr, imageUrl: article.imageUrl },
+        `${format}-${article.slug}.png`,
+        format,
+        (msg) => {
+          if (msg) setProgressMsg(msg)
+        }
+      )
+    } finally {
+      generatingRef.current = false
+      setGenerating(false)
+      setProgressMsg('')
     }
   }
 
@@ -247,33 +291,43 @@ function ArticlesPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                         </Link>
-                        <button
-                          onClick={() => {
-                            const dateStr = article.publishedAt
-                              ? new Date(article.publishedAt).toLocaleDateString('bn-BD', {
-                                  day: 'numeric',
-                                  month: 'long',
-                                  year: 'numeric',
-                                })
-                              : new Date().toLocaleDateString('bn-BD', {
-                                  day: 'numeric',
-                                  month: 'long',
-                                  year: 'numeric',
-                                })
-                            generateAndDownloadSocialCard(
-                              {
-                                title: article.title,
-                                date: dateStr,
-                                imageUrl: article.imageUrl,
-                              },
-                              `social-card-${article.slug}.png`
-                            )
-                          }}
-                          className="p-2 text-muted-foreground hover:text-purple-600 transition-colors rounded-lg hover:bg-muted"
-                          title="সোশ্যাল কার্ড তৈরি করুন"
-                        >
-                          <Image className="w-4 h-4" />
-                        </button>
+                        {/* Social Card Dropdown */}
+                        <div className="relative group">
+                          <button
+                            className="p-2 text-muted-foreground hover:text-purple-600 transition-colors rounded-lg hover:bg-muted"
+                            title="সোশ্যাল কার্ড"
+                          >
+                            <Image className="w-4 h-4" />
+                          </button>
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                            <div className="py-1">
+                              <button
+                                onClick={() => handleGenerateCard(article, 'facebook', 'ফেসবুক')}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <Facebook className="w-4 h-4 text-blue-600" />
+                                <span className="text-left">ফেসবুক</span>
+                                <span className="ml-auto text-[10px] text-gray-400">1.91:1</span>
+                              </button>
+                              <button
+                                onClick={() => handleGenerateCard(article, 'square', 'ইনস্টাগ্রাম')}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <Instagram className="w-4 h-4 text-pink-600" />
+                                <span className="text-left">ইনস্টাগ্রাম</span>
+                                <span className="ml-auto text-[10px] text-gray-400">1:1</span>
+                              </button>
+                              <button
+                                onClick={() => handleGenerateCard(article, 'story', 'স্টোরি/টিকটক')}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <Video className="w-4 h-4 text-purple-600" />
+                                <span className="text-left">স্টোরি/টিকটক</span>
+                                <span className="ml-auto text-[10px] text-gray-400">9:16</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                         <Link href={`/admin/articles/${article.docId}`}>
                           <button className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted" title="সম্পাদনা">
                             <Edit2 className="w-4 h-4" />
@@ -374,6 +428,19 @@ function ArticlesPage() {
           <div className="bg-card p-6 rounded-lg shadow-lg flex items-center gap-3">
             <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             <span className="text-sm text-foreground">লোড হচ্ছে...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Social Card Generation Progress */}
+      {generating && (
+        <div className="fixed inset-0 bg-background/60 flex items-center justify-center z-[100]">
+          <div className="bg-card p-8 rounded-xl shadow-2xl flex flex-col items-center gap-4 min-w-[280px]">
+            <div className="relative w-12 h-12">
+              <span className="absolute inset-0 w-12 h-12 border-[3px] border-primary/20 rounded-full" />
+              <span className="absolute inset-0 w-12 h-12 border-[3px] border-t-primary rounded-full animate-spin" />
+            </div>
+            <p className="text-sm font-medium text-foreground text-center">{progressMsg}</p>
           </div>
         </div>
       )}

@@ -77,9 +77,9 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="w-64 border-r bg-card flex flex-col">
+    <aside className="w-52 border-r bg-card flex flex-col shrink-0">
       {/* Logo */}
-      <div className="p-6 border-b">
+      <div className="p-4 border-b">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Newspaper className="w-4 h-4 text-primary-foreground" />
@@ -94,7 +94,7 @@ export function AdminSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')

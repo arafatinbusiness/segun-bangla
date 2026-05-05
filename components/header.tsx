@@ -9,7 +9,7 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // is seeing the latest version. Ask the client: "What version do you see?"
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
-const DEPLOY_VERSION = 'v3'
+const DEPLOY_VERSION = 'v4'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'

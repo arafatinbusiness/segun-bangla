@@ -197,8 +197,8 @@ function HomePage() {
               )}
             </div>
 
-            {/* Center Column - Lead Article */}
-            <div className="md:col-span-2">
+            {/* Center Column - Lead Article + 2 more articles below */}
+            <div className="md:col-span-2 space-y-4">
               {mainArticle && (
                 <article className="group text-center">
                   <a href={`/article/${mainArticle.slug}`} className="group">
@@ -218,6 +218,50 @@ function HomePage() {
                   </div>
                 </article>
               )}
+              
+              {/* 2 more articles below the lead image - pushed down to align with SP-3/SP-4 */}
+              {(() => {
+                const specialIds = new Set(specialArticlesList.map(a => a.docId))
+                const extraArticles = [...allArticles]
+                  .filter(a => !specialIds.has(a.docId) && a.status === 'published' && a.docId !== mainArticle?.docId)
+                  .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+                  .slice(0, 2)
+                
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                    {extraArticles.map((article) => (
+                      <article key={article.docId} className="group">
+                        <a href={`/article/${article.slug}`}>
+                          <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+                            <img
+                              src={article.imageUrl}
+                              alt={article.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                            {article.source || 'সর্বশেষ'}
+                          </span>
+                          <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                            {article.title}
+                          </h3>
+                          <p
+                            className="text-[#444444] text-xs mt-1 leading-relaxed"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 6,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {article.excerpt}
+                          </p>
+                        </a>
+                      </article>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Right Sidebar - Ad + SP-2 + SP-4 */}
@@ -329,22 +373,64 @@ function HomePage() {
             ))}
           </section>
 
-          {/* Bottom Banner Ad - Between Head Section and Category News */}
-          <section className="mb-8">
-            <div className="relative border border-gray-200 rounded-lg bg-[#F8F9FA] overflow-hidden">
-              <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">
-                Advertisement
-              </span>
-              <AdRenderer
-                slotName="bottom-banner"
-                className="w-full min-h-[120px] md:min-h-[100px] flex items-center justify-center"
-                imageClassName="w-full h-full object-contain"
-              />
-            </div>
+          {/* 2.5 Special News Row (4 articles) - replaces old ad spot */}
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-8">
+            {(() => {
+              // Use special articles first, then fill with latest by date
+              const specialIds = new Set(specialArticlesList.map(a => a.docId))
+              const latestArticles = [...allArticles]
+                .filter(a => !specialIds.has(a.docId) && a.status === 'published')
+                .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+              
+              const rowArticles: FirestoreArticle[] = []
+              // Add special articles (up to 4)
+              for (const sa of specialArticlesList) {
+                if (rowArticles.length < 4) rowArticles.push(sa)
+              }
+              // Fill remaining slots with latest
+              for (const la of latestArticles) {
+                if (rowArticles.length >= 4) break
+                rowArticles.push(la)
+              }
+              
+              return rowArticles.map((article) => (
+                <article key={article.docId} className="group">
+                  <a href={`/article/${article.slug}`}>
+                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+                      <img
+                        src={article.imageUrl}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
+                      {article.source || 'বিশেষ'}
+                    </span>
+                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                      {article.title}
+                    </h3>
+                    <p
+                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {article.excerpt}
+                    </p>
+                  </a>
+                </article>
+              ))
+            })()}
           </section>
 
-          {/* 3. Category Specific Rows */}
-          {categories.slice(0, 3).map((category, catIndex) => {
+          {/* 3. Category Specific Rows - skip categories with no articles */}
+          {categories
+            .filter(cat => allArticles.some(article => article.categoryId === cat.id))
+            .slice(0, 3)
+            .map((category, catIndex) => {
             const categoryArticles = allArticles.filter(article => article.categoryId === category.id).slice(0, 7)
             const leadCategoryArticle = categoryArticles[0]
             const listCategoryArticles = categoryArticles.slice(1, 7)
@@ -482,6 +568,20 @@ function HomePage() {
             </div>
           </section>
         </div>
+
+        {/* Bottom Banner Ad - Before Footer */}
+        <section className="max-w-7xl mx-auto px-4 pb-8">
+          <div className="relative border border-gray-200 rounded-lg bg-[#F8F9FA] overflow-hidden">
+            <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">
+              Advertisement
+            </span>
+            <AdRenderer
+              slotName="bottom-banner"
+              className="w-full min-h-[120px] md:min-h-[100px] flex items-center justify-center"
+              imageClassName="w-full h-full object-contain"
+            />
+          </div>
+        </section>
       </main>
       <Footer />
     </>

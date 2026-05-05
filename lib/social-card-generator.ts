@@ -1,27 +1,34 @@
 /**
  * Social Card Generator
  * Generates a downloadable photo card for social media sharing.
- * Uses a "Top-Down Narrative" structure:
- *   1. Visual Background (Top 50-60%) - Article image with dark gradient vignette
- *   2. Publication Date (Center-Top) - Centered, white/light gray
- *   3. Main Headline/Title (Center Section) - Centered, largest font, bold white
- *   4. Call to Action (Bottom-Left) - "বিস্তারিত কমেন্টে..."
- *   5. Branding & Source (Bottom Footer) - URL left, logo right
- * Supports Bangla text rendering via Canvas API.
+ * Opens the card in a new browser tab for the user to right-click save.
+ * This avoids all canvas taint / CORS issues.
+ *
+ * Professional News Layout (full-bleed image with overlay):
+ *   1. Full-bleed background image spanning entire card
+ *   2. Dark gradient overlay (transparent top → dark bottom 50%)
+ *   3. Date (Centered, positioned as bridge between visual and text)
+ *   4. Main Headline (Centered, bold, large, over dark overlay)
+ *   5. "বিস্তারিত কমেন্টে..." (Bottom-left, Bangla)
+ *   6. Footer: URL left, Brand text right
+ *
+ * Aspect Ratios Supported:
+ *   - 'facebook'  : 1200×630  (1.91:1) - Facebook, LinkedIn, Twitter/X
+ *   - 'square'    : 1080×1080 (1:1)    - Instagram Feed
+ *   - 'story'     : 1080×1920 (9:16)   - Instagram Story, TikTok, Facebook Story
  */
 
-const CARD_WIDTH = 1200
-const CARD_HEIGHT = 630
+export type SocialCardFormat = 'facebook' | 'square' | 'story'
 
-// Brand colors
-const COLORS = {
-  primary: '#8B0000',
-  darkBg: '#1A1A1A',
-  white: '#FFFFFF',
-  lightGray: '#CCCCCC',
-  mediumGray: '#888888',
-  darkText: '#1A1A1A',
-  accent: '#FF0000',
+interface CardDimensions {
+  width: number
+  height: number
+}
+
+const FORMAT_DIMENSIONS: Record<SocialCardFormat, CardDimensions> = {
+  facebook: { width: 1200, height: 630 },
+  square: { width: 1080, height: 1080 },
+  story: { width: 1080, height: 1920 },
 }
 
 interface SocialCardData {
@@ -31,209 +38,208 @@ interface SocialCardData {
 }
 
 /**
- * Load an image from a URL and return an HTMLImageElement
- */
-function loadImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`Failed to load image: ${url}`))
-    img.src = url
-  })
-}
-
-/**
- * Draw wrapped text on canvas with Bangla support
- * Returns the Y position after the last line drawn
- */
-function drawWrappedText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  lineHeight: number,
-  maxLines: number,
-  align: CanvasTextAlign = 'left'
-): number {
-  ctx.textAlign = align
-
-  // For Bangla text, split by spaces first, then character-by-character if needed
-  const words = text.split(' ')
-  let line = ''
-  let lines = 0
-  let currentY = y
-
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line ? line + ' ' + words[i] : words[i]
-    const metrics = ctx.measureText(testLine)
-    const testWidth = metrics.width
-
-    if (testWidth > maxWidth && line) {
-      // Draw current line
-      const lineX = align === 'center' ? x : x
-      ctx.fillText(line, lineX, currentY)
-      line = words[i]
-      currentY += lineHeight
-      lines++
-      if (lines >= maxLines) {
-        return currentY
-      }
-    } else {
-      line = testLine
-    }
-  }
-
-  if (line) {
-    ctx.fillText(line, align === 'center' ? x : x, currentY)
-    lines++
-  }
-
-  return currentY
-}
-
-/**
- * Generate a social media card image and trigger download
+ * Generate a social media card and open it in a new tab for saving.
+ * User can right-click → Save Image As... or take a screenshot.
  */
 export async function generateAndDownloadSocialCard(
   data: SocialCardData,
-  filename: string = 'social-card.png'
+  filename: string = 'social-card.png',
+  format: SocialCardFormat = 'facebook',
+  onProgress?: (message: string) => void
 ): Promise<void> {
-  // Create canvas
-  const canvas = document.createElement('canvas')
-  canvas.width = CARD_WIDTH
-  canvas.height = CARD_HEIGHT
-  const ctx = canvas.getContext('2d')
+  const dims = FORMAT_DIMENSIONS[format]
+  const W = dims.width
+  const H = dims.height
 
-  if (!ctx) {
-    throw new Error('Could not get canvas context')
-  }
-
-  // ============================================================
-  // 1. VISUAL BACKGROUND (Top 50-60%)
-  // ============================================================
-  // Fill with dark background first (in case image fails)
-  ctx.fillStyle = COLORS.darkBg
-  ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT)
-
-  const imageSectionHeight = Math.round(CARD_HEIGHT * 0.58) // ~365px (58% of 630)
-
-  if (data.imageUrl) {
-    try {
-      const img = await loadImage(data.imageUrl)
-      // Draw image covering the top section
-      ctx.drawImage(img, 0, 0, CARD_WIDTH, imageSectionHeight)
-
-      // Dark gradient (vignette) at bottom of image for text legibility
-      const gradient = ctx.createLinearGradient(0, imageSectionHeight - 120, 0, imageSectionHeight)
-      gradient.addColorStop(0, 'rgba(0,0,0,0)')
-      gradient.addColorStop(0.5, 'rgba(0,0,0,0.4)')
-      gradient.addColorStop(1, 'rgba(0,0,0,0.85)')
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, imageSectionHeight - 120, CARD_WIDTH, 120)
-    } catch {
-      // If image fails, use solid brand color
-      ctx.fillStyle = COLORS.primary
-      ctx.fillRect(0, 0, CARD_WIDTH, imageSectionHeight)
-    }
-  } else {
-    // No image - use brand colored area
-    ctx.fillStyle = COLORS.primary
-    ctx.fillRect(0, 0, CARD_WIDTH, imageSectionHeight)
-  }
-
-  // Darken the entire image section slightly for text contrast
-  ctx.fillStyle = 'rgba(0,0,0,0.15)'
-  ctx.fillRect(0, 0, CARD_WIDTH, imageSectionHeight)
-
-  // ============================================================
-  // 2. PUBLICATION DATE (Center-Top, within image section)
-  // ============================================================
-  const dateY = imageSectionHeight - 100
-  ctx.fillStyle = COLORS.lightGray
-  ctx.font = '18px "Noto Sans Bengali", "Siyam Rupali", Arial, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.fillText(data.date, CARD_WIDTH / 2, dateY)
-
-  // ============================================================
-  // 3. MAIN HEADLINE/TITLE (Center Section)
-  // ============================================================
-  const titleMaxWidth = CARD_WIDTH - 120
+  // Larger font sizes
   const titleFontSize = data.title.length > 80 ? 28 : data.title.length > 50 ? 32 : 36
-  const titleY = dateY + 20
 
-  ctx.fillStyle = COLORS.white
-  ctx.font = `bold ${titleFontSize}px "Noto Sans Bengali", "Siyam Rupali", Arial, sans-serif`
-  ctx.textAlign = 'center'
+  // Date position: ~32% from top (bridge between visual and text)
+  const dateTopPct = 32
 
-  drawWrappedText(
-    ctx,
-    data.title,
-    CARD_WIDTH / 2,
-    titleY + titleFontSize,
-    titleMaxWidth,
-    titleFontSize + 10,
-    3,
-    'center'
-  )
+  // Title position: ~48% from top (over dark overlay)
+  const titleTopPct = 48
 
-  // ============================================================
-  // 4. CALL TO ACTION (Bottom-Left)
-  // ============================================================
-  const ctaY = CARD_HEIGHT - 70
-  ctx.fillStyle = COLORS.accent
-  ctx.font = 'bold 18px "Noto Sans Bengali", "Siyam Rupali", Arial, sans-serif'
-  ctx.textAlign = 'left'
-  ctx.fillText('বিস্তারিত কমেন্টে...', 40, ctaY)
+  onProgress?.('সোশ্যাল কার্ড তৈরি হচ্ছে...')
 
-  // ============================================================
-  // 5. BRANDING & SOURCE (Bottom Footer)
-  // ============================================================
-  // Bottom dark strip
-  ctx.fillStyle = COLORS.darkBg
-  ctx.fillRect(0, CARD_HEIGHT - 45, CARD_WIDTH, 45)
+  const html = `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Card - segunbangla.com</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    display: flex; 
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
+    min-height: 100vh; 
+    background: #222;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  .card {
+    width: ${W}px;
+    height: ${H}px;
+    position: relative;
+    overflow: hidden;
+    background: #8B0000;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    max-width: 100%;
+  }
+  .card-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.1) 0%,
+      rgba(0,0,0,0.15) 25%,
+      rgba(0,0,0,0.4) 45%,
+      rgba(0,0,0,0.75) 60%,
+      rgba(0,0,0,0.85) 75%,
+      rgba(0,0,0,0.9) 100%
+    );
+    z-index: 1;
+  }
+  .date {
+    position: absolute;
+    top: ${dateTopPct}%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #e0e0e0;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    z-index: 2;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .headline {
+    position: absolute;
+    top: ${titleTopPct}%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 40px;
+    z-index: 2;
+  }
+  .headline h1 {
+    color: #fff;
+    font-size: ${titleFontSize}px;
+    font-weight: bold;
+    line-height: 1.35;
+    max-width: 92%;
+    margin: 0 auto;
+    word-wrap: break-word;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .cta {
+    position: absolute;
+    bottom: 55px;
+    left: 30px;
+    color: #ff1a1a;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 2;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 46px;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 2;
+  }
+  .footer .url {
+    color: #fff;
+    font-size: 17px;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+  }
+  .footer .brand {
+    color: #fff;
+    font-size: 19px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .instructions {
+    margin-top: 20px;
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    max-width: 500px;
+    line-height: 1.6;
+  }
+  .instructions strong {
+    color: #fff;
+  }
+  @media (max-width: ${W + 40}px) {
+    .card {
+      transform: scale(${Math.min(1, (window.innerWidth - 40) / W)});
+      transform-origin: top center;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  ${data.imageUrl ? `<img class="card-bg" src="${data.imageUrl}" alt="" />` : ''}
+  <div class="gradient-overlay"></div>
+  <div class="date">${data.date}</div>
+  <div class="headline"><h1>${data.title}</h1></div>
+  <div class="cta">বিস্তারিত কমেন্টে...</div>
+  <div class="footer">
+    <span class="url">www.segunbangla.com</span>
+    <span class="brand">সেগুন বাংলা</span>
+  </div>
+</div>
+<div class="instructions">
+  ⬇️ <strong>ডান-ক্লিক করে Save Image As...</strong> নির্বাচন করে ছবিটি ডাউনলোড করুন<br>
+  অথবা স্ক্রিনশট নিন
+</div>
+</body>
+</html>`
 
-  // Website URL - bottom left
-  ctx.fillStyle = COLORS.white
-  ctx.font = 'bold 16px "Noto Sans Bengali", "Siyam Rupali", Arial, sans-serif'
-  ctx.textAlign = 'left'
-  ctx.fillText('www.segunbangla.com', 40, CARD_HEIGHT - 16)
+  onProgress?.('প্রিভিউ খোলা হচ্ছে...')
 
-  // Logo - bottom right
-  try {
-    const logoImg = await loadImage('/logo.png')
-    const logoHeight = 30
-    const logoWidth = (logoImg.naturalWidth / logoImg.naturalHeight) * logoHeight
-    const logoX = CARD_WIDTH - 40 - logoWidth
-    const logoY = CARD_HEIGHT - 45 + (45 - logoHeight) / 2
-    ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight)
-  } catch {
-    // If logo fails to load, render text fallback
-    ctx.fillStyle = COLORS.white
-    ctx.font = 'bold 18px "Noto Sans Bengali", "Siyam Rupali", Arial, sans-serif'
-    ctx.textAlign = 'right'
-    ctx.fillText('সেগুন বাংলা', CARD_WIDTH - 40, CARD_HEIGHT - 16)
+  // Open in a new window
+  const newWindow = window.open('', '_blank')
+  if (!newWindow) {
+    // Fallback: if popup blocked, create a blob and download as HTML
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename.replace('.png', '.html')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    return
   }
 
-  // ============================================================
-  // DOWNLOAD
-  // ============================================================
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Failed to create image blob'))
-        return
-      }
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-      resolve()
-    }, 'image/png')
-  })
+  newWindow.document.write(html)
+  newWindow.document.title = `Social Card - ${data.title.substring(0, 50)}`
+  newWindow.document.close()
+
+  onProgress?.('') // Clear progress
 }
