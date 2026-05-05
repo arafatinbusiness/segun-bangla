@@ -175,7 +175,7 @@ export function Header({ categories }: HeaderProps) {
                 <Link
                   href={`/category/${category.slug}`}
                   className={`
-                    flex items-center gap-1 px-4 py-3 text-sm font-medium
+                    flex items-center gap-1 px-4 py-3 text-base font-bold
                     transition-colors duration-150 whitespace-nowrap
                     ${activeCategory === category.id
                       ? 'text-[#8B0000]'
@@ -303,18 +303,30 @@ export function Header({ categories }: HeaderProps) {
         </div>
       )}
 
-      {/* Mobile Menu Toggle */}
+      {/* Mobile Categories - Always visible first few, toggle for more */}
       <div className="md:hidden border-t border-[#E8E8E8]">
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="w-full px-4 py-3 text-sm font-medium text-[#1A1A1A] flex items-center justify-between"
-        >
-          <span>বিভাগ সমূহ</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} />
-        </button>
+        <div className="px-4 py-2 flex flex-wrap gap-1">
+          {categories.slice(0, 5).map((category) => (
+            <Link
+              key={category.id}
+              href={`/category/${category.slug}`}
+              className="px-3 py-1.5 text-xs font-bold text-[#1A1A1A] bg-gray-100 rounded-full hover:text-[#8B0000] hover:bg-gray-200 transition-colors"
+            >
+              {category.name}
+            </Link>
+          ))}
+          {categories.length > 5 && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="px-3 py-1.5 text-xs font-bold text-[#8B0000] bg-red-50 rounded-full hover:bg-red-100 transition-colors"
+            >
+              {mobileMenuOpen ? 'সংকুচিত করুন' : `+ আরও ${categories.length - 5}`}
+            </button>
+          )}
+        </div>
         {mobileMenuOpen && (
-          <div className="px-4 pb-4 space-y-1">
-            {categories.map((category) => (
+          <div className="px-4 pb-3 space-y-1">
+            {categories.slice(5).map((category) => (
               <Link
                 key={category.id}
                 href={`/category/${category.slug}`}
