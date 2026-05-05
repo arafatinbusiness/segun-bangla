@@ -109,7 +109,13 @@ function ArticlePage() {
                 {article.title}
               </h1>
               <div className="flex flex-col gap-3 text-sm text-muted-foreground border-b pb-6">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {article.source && (
+                    <>
+                      <span className="font-medium text-primary">{article.source}</span>
+                      <span>•</span>
+                    </>
+                  )}
                   <span>{publishDate}</span>
                   <span>•</span>
                   <span>{article.viewCount} ভিউ</span>

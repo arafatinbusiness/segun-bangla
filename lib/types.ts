@@ -42,6 +42,7 @@ export interface Article {
   updatedAt: number // timestamp
   viewCount: number
   tags?: string[]
+  source?: string
 }
 
 export interface FirestoreArticle extends Article {

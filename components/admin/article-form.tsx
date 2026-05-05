@@ -12,6 +12,8 @@ import { SlugInput } from '@/components/ui/slug-input'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { generateCleanSlug } from '@/lib/slug-utils'
+import { uploadArticleImage, validateImageFile } from '@/lib/services/image-upload'
+import { ImagePlus, Upload, X, Link as LinkIcon } from 'lucide-react'
 import type { Article, Category, Subcategory } from '@/lib/types'
 
 interface ArticleFormProps {
@@ -62,6 +64,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       imageUrl: '',
       categoryId: '',
       subcategoryId: '',
+      source: '',
       isLead: false,
       isSpecial: false,
       status: 'published',
@@ -71,6 +74,12 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [subcategoriesLoading, setSubcategoriesLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url')
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load subcategories when category changes
   useEffect(() => {
@@ -119,6 +128,34 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       setSubmitting(false)
     }
   }
+
+  // Handle file selection and upload to Firebase Storage
+  const handleFileSelect = useCallback(async (file: File) => {
+    // Validate file
+    const error = validateImageFile(file)
+    if (error) {
+      setUploadError(error)
+      return
+    }
+
+    setUploadError(null)
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
+      // Use a temporary ID for new articles, or the existing article ID
+      const articleId = article?.id || 'temp-' + Date.now()
+      const downloadUrl = await uploadArticleImage(file, articleId, (progress) => {
+        setUploadProgress(progress)
+      })
+      setFormData((prev) => ({ ...prev, imageUrl: downloadUrl }))
+    } catch (err) {
+      console.error('[v0] Upload failed:', err)
+      setUploadError('ছবি আপলোড করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।')
+    } finally {
+      setUploading(false)
+    }
+  }, [article])
 
   // Generate slug from title - uses transliteration for Bengali text
   const generateSlug = () => {
@@ -182,34 +219,161 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           />
         </div>
 
-        {/* Image URL with compact preview */}
+        {/* Image Upload / URL */}
         <div className="space-y-2">
-          <Label htmlFor="imageUrl" className="text-foreground font-semibold">প্রধান ছবির URL</Label>
-          <div className="flex gap-3 items-start">
-            <div className="flex-1">
-              <Input
-                id="imageUrl"
-                name="imageUrl"
-                type="url"
-                value={formData.imageUrl || ''}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
-                className="w-full"
-              />
-            </div>
-            {formData.imageUrl && (
-              <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted border shrink-0">
-                <img
-                  src={formData.imageUrl}
-                  alt="প্রিভিউ"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>'
-                  }}
+          <Label className="text-foreground font-semibold">প্রধান ছবি</Label>
+          
+          {/* Tabs: URL or Upload */}
+          <div className="flex gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setImageMode('url')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                imageMode === 'url'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              <LinkIcon className="w-3.5 h-3.5" />
+              URL লিংক
+            </button>
+            <button
+              type="button"
+              onClick={() => setImageMode('upload')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                imageMode === 'upload'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              আপলোড
+            </button>
+          </div>
+
+          {imageMode === 'url' ? (
+            <div className="flex gap-3 items-start">
+              <div className="flex-1">
+                <Input
+                  id="imageUrl"
+                  name="imageUrl"
+                  type="url"
+                  value={formData.imageUrl || ''}
+                  onChange={handleChange}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full"
                 />
               </div>
-            )}
-          </div>
+              {formData.imageUrl && (
+                <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted border shrink-0">
+                  <img
+                    src={formData.imageUrl}
+                    alt="প্রিভিউ"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>'
+                      }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Upload area */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setIsDragging(false)
+                  const file = e.dataTransfer.files[0]
+                  if (file) handleFileSelect(file)
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileSelect(file)
+                  }}
+                />
+                {uploading ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <Upload className="w-6 h-6 text-primary animate-pulse" />
+                      <span className="text-sm font-medium">আপলোড হচ্ছে...</span>
+                    </div>
+                    <div className="w-full max-w-xs mx-auto bg-muted rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{uploadProgress}%</p>
+                  </div>
+                ) : formData.imageUrl ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={formData.imageUrl}
+                      alt="আপলোড করা ছবি"
+                      className="max-h-40 rounded-lg object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setFormData((prev) => ({ ...prev, imageUrl: '' }))
+                      }}
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 shadow"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">ছবি আপলোড করতে ক্লিক করুন</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        অথবা ড্র্যাগ ও ড্রপ করুন (সর্বোচ্চ ৫MB)
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      JPEG, PNG, WebP, GIF, AVIF
+                    </p>
+                  </div>
+                )}
+              </div>
+              {uploadError && (
+                <p className="text-sm text-destructive">{uploadError}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Source */}
+        <div className="space-y-2">
+          <Label htmlFor="source" className="text-foreground font-semibold">সোর্স/উৎস</Label>
+          <Input
+            id="source"
+            name="source"
+            value={formData.source || ''}
+            onChange={handleChange}
+            placeholder="যেমন: বাসস, ইউএনবি, নিজস্ব প্রতিবেদক"
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground">
+            নিবন্ধের শীর্ষে প্রকাশের তারিখের পাশে দেখানো হবে
+          </p>
         </div>
 
         {/* Category */}
