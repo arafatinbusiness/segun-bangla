@@ -9,7 +9,8 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // is seeing the latest version. Ask the client: "What version do you see?"
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
-const DEPLOY_VERSION = 'v4'
+// DEPLOY_VERSION = 'v5'  // Added "সর্বশেষ" as first menu item, "সব দেখুন" opens overlay with all categories
+const DEPLOY_VERSION = 'v5'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
@@ -176,6 +177,18 @@ export function Header({ categories }: HeaderProps) {
       <div className="hidden md:block border-t border-[#E8E8E8]">
         <div className="max-w-7xl mx-auto px-4">
           <nav className="flex items-center justify-center gap-0">
+            {/* "সর্বশেষ" - First menu item for all latest news */}
+            <Link
+              href="/search"
+              className={`
+                relative flex items-center gap-1 px-4 py-3 text-base font-bold
+                transition-colors duration-150 whitespace-nowrap
+                text-[#8B0000] hover:text-[#1A1A1A]
+              `}
+            >
+              সর্বশেষ
+            </Link>
+            {/* Show up to 12 categories (total 13 items with সর্বশেষ) */}
             {categories.slice(0, 12).map((category) => (
               <Link
                 key={category.id}
@@ -195,13 +208,6 @@ export function Header({ categories }: HeaderProps) {
                 <ChevronDown className="w-3 h-3 opacity-50" />
               </Link>
             ))}
-            {/* "সব দেখুন" - 13th item linking to all categories */}
-            <Link
-              href="/search"
-              className="flex items-center gap-1 px-4 py-3 text-base font-bold text-[#8B0000] hover:text-[#1A1A1A] transition-colors duration-150 whitespace-nowrap"
-            >
-              সব দেখুন
-            </Link>
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#E8E8E8]">
               <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors">
                 <Search size={16} />
@@ -320,7 +326,14 @@ export function Header({ categories }: HeaderProps) {
       {/* Mobile Categories - First 4 visible + always-visible three-dots */}
       <div className="md:hidden border-t border-[#E8E8E8]">
         <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {categories.slice(0, 4).map((category) => (
+          {/* "সর্বশেষ" - First mobile pill */}
+          <Link
+            href="/search"
+            className="px-4 py-2 text-sm font-bold text-white bg-[#8B0000] rounded-full hover:bg-[#a00000] transition-colors whitespace-nowrap shrink-0"
+          >
+            সর্বশেষ
+          </Link>
+          {categories.slice(0, 3).map((category) => (
             <Link
               key={category.id}
               href={`/category/${category.slug}`}
@@ -329,7 +342,7 @@ export function Header({ categories }: HeaderProps) {
               {category.name}
             </Link>
           ))}
-          {categories.length > 4 && (
+          {categories.length > 3 && (
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="w-9 h-9 flex items-center justify-center text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-100 rounded-full transition-colors shrink-0"
@@ -343,47 +356,55 @@ export function Header({ categories }: HeaderProps) {
             </button>
           )}
         </div>
-
-        {/* Full-screen overlay menu */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 bg-white">
-            {/* Close button */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <span className="text-base font-bold text-[#1A1A1A]">বিভাগ সমূহ</span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-9 h-9 flex items-center justify-center text-[#1A1A1A] hover:text-[#8B0000] rounded-full hover:bg-gray-100"
-                aria-label="বন্ধ করুন"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            {/* Category list */}
-            <div className="overflow-y-auto h-full pb-20">
-              {categories.slice(4).map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/category/${category.slug}`}
-                  className="block px-6 py-4 text-base font-bold text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-50 border-b border-gray-100"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {category.name}
-                </Link>
-              ))}
-              <Link
-                href="/search"
-                className="block px-6 py-4 text-base font-bold text-[#8B0000] hover:bg-gray-50 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                সার্চ
-              </Link>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Full-screen overlay menu - shows ALL categories (works on both mobile and desktop) */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] bg-white">
+          {/* Close button */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <span className="text-base font-bold text-[#1A1A1A]">বিভাগ সমূহ</span>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-9 h-9 flex items-center justify-center text-[#1A1A1A] hover:text-[#8B0000] rounded-full hover:bg-gray-100"
+              aria-label="বন্ধ করুন"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          {/* Category list - ALL categories shown here */}
+          <div className="overflow-y-auto h-full pb-20">
+            {/* "সর্বশেষ" at top of overlay */}
+            <Link
+              href="/search"
+              className="block px-6 py-4 text-base font-bold text-white bg-[#8B0000] hover:bg-[#a00000] border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              সর্বশেষ
+            </Link>
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                href={`/category/${category.slug}`}
+                className="block px-6 py-4 text-base font-bold text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-50 border-b border-gray-100"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {category.name}
+              </Link>
+            ))}
+            <Link
+              href="/search"
+              className="block px-6 py-4 text-base font-bold text-[#8B0000] hover:bg-gray-50 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              সার্চ
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
