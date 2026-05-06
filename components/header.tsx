@@ -10,7 +10,7 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
 // DEPLOY_VERSION = 'v5'  // Added "সর্বশেষ" as first menu item, "সব দেখুন" opens overlay with all categories
-const DEPLOY_VERSION = 'v5'
+const DEPLOY_VERSION = 'v6'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
@@ -188,8 +188,8 @@ export function Header({ categories }: HeaderProps) {
             >
               সর্বশেষ
             </Link>
-            {/* Show up to 12 categories (total 13 items with সর্বশেষ) */}
-            {categories.slice(0, 12).map((category) => (
+            {/* Show up to 11 categories (total 13 items: সর্বশেষ + 11 categories + সব দেখুন) */}
+            {categories.slice(0, 11).map((category) => (
               <Link
                 key={category.id}
                 href={`/category/${category.slug}`}
@@ -208,6 +208,13 @@ export function Header({ categories }: HeaderProps) {
                 <ChevronDown className="w-3 h-3 opacity-50" />
               </Link>
             ))}
+            {/* "সব দেখুন" - Opens overlay with ALL categories from Firebase */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex items-center gap-1 px-4 py-3 text-base font-bold text-[#8B0000] hover:text-[#1A1A1A] transition-colors duration-150 whitespace-nowrap"
+            >
+              সব দেখুন
+            </button>
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#E8E8E8]">
               <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors">
                 <Search size={16} />
