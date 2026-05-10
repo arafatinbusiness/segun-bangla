@@ -1,8 +1,7 @@
 /**
  * Social Card Generator
  * Generates a downloadable photo card for social media sharing.
- * Opens the card in a new browser tab for the user to right-click save.
- * This avoids all canvas taint / CORS issues.
+ * Renders directly on Canvas for reliable PNG export.
  *
  * Solid Footer Block Layout (High-Authority News Look):
  *   1. Top Branding Bar (7% height) - White bg, brand name left, date right
@@ -35,8 +34,57 @@ interface SocialCardData {
 }
 
 /**
+ * Draw wrapped text on canvas, centered horizontally and vertically within a region.
+ */
+function drawWrappedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  maxHeight: number,
+  lineHeight: number,
+  fontSize: number,
+  color: string
+): void {
+  ctx.fillStyle = color
+  ctx.font = `bold ${fontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+
+  // Split into words
+  const words = text.split(' ')
+  const lines: string[] = []
+  let currentLine = ''
+
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + ' ' + word : word
+    const metrics = ctx.measureText(testLine)
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine)
+      currentLine = word
+    } else {
+      currentLine = testLine
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+
+  // Calculate total text height
+  const totalHeight = lines.length * lineHeight
+
+  // Start Y position to center vertically
+  let startY = y + (maxHeight - totalHeight) / 2
+
+  // Draw each line
+  for (const line of lines) {
+    ctx.fillText(line, x, startY)
+    startY += lineHeight
+  }
+}
+
+/**
  * Generate a social media card and open it in a new tab for saving.
- * User can right-click → Save Image As... or take a screenshot.
+ * Renders directly on Canvas for reliable PNG download.
  */
 export async function generateAndDownloadSocialCard(
   data: SocialCardData,
@@ -48,12 +96,17 @@ export async function generateAndDownloadSocialCard(
   const W = dims.width
   const H = dims.height
 
-  // ─── Layout Proportions ────────────────────────────────────────────────
-  const headerHeightPct = 7    // Top branding bar
-  const imageHeightPct = 58    // Main news image
-  const footerHeightPct = 35   // Solid maroon footer
+  onProgress?.('সোশ্যাল কার্ড তৈরি হচ্ছে...')
 
-  // ─── Font Sizes (proportional to card height) ──────────────────────────
+  // ─── Layout Calculations ────────────────────────────────────────────────
+  const headerHeight = Math.round(H * 0.07)
+  const imageHeight = Math.round(H * 0.58)
+  const footerHeight = Math.round(H * 0.35)
+
+  const paddingX = Math.round(W * 0.05)
+  const footerPaddingY = Math.round(H * 0.04)
+
+  // Font sizes
   const brandFontSize = Math.round(H * 0.028)
   const dateFontSize = Math.round(H * 0.022)
   const titleFontSize = data.title.length > 80
@@ -63,8 +116,154 @@ export async function generateAndDownloadSocialCard(
       : Math.round(H * 0.058)
   const ctaFontSize = Math.round(H * 0.024)
 
-  onProgress?.('সোশ্যাল কার্ড তৈরি হচ্ছে...')
+  // ─── Create Canvas ──────────────────────────────────────────────────────
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')!
 
+  // ─── 1. Draw Header Strip (White background) ────────────────────────────
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fillRect(0, 0, W, headerHeight)
+
+  // Brand name "Segun Bangla" - left aligned
+  ctx.fillStyle = '#000000'
+  ctx.font = `bold ${brandFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('Segun Bangla', paddingX, headerHeight / 2)
+
+  // Date - right aligned
+  ctx.fillStyle = '#555555'
+  ctx.font = `${dateFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'right'
+  ctx.fillText(data.date, W - paddingX, headerHeight / 2)
+
+  // ─── 2. Draw Image ──────────────────────────────────────────────────────
+  const imageTop = headerHeight
+
+  if (data.imageUrl) {
+    try {
+      const img = await loadImage(data.imageUrl)
+      // Draw image to fill the image area (cover)
+      const imgAspect = img.naturalWidth / img.naturalHeight
+      const areaAspect = W / imageHeight
+
+      let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+
+      if (imgAspect > areaAspect) {
+        // Image is wider - crop sides
+        sh = img.naturalHeight
+        sw = sh * areaAspect
+        sx = (img.naturalWidth - sw) / 2
+      } else {
+        // Image is taller - crop top/bottom
+        sw = img.naturalWidth
+        sh = sw / areaAspect
+        sy = (img.naturalHeight - sh) / 2
+      }
+
+      ctx.drawImage(img, sx, sy, sw, sh, 0, imageTop, W, imageHeight)
+    } catch {
+      // Fallback: gray placeholder
+      ctx.fillStyle = '#f0f0f0'
+      ctx.fillRect(0, imageTop, W, imageHeight)
+      ctx.fillStyle = '#999999'
+      ctx.font = `bold ${Math.round(W * 0.04)}px Arial, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('সেগুন বাংলা', W / 2, imageTop + imageHeight / 2)
+    }
+  } else {
+    // No image: gray placeholder
+    ctx.fillStyle = '#f0f0f0'
+    ctx.fillRect(0, imageTop, W, imageHeight)
+    ctx.fillStyle = '#999999'
+    ctx.font = `bold ${Math.round(W * 0.04)}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('সেগুন বাংলা', W / 2, imageTop + imageHeight / 2)
+  }
+
+  // ─── 3. Draw Footer (Solid Maroon) ──────────────────────────────────────
+  const footerTop = headerHeight + imageHeight
+  ctx.fillStyle = '#800000'
+  ctx.fillRect(0, footerTop, W, footerHeight)
+
+  // Title area - centered in the footer (leaving space for CTA at bottom)
+  const titleAreaTop = footerTop + footerPaddingY
+  const titleAreaHeight = footerHeight - footerPaddingY * 2 - Math.round(ctaFontSize * 2.5)
+  const titleMaxWidth = W - paddingX * 2
+
+  // Draw title with text shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.2)'
+  ctx.shadowBlur = 3
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 1
+
+  drawWrappedText(
+    ctx,
+    data.title,
+    W / 2,
+    titleAreaTop,
+    titleMaxWidth,
+    titleAreaHeight,
+    Math.round(titleFontSize * 1.4),
+    titleFontSize,
+    '#FFFFFF'
+  )
+
+  // Reset shadow
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 0
+
+  // ─── 4. Draw CTA ────────────────────────────────────────────────────────
+  const ctaText = 'বিস্তারিত কমেন্টে'
+  const ctaY = footerTop + footerHeight - Math.round(H * 0.035) - ctaFontSize
+
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.font = `${ctaFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+
+  const ctaFullText = `« ${ctaText} »`
+  const ctaMetrics = ctx.measureText(ctaFullText)
+  const ctaWidth = ctaMetrics.width
+
+  // Draw underline
+  const underlineY = ctaY + Math.round(H * 0.008)
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(W / 2 - ctaWidth / 2, underlineY)
+  ctx.lineTo(W / 2 + ctaWidth / 2, underlineY)
+  ctx.stroke()
+
+  // Draw CTA text
+  ctx.fillText(ctaFullText, W / 2, ctaY)
+
+  // ─── Convert to PNG and open in new tab ─────────────────────────────────
+  onProgress?.('ছবি তৈরি হচ্ছে...')
+
+  const dataUrl = canvas.toDataURL('image/png')
+
+  // Open in new tab with just the image
+  const newWindow = window.open('', '_blank')
+  if (!newWindow) {
+    // Fallback: direct download
+    const link = document.createElement('a')
+    link.download = filename.replace('.png', '') + '.png'
+    link.href = dataUrl
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    onProgress?.('')
+    return
+  }
+
+  // Create an HTML page with the image and download button
   const html = `<!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -73,146 +272,30 @@ export async function generateAndDownloadSocialCard(
 <title>Social Card - segunbangla.com</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    display: flex; 
+  body {
+    display: flex;
     flex-direction: column;
-    justify-content: center; 
-    align-items: center; 
-    min-height: 100vh; 
+    align-items: center;
+    min-height: 100vh;
     background: #222;
-    font-family: 'Hind Siliguri', 'Noto Sans Bengali', 'Arial Unicod MS', Arial, sans-serif;
+    font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif;
     padding: 20px;
   }
-  .card {
-    width: ${W}px;
-    height: ${H}px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #FFFFFF;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  .card-image {
     max-width: 100%;
+    height: auto;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    border-radius: 4px;
   }
-
-  /* ═══════════════════════════════════════════════════════════════════════
-     1. TOP BRANDING BAR - White bg, brand left, date right
-     ═══════════════════════════════════════════════════════════════════════ */
-  .branding-bar {
-    height: ${headerHeightPct}%;
-    background: #FFFFFF;
+  .actions {
+    margin-top: 24px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 ${Math.round(W * 0.05)}px;
-    flex-shrink: 0;
-  }
-  .brand-name {
-    font-size: ${brandFontSize}px;
-    font-weight: bold;
-    color: #000000;
-    text-transform: uppercase;
-    letter-spacing: -0.5px;
-  }
-  .brand-date {
-    font-size: ${dateFontSize}px;
-    color: #555555;
-    font-weight: 400;
-  }
-
-  /* ═══════════════════════════════════════════════════════════════════════
-     2. MAIN NEWS IMAGE - Clear, sharp, no overlays
-     ═══════════════════════════════════════════════════════════════════════ */
-  .image-section {
-    height: ${imageHeightPct}%;
-    width: 100%;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .news-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .image-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #f0f0f0 0%, #ddd 100%);
-    color: #999;
-    font-size: ${Math.round(W * 0.04)}px;
-    font-weight: bold;
-  }
-
-  /* ═══════════════════════════════════════════════════════════════════════
-     3. SOLID MAROON FOOTER - Deep maroon, centered title, CTA
-     ═══════════════════════════════════════════════════════════════════════ */
-  .authority-footer {
-    height: ${footerHeightPct}%;
-    width: 100%;
-    background: #800000;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: ${Math.round(H * 0.04)}px ${Math.round(W * 0.05)}px;
-    flex-shrink: 0;
-  }
-  .title-area {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
     justify-content: center;
   }
-  .title-area h1 {
-    color: #FFFFFF;
-    font-size: ${titleFontSize}px;
-    font-weight: bold;
-    text-align: center;
-    line-height: 1.3;
-    max-width: 92%;
-    margin: 0 auto;
-    word-wrap: break-word;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  }
-  .cta-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .cta-wrapper {
-    display: flex;
-    align-items: center;
-    gap: ${Math.round(W * 0.012)}px;
-    color: rgba(255,255,255,0.9);
-    font-size: ${ctaFontSize}px;
-    border-bottom: 2px solid rgba(255,255,255,0.4);
-    padding-bottom: ${Math.round(H * 0.008)}px;
-  }
-  .cta-wrapper .guillemet {
-    font-weight: bold;
-  }
-  .cta-wrapper .cta-text {
-    font-weight: 300;
-  }
-
-  .instructions {
-    margin-top: 20px;
-    color: #999;
-    font-size: 14px;
-    text-align: center;
-    max-width: 500px;
-    line-height: 1.6;
-  }
-  .instructions strong {
-    color: #fff;
-  }
-  .download-btn {
-    margin-top: 16px;
+  .btn {
     padding: 14px 40px;
-    background: #800000;
-    color: #fff;
     border: none;
     border-radius: 8px;
     font-size: 18px;
@@ -220,135 +303,79 @@ export async function generateAndDownloadSocialCard(
     cursor: pointer;
     transition: background 0.2s;
     font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
-  .download-btn:hover {
+  .btn-primary {
+    background: #800000;
+    color: #fff;
+  }
+  .btn-primary:hover {
     background: #a00000;
   }
-  .download-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .btn-secondary {
+    background: #444;
+    color: #fff;
   }
-  .download-btn .spinner {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    vertical-align: middle;
-    margin-right: 8px;
+  .btn-secondary:hover {
+    background: #555;
   }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  @media (max-width: ${W + 40}px) {
-    .card {
-      transform: scale(${Math.min(1, (window.innerWidth - 40) / W)});
-      transform-origin: top center;
-    }
+  .instructions {
+    margin-top: 16px;
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    max-width: 500px;
+    line-height: 1.6;
   }
 </style>
 </head>
 <body>
-<div id="card-container" class="card">
-  <!-- 1. Top Branding Bar -->
-  <div class="branding-bar">
-    <span class="brand-name">Segun Bangla</span>
-    <span class="brand-date">${data.date}</span>
+  <img class="card-image" src="${dataUrl}" alt="Social Card" />
+  <div class="actions">
+    <a class="btn btn-primary" href="${dataUrl}" download="${filename.replace('.png', '')}.png">
+      ⬇️ ছবি ডাউনলোড করুন
+    </a>
+    <button class="btn btn-secondary" onclick="window.print()">
+      🖨️ প্রিন্ট / PDF
+    </button>
   </div>
-
-  <!-- 2. Main News Image -->
-  <div class="image-section">
-    ${data.imageUrl
-      ? `<img class="news-image" src="${data.imageUrl}" alt="" />`
-      : `<div class="image-placeholder">সেগুন বাংলা</div>`
-    }
+  <div class="instructions">
+    অথবা ছবিতে <strong>ডান-ক্লিক করে Save Image As...</strong> নির্বাচন করুন
   </div>
-
-  <!-- 3. Solid Maroon Footer -->
-  <div class="authority-footer">
-    <div class="title-area">
-      <h1>${data.title}</h1>
-    </div>
-    <div class="cta-area">
-      <div class="cta-wrapper">
-        <span class="guillemet">«</span>
-        <span class="cta-text">বিস্তারিত কমেন্টে</span>
-        <span class="guillemet">»</span>
-      </div>
-    </div>
-  </div>
-</div>
-<button id="downloadBtn" class="download-btn" onclick="downloadCard()">
-  ⬇️ ছবি ডাউনলোড করুন
-</button>
-<div class="instructions">
-  অথবা ছবিতে <strong>ডান-ক্লিক করে Save Image As...</strong> নির্বাচন করুন
-</div>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script>
-  function downloadCard() {
-    const btn = document.getElementById('downloadBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> ডাউনলোড হচ্ছে...';
-
-    const card = document.getElementById('card-container');
-    const W = ${W};
-    const H = ${H};
-
-    // Use html2canvas to capture the card as an image
-    html2canvas(card, {
-      width: W,
-      height: H,
-      scale: 1,
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: '#FFFFFF',
-      logging: false,
-    }).then(function(canvas) {
-      // Convert to PNG and download
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = '${filename.replace('.png', '')}.png';
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      btn.disabled = false;
-      btn.innerHTML = '⬇️ ছবি ডাউনলোড করুন';
-    }).catch(function(err) {
-      console.error('Download failed:', err);
-      btn.disabled = false;
-      btn.innerHTML = '⬇️ ছবি ডাউনলোড করুন';
-      alert('ডাউনলোড ব্যর্থ হয়েছে। দয়া করে ডান-ক্লিক করে Save Image As... ব্যবহার করুন।');
-    });
-  }
-</script>
 </body>
 </html>`
-
-  onProgress?.('প্রিভিউ খোলা হচ্ছে...')
-
-  // Open in a new window
-  const newWindow = window.open('', '_blank')
-  if (!newWindow) {
-    // Fallback: if popup blocked, create a blob and download as HTML
-    const blob = new Blob([html], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename.replace('.png', '.html')
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    return
-  }
 
   newWindow.document.write(html)
   newWindow.document.title = `Social Card - ${data.title.substring(0, 50)}`
   newWindow.document.close()
 
-  onProgress?.('') // Clear progress
+  onProgress?.('')
+}
+
+/**
+ * Load an image from URL using our own server-side proxy to avoid CORS issues.
+ * The proxy fetches the image server-to-server and serves it from our domain,
+ * so the canvas is never tainted.
+ */
+async function loadImage(url: string): Promise<HTMLImageElement> {
+  // Use our own API route as a proxy
+  const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => {
+      // Final fallback: try loading the original URL directly
+      const img2 = new Image()
+      img2.crossOrigin = 'anonymous'
+      img2.onload = () => resolve(img2)
+      img2.onerror = () => reject(new Error(`Failed to load image: ${url}`))
+      img2.src = url
+    }
+    img.src = proxyUrl
+  })
 }
