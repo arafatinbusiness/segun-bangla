@@ -115,64 +115,64 @@ export function Header({ categories }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-white">
-      {/* Top Bar - Animated hide/show to prevent vibration on scroll */}
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          scrolled ? 'max-h-0 opacity-0' : 'max-h-8 opacity-100'
-        }`}
-      >
-        <div className="bg-[#1A1A1A] text-white text-sm">
-          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-8">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-white/70">{currentDate}</span>
-              <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-1.5 py-0.5 rounded">
-                {DEPLOY_VERSION}
-              </span>
-            </div>
-            <div className="flex gap-4 items-center text-xs">
-              {isAuthenticated ? (
-                <>
-                  <span className="text-white/70">{profile?.displayName}</span>
-                  <Link href="/profile" className="hover:text-white flex items-center gap-1 text-white/70">
-                    <User size={14} />
-                    প্রোফাইল
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" className="hover:text-white text-white/70">
-                    লগইন
-                  </Link>
-                  <Link href="/register" className="hover:text-white text-white/70">
-                    নিবন্ধন
-                  </Link>
-                </>
-              )}
-              <a href="#" className="hover:text-white text-white/70">
-                সাবস্ক্রাইব
-              </a>
+      {/* Top Bar - Always in layout, slides up via transform to prevent layout shifts */}
+      <div className="relative h-8 overflow-hidden">
+        <div
+          className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
+            scrolled ? '-translate-y-full' : 'translate-y-0'
+          }`}
+        >
+          <div className="bg-[#1A1A1A] text-white text-sm h-8">
+            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-8">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/70">{currentDate}</span>
+                <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-1.5 py-0.5 rounded">
+                  {DEPLOY_VERSION}
+                </span>
+              </div>
+              <div className="flex gap-4 items-center text-xs">
+                {isAuthenticated ? (
+                  <>
+                    <span className="text-white/70">{profile?.displayName}</span>
+                    <Link href="/profile" className="hover:text-white flex items-center gap-1 text-white/70">
+                      <User size={14} />
+                      প্রোফাইল
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="hover:text-white text-white/70">
+                      লগইন
+                    </Link>
+                    <Link href="/register" className="hover:text-white text-white/70">
+                      নিবন্ধন
+                    </Link>
+                  </>
+                )}
+                <a href="#" className="hover:text-white text-white/70">
+                  সাবস্ক্রাইব
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Logo Section */}
-      <div className={`transition-all duration-300 ${scrolled ? 'py-1' : 'py-6'}`}>
-        <div className="max-w-7xl mx-auto px-4 flex justify-center">
+      {/* Logo Section - Fixed height container to prevent layout shifts */}
+      <div className="relative h-[104px] overflow-hidden">
+        <div
+          className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${
+            scrolled ? 'py-1' : 'py-6'
+          }`}
+        >
           <Link href="/">
-            {scrolled ? (
-              <img
-                src="/logo.png"
-                alt="সেগুন বাংলা"
-                className="h-8 w-auto object-contain"
-              />
-            ) : (
-              <img
-                src="/logo.png"
-                alt="সেগুন বাংলা"
-                className="h-14 w-auto object-contain"
-              />
-            )}
+            <img
+              src="/logo.png"
+              alt="সেগুন বাংলা"
+              className={`w-auto object-contain transition-all duration-300 ease-in-out ${
+                scrolled ? 'h-8' : 'h-14'
+              }`}
+            />
           </Link>
         </div>
       </div>
