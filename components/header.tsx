@@ -10,7 +10,7 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
 // DEPLOY_VERSION = 'v5'  // Added "সর্বশেষ" as first menu item, "সব দেখুন" opens overlay with all categories
-const DEPLOY_VERSION = 'v6'
+const DEPLOY_VERSION = 'v7'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
@@ -115,8 +115,12 @@ export function Header({ categories }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-white">
-      {/* Top Bar - Hidden when scrolled */}
-      {!scrolled && (
+      {/* Top Bar - Animated hide/show to prevent vibration on scroll */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          scrolled ? 'max-h-0 opacity-0' : 'max-h-8 opacity-100'
+        }`}
+      >
         <div className="bg-[#1A1A1A] text-white text-sm">
           <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-8">
             <div className="flex items-center gap-2">
@@ -150,7 +154,7 @@ export function Header({ categories }: HeaderProps) {
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Logo Section */}
       <div className={`transition-all duration-300 ${scrolled ? 'py-1' : 'py-6'}`}>
