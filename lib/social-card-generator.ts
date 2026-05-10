@@ -208,6 +208,40 @@ export async function generateAndDownloadSocialCard(
   .instructions strong {
     color: #fff;
   }
+  .download-btn {
+    margin-top: 16px;
+    padding: 14px 40px;
+    background: #800000;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: 'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif;
+  }
+  .download-btn:hover {
+    background: #a00000;
+  }
+  .download-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .download-btn .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
   @media (max-width: ${W + 40}px) {
     .card {
       transform: scale(${Math.min(1, (window.innerWidth - 40) / W)});
@@ -217,7 +251,7 @@ export async function generateAndDownloadSocialCard(
 </style>
 </head>
 <body>
-<div class="card">
+<div id="card-container" class="card">
   <!-- 1. Top Branding Bar -->
   <div class="branding-bar">
     <span class="brand-name">Segun Bangla</span>
@@ -246,10 +280,51 @@ export async function generateAndDownloadSocialCard(
     </div>
   </div>
 </div>
+<button id="downloadBtn" class="download-btn" onclick="downloadCard()">
+  ⬇️ ছবি ডাউনলোড করুন
+</button>
 <div class="instructions">
-  ⬇️ <strong>ডান-ক্লিক করে Save Image As...</strong> নির্বাচন করে ছবিটি ডাউনলোড করুন<br>
-  অথবা স্ক্রিনশট নিন
+  অথবা ছবিতে <strong>ডান-ক্লিক করে Save Image As...</strong> নির্বাচন করুন
 </div>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  function downloadCard() {
+    const btn = document.getElementById('downloadBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> ডাউনলোড হচ্ছে...';
+
+    const card = document.getElementById('card-container');
+    const W = ${W};
+    const H = ${H};
+
+    // Use html2canvas to capture the card as an image
+    html2canvas(card, {
+      width: W,
+      height: H,
+      scale: 1,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#FFFFFF',
+      logging: false,
+    }).then(function(canvas) {
+      // Convert to PNG and download
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = '${filename.replace('.png', '')}.png';
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      btn.disabled = false;
+      btn.innerHTML = '⬇️ ছবি ডাউনলোড করুন';
+    }).catch(function(err) {
+      console.error('Download failed:', err);
+      btn.disabled = false;
+      btn.innerHTML = '⬇️ ছবি ডাউনলোড করুন';
+      alert('ডাউনলোড ব্যর্থ হয়েছে। দয়া করে ডান-ক্লিক করে Save Image As... ব্যবহার করুন।');
+    });
+  }
+</script>
 </body>
 </html>`
 
