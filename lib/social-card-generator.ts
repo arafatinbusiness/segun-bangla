@@ -4,13 +4,10 @@
  * Opens the card in a new browser tab for the user to right-click save.
  * This avoids all canvas taint / CORS issues.
  *
- * Professional News Layout (full-bleed image with overlay):
- *   1. Full-bleed background image spanning entire card
- *   2. Dark gradient overlay (transparent top → dark bottom 50%)
- *   3. Date (Centered, positioned as bridge between visual and text)
- *   4. Main Headline (Centered, bold, large, over dark overlay)
- *   5. "বিস্তারিত কমেন্টে..." (Bottom-left, Bangla)
- *   6. Footer: URL left, Brand text right
+ * Solid Footer Block Layout (High-Authority News Look):
+ *   1. Top Branding Bar (7% height) - White bg, brand name left, date right
+ *   2. Main News Image (58% height) - Clear, sharp, no overlays
+ *   3. Solid Maroon Footer (35% height) - Deep maroon bg, centered title, CTA
  *
  * Aspect Ratios Supported:
  *   - 'facebook'  : 1200×630  (1.91:1) - Facebook, LinkedIn, Twitter/X
@@ -51,14 +48,20 @@ export async function generateAndDownloadSocialCard(
   const W = dims.width
   const H = dims.height
 
-  // Larger font sizes
-  const titleFontSize = data.title.length > 80 ? 28 : data.title.length > 50 ? 32 : 36
+  // ─── Layout Proportions ────────────────────────────────────────────────
+  const headerHeightPct = 7    // Top branding bar
+  const imageHeightPct = 58    // Main news image
+  const footerHeightPct = 35   // Solid maroon footer
 
-  // Date position: ~32% from top (bridge between visual and text)
-  const dateTopPct = 32
-
-  // Title position: ~48% from top (over dark overlay)
-  const titleTopPct = 48
+  // ─── Font Sizes (proportional to card height) ──────────────────────────
+  const brandFontSize = Math.round(H * 0.028)
+  const dateFontSize = Math.round(H * 0.022)
+  const titleFontSize = data.title.length > 80
+    ? Math.round(H * 0.045)
+    : data.title.length > 50
+      ? Math.round(H * 0.052)
+      : Math.round(H * 0.058)
+  const ctaFontSize = Math.round(H * 0.024)
 
   onProgress?.('সোশ্যাল কার্ড তৈরি হচ্ছে...')
 
@@ -77,110 +80,123 @@ export async function generateAndDownloadSocialCard(
     align-items: center; 
     min-height: 100vh; 
     background: #222;
-    font-family: Arial, sans-serif;
+    font-family: 'Hind Siliguri', 'Noto Sans Bengali', 'Arial Unicod MS', Arial, sans-serif;
     padding: 20px;
   }
   .card {
     width: ${W}px;
     height: ${H}px;
-    position: relative;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    background: #8B0000;
+    background: #FFFFFF;
     box-shadow: 0 4px 30px rgba(0,0,0,0.5);
     max-width: 100%;
   }
-  .card-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     1. TOP BRANDING BAR - White bg, brand left, date right
+     ═══════════════════════════════════════════════════════════════════════ */
+  .branding-bar {
+    height: ${headerHeightPct}%;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 ${Math.round(W * 0.05)}px;
+    flex-shrink: 0;
+  }
+  .brand-name {
+    font-size: ${brandFontSize}px;
+    font-weight: bold;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+  }
+  .brand-date {
+    font-size: ${dateFontSize}px;
+    color: #555555;
+    font-weight: 400;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     2. MAIN NEWS IMAGE - Clear, sharp, no overlays
+     ═══════════════════════════════════════════════════════════════════════ */
+  .image-section {
+    height: ${imageHeightPct}%;
+    width: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .news-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
   }
-  .gradient-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
+  .image-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-      to bottom,
-      rgba(0,0,0,0.1) 0%,
-      rgba(0,0,0,0.15) 25%,
-      rgba(0,0,0,0.4) 45%,
-      rgba(0,0,0,0.75) 60%,
-      rgba(0,0,0,0.85) 75%,
-      rgba(0,0,0,0.9) 100%
-    );
-    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f0f0f0 0%, #ddd 100%);
+    color: #999;
+    font-size: ${Math.round(W * 0.04)}px;
+    font-weight: bold;
   }
-  .date {
-    position: absolute;
-    top: ${dateTopPct}%;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: #e0e0e0;
-    font-size: 20px;
-    letter-spacing: 0.5px;
-    z-index: 2;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     3. SOLID MAROON FOOTER - Deep maroon, centered title, CTA
+     ═══════════════════════════════════════════════════════════════════════ */
+  .authority-footer {
+    height: ${footerHeightPct}%;
+    width: 100%;
+    background: #800000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: ${Math.round(H * 0.04)}px ${Math.round(W * 0.05)}px;
+    flex-shrink: 0;
   }
-  .headline {
-    position: absolute;
-    top: ${titleTopPct}%;
-    left: 0;
-    right: 0;
-    text-align: center;
-    padding: 0 40px;
-    z-index: 2;
+  .title-area {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .headline h1 {
-    color: #fff;
+  .title-area h1 {
+    color: #FFFFFF;
     font-size: ${titleFontSize}px;
     font-weight: bold;
-    line-height: 1.35;
+    text-align: center;
+    line-height: 1.3;
     max-width: 92%;
     margin: 0 auto;
     word-wrap: break-word;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
-  .cta {
-    position: absolute;
-    bottom: 55px;
-    left: 30px;
-    color: #ff1a1a;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 2;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  .cta-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
-  .footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 46px;
-    background: rgba(0,0,0,0.85);
+  .cta-wrapper {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 28px;
-    z-index: 2;
+    gap: ${Math.round(W * 0.012)}px;
+    color: rgba(255,255,255,0.9);
+    font-size: ${ctaFontSize}px;
+    border-bottom: 2px solid rgba(255,255,255,0.4);
+    padding-bottom: ${Math.round(H * 0.008)}px;
   }
-  .footer .url {
-    color: #fff;
-    font-size: 17px;
+  .cta-wrapper .guillemet {
     font-weight: bold;
-    letter-spacing: 0.3px;
   }
-  .footer .brand {
-    color: #fff;
-    font-size: 19px;
-    font-weight: bold;
-    letter-spacing: 0.5px;
+  .cta-wrapper .cta-text {
+    font-weight: 300;
   }
+
   .instructions {
     margin-top: 20px;
     color: #999;
@@ -202,14 +218,32 @@ export async function generateAndDownloadSocialCard(
 </head>
 <body>
 <div class="card">
-  ${data.imageUrl ? `<img class="card-bg" src="${data.imageUrl}" alt="" />` : ''}
-  <div class="gradient-overlay"></div>
-  <div class="date">${data.date}</div>
-  <div class="headline"><h1>${data.title}</h1></div>
-  <div class="cta">বিস্তারিত কমেন্টে...</div>
-  <div class="footer">
-    <span class="url">www.segunbangla.com</span>
-    <span class="brand">সেগুন বাংলা</span>
+  <!-- 1. Top Branding Bar -->
+  <div class="branding-bar">
+    <span class="brand-name">Segun Bangla</span>
+    <span class="brand-date">${data.date}</span>
+  </div>
+
+  <!-- 2. Main News Image -->
+  <div class="image-section">
+    ${data.imageUrl
+      ? `<img class="news-image" src="${data.imageUrl}" alt="" />`
+      : `<div class="image-placeholder">সেগুন বাংলা</div>`
+    }
+  </div>
+
+  <!-- 3. Solid Maroon Footer -->
+  <div class="authority-footer">
+    <div class="title-area">
+      <h1>${data.title}</h1>
+    </div>
+    <div class="cta-area">
+      <div class="cta-wrapper">
+        <span class="guillemet">«</span>
+        <span class="cta-text">বিস্তারিত কমেন্টে</span>
+        <span class="guillemet">»</span>
+      </div>
+    </div>
   </div>
 </div>
 <div class="instructions">
