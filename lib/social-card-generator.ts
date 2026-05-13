@@ -4,7 +4,7 @@
  * Renders directly on Canvas for reliable PNG export.
  *
  * Solid Footer Block Layout (Teak Wood Theme):
- *   1. Top Branding Bar (7% height) - Teak brown bg, brand name left, date right
+ *   1. Top Branding Bar (4% height) - Teak brown bg, brand name left, date right
  *   2. Main News Image (55% height) - Clear, sharp, no overlays
  *   3. Branding Strip (5% height) - Black bg with centered logo
  *   4. Solid Teak Footer (35% height) - Dark teak brown bg, centered title, CTA
@@ -101,8 +101,8 @@ export async function generateAndDownloadSocialCard(
   onProgress?.('সোশ্যাল কার্ড তৈরি হচ্ছে...')
 
   // ─── Layout Calculations ────────────────────────────────────────────────
-  const headerHeight = Math.round(H * 0.07)
-  const imageHeight = Math.round(H * 0.53)
+  const headerHeight = Math.round(H * 0.04)
+  const imageHeight = Math.round(H * 0.55)
   const brandingStripHeight = Math.round(H * 0.05)
   const footerHeight = Math.round(H * 0.35)
 
@@ -110,7 +110,7 @@ export async function generateAndDownloadSocialCard(
   const footerPaddingY = Math.round(H * 0.04)
 
   // Font sizes
-  const brandFontSize = Math.round(H * 0.048)
+  const brandFontSize = Math.round(H * 0.026)
   const dateFontSize = Math.round(H * 0.022)
   const titleFontSize = data.title.length > 80
     ? Math.round(H * 0.045)
@@ -129,28 +129,12 @@ export async function generateAndDownloadSocialCard(
   ctx.fillStyle = '#8B5E3C'
   ctx.fillRect(0, 0, W, headerHeight)
 
-  // Load and draw logo
-  let logoImg: HTMLImageElement | null = null
-  try {
-    logoImg = await loadImage('/logo.png')
-  } catch {
-    // Logo not available, will use text fallback
-  }
-
-  if (logoImg) {
-    // Calculate logo size to fit within header height with some padding
-    const logoHeight = Math.round(headerHeight * 0.7)
-    const logoWidth = Math.round(logoHeight * (logoImg.naturalWidth / logoImg.naturalHeight))
-    const logoY = Math.round((headerHeight - logoHeight) / 2)
-    ctx.drawImage(logoImg, paddingX, logoY, logoWidth, logoHeight)
-  } else {
-    // Fallback: brand name text
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = `bold ${brandFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('Segun Bangla', paddingX, headerHeight / 2)
-  }
+  // Brand name "Segun Bangla" - left aligned
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = `bold ${brandFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('Segun Bangla', paddingX, headerHeight / 2)
 
   // Date - right aligned
   ctx.fillStyle = '#FFFFFF'
@@ -263,7 +247,14 @@ export async function generateAndDownloadSocialCard(
   ctx.fillStyle = '#000000'
   ctx.fillRect(0, brandingStripTop, W, brandingStripHeight)
 
-  // Draw logo centered in the branding strip
+  // Load and draw logo centered in the branding strip
+  let logoImg: HTMLImageElement | null = null
+  try {
+    logoImg = await loadImage('/logo.png')
+  } catch {
+    // Logo not available
+  }
+
   if (logoImg) {
     const stripLogoHeight = Math.round(brandingStripHeight * 0.7)
     const stripLogoWidth = Math.round(stripLogoHeight * (logoImg.naturalWidth / logoImg.naturalHeight))
