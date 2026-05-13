@@ -6,7 +6,7 @@
  * Solid Footer Block Layout (Teak Wood Theme):
  *   1. Top Branding Bar (7% height) - Teak brown bg, brand name left, date right
  *   2. Main News Image (55% height) - Clear, sharp, no overlays
- *   3. Branding Strip (3% height) - Black bg with white "সেগুন বাংলা · segunbangla.com"
+ *   3. Branding Strip (5% height) - Black bg with centered logo
  *   4. Solid Teak Footer (35% height) - Dark teak brown bg, centered title, CTA
  *
  * Aspect Ratios Supported:
@@ -102,8 +102,8 @@ export async function generateAndDownloadSocialCard(
 
   // ─── Layout Calculations ────────────────────────────────────────────────
   const headerHeight = Math.round(H * 0.07)
-  const imageHeight = Math.round(H * 0.55)
-  const brandingStripHeight = Math.round(H * 0.03)
+  const imageHeight = Math.round(H * 0.53)
+  const brandingStripHeight = Math.round(H * 0.05)
   const footerHeight = Math.round(H * 0.35)
 
   const paddingX = Math.round(W * 0.05)
@@ -129,12 +129,28 @@ export async function generateAndDownloadSocialCard(
   ctx.fillStyle = '#8B5E3C'
   ctx.fillRect(0, 0, W, headerHeight)
 
-  // Brand name "Segun Bangla" - left aligned
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = `bold ${brandFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('Segun Bangla', paddingX, headerHeight / 2)
+  // Load and draw logo
+  let logoImg: HTMLImageElement | null = null
+  try {
+    logoImg = await loadImage('/logo.png')
+  } catch {
+    // Logo not available, will use text fallback
+  }
+
+  if (logoImg) {
+    // Calculate logo size to fit within header height with some padding
+    const logoHeight = Math.round(headerHeight * 0.7)
+    const logoWidth = Math.round(logoHeight * (logoImg.naturalWidth / logoImg.naturalHeight))
+    const logoY = Math.round((headerHeight - logoHeight) / 2)
+    ctx.drawImage(logoImg, paddingX, logoY, logoWidth, logoHeight)
+  } else {
+    // Fallback: brand name text
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = `bold ${brandFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('Segun Bangla', paddingX, headerHeight / 2)
+  }
 
   // Date - right aligned
   ctx.fillStyle = '#FFFFFF'
@@ -247,12 +263,14 @@ export async function generateAndDownloadSocialCard(
   ctx.fillStyle = '#000000'
   ctx.fillRect(0, brandingStripTop, W, brandingStripHeight)
 
-  // Branding text centered in the strip
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = `bold ${Math.round(H * 0.022)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('সেগুন বাংলা · segunbangla.com', W / 2, brandingStripTop + brandingStripHeight / 2)
+  // Draw logo centered in the branding strip
+  if (logoImg) {
+    const stripLogoHeight = Math.round(brandingStripHeight * 0.7)
+    const stripLogoWidth = Math.round(stripLogoHeight * (logoImg.naturalWidth / logoImg.naturalHeight))
+    const stripLogoX = Math.round((W - stripLogoWidth) / 2)
+    const stripLogoY = Math.round(brandingStripTop + (brandingStripHeight - stripLogoHeight) / 2)
+    ctx.drawImage(logoImg, stripLogoX, stripLogoY, stripLogoWidth, stripLogoHeight)
+  }
 
   // ─── 4. Draw Footer (Solid Teak Wood) ───────────────────────────────────
   const footerTop = brandingStripTop + brandingStripHeight
@@ -317,10 +335,16 @@ export async function generateAndDownloadSocialCard(
   // ─── 6. Branding Watermark ──────────────────────────────────────────────
   const watermarkY = footerTop + footerHeight - Math.round(H * 0.012)
   ctx.fillStyle = 'rgba(255,255,255,0.25)'
-  ctx.font = `${Math.round(H * 0.016)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
-  ctx.textAlign = 'right'
+  ctx.font = `bold ${Math.round(H * 0.022)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
   ctx.textBaseline = 'bottom'
-  ctx.fillText('www.segunbangla.com', W - paddingX, watermarkY)
+
+  // Left: domain name
+  ctx.textAlign = 'left'
+  ctx.fillText('www.segunbangla.com', paddingX, watermarkY)
+
+  // Right: brand name in Bangla
+  ctx.textAlign = 'right'
+  ctx.fillText('সেগুন বাংলা', W - paddingX, watermarkY)
 
   // ─── Convert to PNG and open in new tab ─────────────────────────────────
   onProgress?.('ছবি তৈরি হচ্ছে...')

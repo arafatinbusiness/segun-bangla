@@ -140,7 +140,7 @@ function ArticlesPage() {
         facebook: 'ফেসবুক',
         square: 'ইনস্টাগ্রাম',
         story: 'স্টোরি/টিকটক',
-        passport: 'পাসপোর্ট',
+        passport: 'পোর্ট্রেট',
       }
       
       await generateAndDownloadSocialCard(
@@ -327,11 +327,11 @@ function ArticlesPage() {
                                 <span className="ml-auto text-[10px] text-gray-400">9:16</span>
                               </button>
                               <button
-                                onClick={() => handleGenerateCard(article, 'passport', 'পাসপোর্ট')}
+                                onClick={() => handleGenerateCard(article, 'passport', 'পোর্ট্রেট')}
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                               >
                                 <IdCard className="w-4 h-4 text-amber-700" />
-                                <span className="text-left">পাসপোর্ট</span>
+                                <span className="text-left">পোর্ট্রেট</span>
                                 <span className="ml-auto text-[10px] text-gray-400">ছবি</span>
                               </button>
                             </div>
