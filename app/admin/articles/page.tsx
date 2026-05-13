@@ -7,7 +7,7 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film } from 'lucide-react'
 import Link from 'next/link'
 import { generateAndDownloadSocialCard } from '@/lib/social-card-generator'
 import type { SocialCardFormat } from '@/lib/social-card-generator'
@@ -334,6 +334,17 @@ function ArticlesPage() {
                                 <span className="text-left">পোর্ট্রেট</span>
                                 <span className="ml-auto text-[10px] text-gray-400">ছবি</span>
                               </button>
+                              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                              <a
+                                href={`${process.env.NEXT_PUBLIC_STUDIO_URL || 'https://segun-bangla-studio.vercel.app'}/studio?article=${article.docId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <Film className="w-4 h-4 text-red-600" />
+                                <span className="text-left">ভিডিও রিল</span>
+                                <span className="ml-auto text-[10px] text-gray-400">9:16</span>
+                              </a>
                             </div>
                           </div>
                         </div>
