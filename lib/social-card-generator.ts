@@ -345,16 +345,7 @@ export async function generateAndDownloadSocialCard(
   // ─── Convert to PNG and open in new tab ─────────────────────────────────
   onProgress?.('ছবি তৈরি হচ্ছে...')
 
-  let dataUrl: string
-  try {
-    dataUrl = canvas.toDataURL('image/png')
-  } catch {
-    // Canvas may be tainted if image loaded without CORS
-    console.error('Canvas tainted - cannot export PNG')
-    alert('ছবিটি এক্সপোর্ট করা সম্ভব হচ্ছে না। অনুগ্রহ করে আবার চেষ্টা করুন।')
-    onProgress?.('')
-    return
-  }
+  const dataUrl = canvas.toDataURL('image/png')
 
   // Open in new tab with just the image
   const newWindow = window.open('', '_blank')
@@ -468,24 +459,19 @@ export async function generateAndDownloadSocialCard(
  * so the canvas is never tainted.
  */
 async function loadImage(url: string): Promise<HTMLImageElement> {
+  // Use our own API route as a proxy
+  const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
+
   return new Promise((resolve, reject) => {
-    // Strategy 1: Try via our server-side proxy (no CORS issues)
-    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
     img.onerror = () => {
-      // Strategy 2: Try original URL with CORS
+      // Final fallback: try loading the original URL directly
       const img2 = new Image()
       img2.crossOrigin = 'anonymous'
       img2.onload = () => resolve(img2)
-      img2.onerror = () => {
-        // Strategy 3: Try original URL without CORS (last resort)
-        const img3 = new Image()
-        img3.onload = () => resolve(img3)
-        img3.onerror = () => reject(new Error(`Failed to load image: ${url}`))
-        img3.src = url
-      }
+      img2.onerror = () => reject(new Error(`Failed to load image: ${url}`))
       img2.src = url
     }
     img.src = proxyUrl
