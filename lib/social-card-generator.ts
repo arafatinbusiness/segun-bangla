@@ -113,10 +113,10 @@ export async function generateAndDownloadSocialCard(
   const brandFontSize = Math.round(H * 0.026)
   const dateFontSize = Math.round(H * 0.022)
   const titleFontSize = data.title.length > 80
-    ? Math.round(H * 0.045)
+    ? Math.round(H * 0.038)
     : data.title.length > 50
-      ? Math.round(H * 0.052)
-      : Math.round(H * 0.058)
+      ? Math.round(H * 0.042)
+      : Math.round(H * 0.048)
   const ctaFontSize = Math.round(H * 0.024)
 
   // ─── Create Canvas ──────────────────────────────────────────────────────
@@ -146,9 +146,14 @@ export async function generateAndDownloadSocialCard(
   const imageTop = headerHeight
 
   if (data.imageUrl) {
+    let img: HTMLImageElement | null = null
     try {
-      const img = await loadImage(data.imageUrl)
+      img = await loadImage(data.imageUrl)
+    } catch (e) {
+      console.error('Failed to load image for social card:', e)
+    }
 
+    if (img) {
       if (format === 'passport') {
         // Passport format: show image as a small centered square with white border
         // Fill the background with a soft gray
@@ -221,8 +226,8 @@ export async function generateAndDownloadSocialCard(
         ctx.fillText('www.segunbangla.com', 0, 0)
         ctx.restore()
       }
-    } catch {
-      // Fallback: gray placeholder
+    } else {
+      // Image failed to load: gray placeholder
       ctx.fillStyle = '#f0f0f0'
       ctx.fillRect(0, imageTop, W, imageHeight)
       ctx.fillStyle = '#999999'
