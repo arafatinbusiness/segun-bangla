@@ -7,7 +7,7 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard } from 'lucide-react'
 import Link from 'next/link'
 import { generateAndDownloadSocialCard } from '@/lib/social-card-generator'
 import type { SocialCardFormat } from '@/lib/social-card-generator'
@@ -140,6 +140,7 @@ function ArticlesPage() {
         facebook: 'ফেসবুক',
         square: 'ইনস্টাগ্রাম',
         story: 'স্টোরি/টিকটক',
+        passport: 'পাসপোর্ট',
       }
       
       await generateAndDownloadSocialCard(
@@ -307,7 +308,7 @@ function ArticlesPage() {
                               >
                                 <Facebook className="w-4 h-4 text-blue-600" />
                                 <span className="text-left">ফেসবুক</span>
-                                <span className="ml-auto text-[10px] text-gray-400">1.91:1</span>
+                                <span className="ml-auto text-[10px] text-gray-400">4:5</span>
                               </button>
                               <button
                                 onClick={() => handleGenerateCard(article, 'square', 'ইনস্টাগ্রাম')}
@@ -324,6 +325,14 @@ function ArticlesPage() {
                                 <Video className="w-4 h-4 text-purple-600" />
                                 <span className="text-left">স্টোরি/টিকটক</span>
                                 <span className="ml-auto text-[10px] text-gray-400">9:16</span>
+                              </button>
+                              <button
+                                onClick={() => handleGenerateCard(article, 'passport', 'পাসপোর্ট')}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <IdCard className="w-4 h-4 text-amber-700" />
+                                <span className="text-left">পাসপোর্ট</span>
+                                <span className="ml-auto text-[10px] text-gray-400">ছবি</span>
                               </button>
                             </div>
                           </div>

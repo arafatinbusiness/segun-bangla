@@ -3,18 +3,19 @@
  * Generates a downloadable photo card for social media sharing.
  * Renders directly on Canvas for reliable PNG export.
  *
- * Solid Footer Block Layout (High-Authority News Look):
- *   1. Top Branding Bar (7% height) - White bg, brand name left, date right
- *   2. Main News Image (58% height) - Clear, sharp, no overlays
- *   3. Solid Maroon Footer (35% height) - Deep maroon bg, centered title, CTA
+ * Solid Footer Block Layout (Teak Wood Theme):
+ *   1. Top Branding Bar (7% height) - Teak brown bg, brand name left, date right
+ *   2. Main News Image (55% height) - Clear, sharp, no overlays
+ *   3. Branding Strip (3% height) - Black bg with white "সেগুন বাংলা · segunbangla.com"
+ *   4. Solid Teak Footer (35% height) - Dark teak brown bg, centered title, CTA
  *
  * Aspect Ratios Supported:
- *   - 'facebook'  : 1200×630  (1.91:1) - Facebook, LinkedIn, Twitter/X
+ *   - 'facebook'  : 1080×1350 (4:5)    - Facebook Feed Post (recommended ratio)
  *   - 'square'    : 1080×1080 (1:1)    - Instagram Feed
  *   - 'story'     : 1080×1920 (9:16)   - Instagram Story, TikTok, Facebook Story
  */
 
-export type SocialCardFormat = 'facebook' | 'square' | 'story'
+export type SocialCardFormat = 'facebook' | 'square' | 'story' | 'passport'
 
 interface CardDimensions {
   width: number
@@ -22,9 +23,10 @@ interface CardDimensions {
 }
 
 const FORMAT_DIMENSIONS: Record<SocialCardFormat, CardDimensions> = {
-  facebook: { width: 1200, height: 630 },
+  facebook: { width: 1080, height: 1350 },
   square: { width: 1080, height: 1080 },
   story: { width: 1080, height: 1920 },
+  passport: { width: 1080, height: 1350 },
 }
 
 interface SocialCardData {
@@ -100,14 +102,15 @@ export async function generateAndDownloadSocialCard(
 
   // ─── Layout Calculations ────────────────────────────────────────────────
   const headerHeight = Math.round(H * 0.07)
-  const imageHeight = Math.round(H * 0.58)
+  const imageHeight = Math.round(H * 0.55)
+  const brandingStripHeight = Math.round(H * 0.03)
   const footerHeight = Math.round(H * 0.35)
 
   const paddingX = Math.round(W * 0.05)
   const footerPaddingY = Math.round(H * 0.04)
 
   // Font sizes
-  const brandFontSize = Math.round(H * 0.028)
+  const brandFontSize = Math.round(H * 0.048)
   const dateFontSize = Math.round(H * 0.022)
   const titleFontSize = data.title.length > 80
     ? Math.round(H * 0.045)
@@ -122,19 +125,19 @@ export async function generateAndDownloadSocialCard(
   canvas.height = H
   const ctx = canvas.getContext('2d')!
 
-  // ─── 1. Draw Header Strip (White background) ────────────────────────────
-  ctx.fillStyle = '#FFFFFF'
+  // ─── 1. Draw Header Strip (Teak wood background) ────────────────────────
+  ctx.fillStyle = '#8B5E3C'
   ctx.fillRect(0, 0, W, headerHeight)
 
   // Brand name "Segun Bangla" - left aligned
-  ctx.fillStyle = '#000000'
+  ctx.fillStyle = '#FFFFFF'
   ctx.font = `bold ${brandFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.fillText('Segun Bangla', paddingX, headerHeight / 2)
 
   // Date - right aligned
-  ctx.fillStyle = '#555555'
+  ctx.fillStyle = '#FFFFFF'
   ctx.font = `${dateFontSize}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
   ctx.textAlign = 'right'
   ctx.fillText(data.date, W - paddingX, headerHeight / 2)
@@ -145,25 +148,79 @@ export async function generateAndDownloadSocialCard(
   if (data.imageUrl) {
     try {
       const img = await loadImage(data.imageUrl)
-      // Draw image to fill the image area (cover)
-      const imgAspect = img.naturalWidth / img.naturalHeight
-      const areaAspect = W / imageHeight
 
-      let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+      if (format === 'passport') {
+        // Passport format: show image as a small centered square with white border
+        // Fill the background with a soft gray
+        ctx.fillStyle = '#E8E0D8'
+        ctx.fillRect(0, imageTop, W, imageHeight)
 
-      if (imgAspect > areaAspect) {
-        // Image is wider - crop sides
-        sh = img.naturalHeight
-        sw = sh * areaAspect
-        sx = (img.naturalWidth - sw) / 2
+        // Calculate passport photo size (square, ~40% of image area width)
+        const passportSize = Math.round(W * 0.38)
+        const passportX = Math.round((W - passportSize) / 2)
+        const passportY = Math.round(imageTop + (imageHeight - passportSize) / 2)
+
+        // Draw white border (like a passport photo)
+        const borderSize = 6
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(passportX - borderSize, passportY - borderSize, passportSize + borderSize * 2, passportSize + borderSize * 2)
+
+        // Draw shadow under the photo
+        ctx.shadowColor = 'rgba(0,0,0,0.15)'
+        ctx.shadowBlur = 12
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 3
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(passportX - borderSize, passportY - borderSize, passportSize + borderSize * 2, passportSize + borderSize * 2)
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 0
+
+        // Draw the image centered and cropped to square
+        const imgMin = Math.min(img.naturalWidth, img.naturalHeight)
+        const imgSx = (img.naturalWidth - imgMin) / 2
+        const imgSy = (img.naturalHeight - imgMin) / 2
+        ctx.drawImage(img, imgSx, imgSy, imgMin, imgMin, passportX, passportY, passportSize, passportSize)
+
+        // Draw subtle watermark below the passport photo
+        ctx.fillStyle = 'rgba(0,0,0,0.08)'
+        ctx.font = `${Math.round(H * 0.016)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'top'
+        ctx.fillText('segunbangla.com', W / 2, passportY + passportSize + borderSize + 8)
       } else {
-        // Image is taller - crop top/bottom
-        sw = img.naturalWidth
-        sh = sw / areaAspect
-        sy = (img.naturalHeight - sh) / 2
-      }
+        // Standard format: draw image to fill the image area (cover)
+        const imgAspect = img.naturalWidth / img.naturalHeight
+        const areaAspect = W / imageHeight
 
-      ctx.drawImage(img, sx, sy, sw, sh, 0, imageTop, W, imageHeight)
+        let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+
+        if (imgAspect > areaAspect) {
+          // Image is wider - crop sides
+          sh = img.naturalHeight
+          sw = sh * areaAspect
+          sx = (img.naturalWidth - sw) / 2
+        } else {
+          // Image is taller - crop top/bottom
+          sw = img.naturalWidth
+          sh = sw / areaAspect
+          sy = (img.naturalHeight - sh) / 2
+        }
+
+        ctx.drawImage(img, sx, sy, sw, sh, 0, imageTop, W, imageHeight)
+
+        // Draw subtle watermark over the image
+        ctx.save()
+        ctx.translate(W / 2, imageTop + imageHeight / 2)
+        ctx.rotate(-Math.PI / 6)
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'
+        ctx.font = `bold ${Math.round(W * 0.06)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('www.segunbangla.com', 0, 0)
+        ctx.restore()
+      }
     } catch {
       // Fallback: gray placeholder
       ctx.fillStyle = '#f0f0f0'
@@ -185,9 +242,22 @@ export async function generateAndDownloadSocialCard(
     ctx.fillText('সেগুন বাংলা', W / 2, imageTop + imageHeight / 2)
   }
 
-  // ─── 3. Draw Footer (Solid Maroon) ──────────────────────────────────────
-  const footerTop = headerHeight + imageHeight
-  ctx.fillStyle = '#800000'
+  // ─── 3. Branding Strip (between image and footer) ───────────────────────
+  const brandingStripTop = headerHeight + imageHeight
+  ctx.fillStyle = '#000000'
+  ctx.fillRect(0, brandingStripTop, W, brandingStripHeight)
+
+  // Branding text centered in the strip
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = `bold ${Math.round(H * 0.022)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('সেগুন বাংলা · segunbangla.com', W / 2, brandingStripTop + brandingStripHeight / 2)
+
+  // ─── 4. Draw Footer (Solid Teak Wood) ───────────────────────────────────
+  const footerTop = brandingStripTop + brandingStripHeight
+
+  ctx.fillStyle = '#5C3317'
   ctx.fillRect(0, footerTop, W, footerHeight)
 
   // Title area - centered in the footer (leaving space for CTA at bottom)
@@ -219,7 +289,7 @@ export async function generateAndDownloadSocialCard(
   ctx.shadowOffsetX = 0
   ctx.shadowOffsetY = 0
 
-  // ─── 4. Draw CTA ────────────────────────────────────────────────────────
+  // ─── 5. Draw CTA ────────────────────────────────────────────────────────
   const ctaText = 'বিস্তারিত কমেন্টে'
   const ctaY = footerTop + footerHeight - Math.round(H * 0.035) - ctaFontSize
 
@@ -243,6 +313,14 @@ export async function generateAndDownloadSocialCard(
 
   // Draw CTA text
   ctx.fillText(ctaFullText, W / 2, ctaY)
+
+  // ─── 6. Branding Watermark ──────────────────────────────────────────────
+  const watermarkY = footerTop + footerHeight - Math.round(H * 0.012)
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'
+  ctx.font = `${Math.round(H * 0.016)}px "Hind Siliguri", "Noto Sans Bengali", Arial, sans-serif`
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'bottom'
+  ctx.fillText('www.segunbangla.com', W - paddingX, watermarkY)
 
   // ─── Convert to PNG and open in new tab ─────────────────────────────────
   onProgress?.('ছবি তৈরি হচ্ছে...')
@@ -309,11 +387,11 @@ export async function generateAndDownloadSocialCard(
     gap: 8px;
   }
   .btn-primary {
-    background: #800000;
+    background: #5C3317;
     color: #fff;
   }
   .btn-primary:hover {
-    background: #a00000;
+    background: #7A4A2A;
   }
   .btn-secondary {
     background: #444;
