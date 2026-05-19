@@ -31,7 +31,17 @@ function EditArticlePage() {
           setNotFound(true)
           return
         }
+        // Convert old single-category format to new multi-category format
+        if (articleData) {
+          if (!articleData.categoryIds && articleData.categoryId) {
+            articleData.categoryIds = [articleData.categoryId]
+          }
+          if (!articleData.subcategoryIds && articleData.subcategoryId) {
+            articleData.subcategoryIds = [articleData.subcategoryId]
+          }
+        }
         setArticle(articleData)
+
         setCategories(cats)
       } catch (error) {
         console.error('Error fetching article:', error)
@@ -45,7 +55,32 @@ function EditArticlePage() {
 
   const handleSubmit = async (data: any) => {
     try {
-      await updateArticle(articleId, data)
+      // Use first category as primary categoryId for backward compatibility
+      let categoryIds = data.categoryIds || []
+
+      // If isSpecial is checked, auto-assign to "special" category
+      if (data.isSpecial) {
+        const specialCat = categories.find(
+          (c) => c.slug === 'special' || c.slug === 'বিশেষ'
+        )
+        if (specialCat?.id && !categoryIds.includes(specialCat.id)) {
+          categoryIds = [...categoryIds, specialCat.id]
+        }
+      }
+
+      const primaryCategoryId = categoryIds.length > 0 ? categoryIds[0] : data.categoryId || ''
+      const subcategoryIds = data.subcategoryIds || []
+      const primarySubcategoryId = subcategoryIds.length > 0 ? subcategoryIds[0] : data.subcategoryId || ''
+
+      const articleData = {
+        ...data,
+        categoryId: primaryCategoryId,
+        categoryIds: categoryIds,
+        subcategoryId: primarySubcategoryId,
+        subcategoryIds: subcategoryIds,
+      }
+      await updateArticle(articleId, articleData)
+
       alert('নিবন্ধ সফলভাবে আপডেট হয়েছে')
       router.push('/admin/articles')
     } catch (error) {

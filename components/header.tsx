@@ -78,13 +78,18 @@ export function Header({ categories }: HeaderProps) {
 
   const handleMouseEnter = (categoryId: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    setActiveCategory(categoryId)
+    // 2 second delay before opening to prevent accidental hovers
+    timeoutRef.current = setTimeout(() => {
+      setActiveCategory(categoryId)
+    }, 2000)
   }
 
+
   const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {
       setActiveCategory(null)
-    }, 200)
+    }, 400)
   }
 
   const handleMegaMenuEnter = () => {
@@ -92,8 +97,12 @@ export function Header({ categories }: HeaderProps) {
   }
 
   const handleMegaMenuLeave = () => {
-    setActiveCategory(null)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      setActiveCategory(null)
+    }, 300)
   }
+
 
   // Get root subcategories (no parentId) for column 1
   const getRootSubs = (catId: string) => {
@@ -165,7 +174,7 @@ export function Header({ categories }: HeaderProps) {
             scrolled ? 'py-1' : 'py-6'
           }`}
         >
-          <Link href="/">
+          <a href="/">
             <img
               src="/logo.png"
               alt="সেগুন বাংলা"
@@ -173,7 +182,7 @@ export function Header({ categories }: HeaderProps) {
                 scrolled ? 'h-8' : 'h-14'
               }`}
             />
-          </Link>
+          </a>
         </div>
       </div>
 
@@ -369,7 +378,7 @@ export function Header({ categories }: HeaderProps) {
         </div>
       </div>
 
-      {/* Full-screen overlay menu - shows ALL categories (works on both mobile and desktop) */}
+      {/* Full-screen overlay menu - shows ALL categories in landscape/grid layout */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[100] bg-white">
           {/* Close button */}
@@ -386,36 +395,45 @@ export function Header({ categories }: HeaderProps) {
               </svg>
             </button>
           </div>
-          {/* Category list - ALL categories shown here */}
+          {/* Category grid - landscape/grid layout */}
           <div className="overflow-y-auto h-full pb-20">
-            {/* "সর্বশেষ" at top of overlay */}
-            <Link
-              href="/search"
-              className="block px-6 py-4 text-base font-bold text-white bg-[#8B0000] hover:bg-[#a00000] border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              সর্বশেষ
-            </Link>
-            {categories.map((category) => (
+            <div className="max-w-5xl mx-auto px-4 py-6">
+              {/* "সর্বশেষ" at top */}
               <Link
-                key={category.id}
-                href={`/category/${category.slug}`}
-                className="block px-6 py-4 text-base font-bold text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-50 border-b border-gray-100"
+                href="/search"
+                className="inline-block px-6 py-3 mb-6 text-base font-bold text-white bg-[#8B0000] hover:bg-[#a00000] rounded-lg transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {category.name}
+                সর্বশেষ
               </Link>
-            ))}
-            <Link
-              href="/search"
-              className="block px-6 py-4 text-base font-bold text-[#8B0000] hover:bg-gray-50 border-b border-gray-100"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              সার্চ
-            </Link>
+              {/* Categories in grid layout */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/category/${category.slug}`}
+                    className="flex items-center justify-center px-4 py-5 text-base font-bold text-[#1A1A1A] hover:text-[#8B0000] hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors text-center"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+              {/* Search link at bottom */}
+              <div className="mt-6 text-center">
+                <Link
+                  href="/search"
+                  className="inline-block px-6 py-3 text-base font-bold text-[#8B0000] hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  সার্চ
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
     </header>
   )
 }

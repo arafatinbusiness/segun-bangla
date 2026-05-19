@@ -6,10 +6,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getCategoryBySlug, getSubcategoriesByCategory, getAllCategories } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'
+
 import { Header } from '@/components/header'
 import { AdRenderer } from '@/components/ad-renderer'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category, Subcategory } from '@/lib/types'
+
+
 
 // ─── Utility: Time ago in Bengali ───────────────────────────────────────────
 function timeAgo(timestamp: number): string {
@@ -44,14 +47,20 @@ function truncate(text: string, maxLen: number): string {
 function HeroMainCard({ article }: { article: FirestoreArticle }) {
   return (
     <Link href={`/article/${article.slug}`} className="group block relative w-full h-full min-h-[380px] md:min-h-[520px] rounded-lg overflow-hidden bg-gray-100">
-      <Image
-        src={article.imageUrl}
-        alt={article.title}
-        fill
-        className="object-cover group-hover:scale-105 transition-transform duration-500"
-        sizes="(max-width: 768px) 100vw, 50vw"
-        priority
-      />
+      {article.imageUrl ? (
+        <Image
+          src={article.imageUrl}
+          alt={article.title}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          sizes="(max-width: 768px) 100vw, 50vw"
+          priority
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        </div>
+      )}
       {/* নিচে হালকা ডার্ক গ্রেডিয়েন্ট */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       {/* হেডলাইন - ইমেজের ওপর সরাসরি টেক্সট ওভারলে, বাম দিকে সাদা টেক্সট */}
@@ -70,13 +79,19 @@ function SecondaryFeatureCard({ article }: { article: FirestoreArticle }) {
   return (
     <Link href={`/article/${article.slug}`} className="group block">
       <div className="relative h-44 md:h-52 w-full rounded-lg overflow-hidden bg-gray-100 mb-3">
-        <Image
-          src={article.imageUrl}
-          alt={article.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          sizes="(max-width: 768px) 100vw, 25vw"
-        />
+        {article.imageUrl ? (
+          <Image
+            src={article.imageUrl}
+            alt={article.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 100vw, 25vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+        )}
       </div>
       {/* লাল রঙের বোল্ড সাব-হেডিং */}
       <span className="text-[#FF0000] text-xs font-bold uppercase tracking-wider">
@@ -165,13 +180,19 @@ function GridCard({ article }: { article: FirestoreArticle }) {
     <Link href={`/article/${article.slug}`} className="group block">
       {/* ইমেজ (উপরে) */}
       <div className="relative h-44 w-full rounded-lg overflow-hidden bg-gray-100 mb-3">
-        <Image
-          src={article.imageUrl}
-          alt={article.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        {article.imageUrl ? (
+          <Image
+            src={article.imageUrl}
+            alt={article.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+        )}
       </div>
       {/* লাল সাব-হেডিং */}
       <span className="text-[#FF0000] text-xs font-bold uppercase tracking-wider">
@@ -223,13 +244,19 @@ function ListRow({ article }: { article: FirestoreArticle }) {
         {/* ডানে: থাম্বনেইল ইমেজ - 16:9 */}
         <div className="w-2/5 shrink-0">
           <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100">
-            <Image
-              src={article.imageUrl}
-              alt={article.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-              sizes="20vw"
-            />
+            {article.imageUrl ? (
+              <Image
+                src={article.imageUrl}
+                alt={article.title}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="20vw"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -249,6 +276,92 @@ function SectionSeparator() {
 //  MAIN PAGE COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ─── Pagination Component ──────────────────────────────────────────────────
+function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}) {
+  if (totalPages <= 1) return null
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = []
+    const maxVisible = 7 // 1 2 3 4 5 ... 10
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      if (currentPage > 3) pages.push('ellipsis')
+
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
+
+      for (let i = start; i <= end; i++) pages.push(i)
+
+      if (currentPage < totalPages - 2) pages.push('ellipsis')
+      pages.push(totalPages)
+    }
+    return pages
+  }
+
+  const pageNumbers = getPageNumbers()
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 mt-10">
+      {/* Previous Button */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-2 text-sm font-bold rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        ‹ পূর্ববর্তী
+      </button>
+
+      {/* Page Numbers */}
+      {pageNumbers.map((page, idx) =>
+        page === 'ellipsis' ? (
+          <span key={`ellipsis-${idx}`} className="px-2 py-2 text-sm text-gray-400">
+            ...
+          </span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            className={`min-w-[40px] px-3 py-2 text-sm font-bold rounded-md transition-colors ${
+              page === currentPage
+                ? 'bg-[#FF0000] text-white'
+                : 'border border-gray-300 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {page}
+          </button>
+        )
+      )}
+
+      {/* Next Button */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-2 text-sm font-bold rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        পরবর্তী ›
+      </button>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  MAIN PAGE COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ARTICLES_PER_PAGE = 15
+
 function CategoryPage() {
   const params = useParams()
   const slug = params?.slug as string
@@ -256,9 +369,10 @@ function CategoryPage() {
   const [category, setCategory] = useState<Category | null>(null)
   const [allCategories, setAllCategories] = useState<Category[]>([])
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
-  const [articles, setArticles] = useState<FirestoreArticle[]>([])
+  const [allArticles, setAllArticles] = useState<FirestoreArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -279,11 +393,12 @@ function CategoryPage() {
 
         const [subcategoriesData, articlesData] = await Promise.all([
           getSubcategoriesByCategory(categoryData.id),
-          getArticlesByCategory(categoryData.id, 30),
+          getArticlesByCategory(categoryData.id, 200), // Fetch up to 200 articles
         ])
 
         setSubcategories(subcategoriesData)
-        setArticles(articlesData)
+        setAllArticles(articlesData)
+        setCurrentPage(1)
       } catch (error) {
         console.error('[v0] Error loading category page:', error)
         setNotFound(true)
@@ -293,15 +408,27 @@ function CategoryPage() {
     }
 
     if (slug) {
+      setAllArticles([])
+      setCurrentPage(1)
       fetchData()
     }
   }, [slug])
 
+  // ── Calculate pagination ─────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(allArticles.length / ARTICLES_PER_PAGE))
+  const paginatedArticles = allArticles.slice(0, currentPage * ARTICLES_PER_PAGE)
+
   // ── Split articles into sections ──────────────────────────────────────────
-  const heroArticle = articles[0] || null
-  const secondaryArticle = articles[1] || null
-  const gridArticles = articles.slice(2, 5) // only 3 articles for a single 3-column row
-  const listArticles = articles.slice(5)
+  const heroArticle = paginatedArticles[0] || null
+  const secondaryArticle = paginatedArticles[1] || null
+  const gridArticles = paginatedArticles.slice(2, 5) // only 3 articles for a single 3-column row
+  const listArticles = paginatedArticles.slice(5)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
@@ -343,7 +470,8 @@ function CategoryPage() {
   }
 
   // ── Empty state ───────────────────────────────────────────────────────────
-  if (articles.length === 0) {
+  if (allArticles.length === 0) {
+
     return (
       <>
         <Header categories={allCategories} />
@@ -421,7 +549,8 @@ function CategoryPage() {
               />
 
               {/* 'সর্বশেষ' এবং 'পঠিত' ট্যাবড উইজেট */}
-              <SidebarWidget articles={articles} />
+              <SidebarWidget articles={allArticles} />
+
             </div>
           </section>
 
@@ -470,9 +599,18 @@ function CategoryPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Pagination */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+
               </section>
             </>
           )}
+
         </div>
       </main>
     </>

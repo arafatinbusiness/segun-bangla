@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { getArticleBySlug, getRecentArticles } from '@/lib/services/article-queries'
-import { getAllCategories } from '@/lib/services/categories'
+import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
-import type { FirestoreArticle } from '@/lib/types'
-import type { Category } from '@/lib/types'
+import type { FirestoreArticle, Category, Subcategory } from '@/lib/types'
 
 function ArticlePage() {
   const params = useParams()
@@ -18,6 +17,7 @@ function ArticlePage() {
   const [article, setArticle] = useState<FirestoreArticle | null>(null)
   const [recentArticles, setRecentArticles] = useState<FirestoreArticle[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -38,6 +38,14 @@ function ArticlePage() {
         setArticle(articleData)
         setRecentArticles(recentData)
         setCategories(categoriesData)
+
+        // Load subcategories for the article's categories
+        if (articleData.categoryIds && articleData.categoryIds.length > 0) {
+          const subsResults = await Promise.all(
+            articleData.categoryIds.map(catId => getSubcategoriesByCategory(catId))
+          )
+          setSubcategories(subsResults.flat())
+        }
       } catch (error) {
         console.error('ত্রুটি নিবন্ধ লোড করছি:', error)
         setNotFound(true)
@@ -105,10 +113,52 @@ function ArticlePage() {
           {/* Article Header */}
           <article>
             <div className="mb-8">
+              {/* Category & Subcategory Breadcrumb */}
+              {article.categoryIds && article.categoryIds.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {article.categoryIds.map((catId, idx) => {
+                    const cat = categories.find(c => c.id === catId)
+                    if (!cat) return null
+                    return (
+                      <span key={catId} className="flex items-center gap-2">
+                        {idx > 0 && <span className="text-muted-foreground/40">|</span>}
+                        <a
+                          href={`/category/${cat.slug}`}
+                          className="text-[#FF0000] text-xs font-bold uppercase tracking-wider hover:underline"
+                        >
+                          {cat.name}
+                        </a>
+                      </span>
+                    )
+                  })}
+                  {article.subcategoryIds && article.subcategoryIds.length > 0 && article.categoryIds && (
+                    <>
+                      <span className="text-muted-foreground/40 mx-1">›</span>
+                      {article.subcategoryIds.map((subId, idx) => {
+                        const sub = subcategories.find(s => s.id === subId)
+                        const parentCat = categories.find(c => article.categoryIds!.includes(c.id!))
+                        const subSlug = sub?.slug || subId
+                        return (
+                          <span key={subId} className="flex items-center gap-2">
+                            {idx > 0 && <span className="text-muted-foreground/40">|</span>}
+                            <a
+                              href={parentCat ? `/category/${parentCat.slug}/${subSlug}` : '#'}
+                              className="text-[#FF0000] text-xs font-bold uppercase tracking-wider hover:underline"
+                            >
+                              {sub?.name || subId}
+                            </a>
+                          </span>
+                        )
+                      })}
+                    </>
+                  )}
+                </div>
+              )}
               <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
                 {article.title}
               </h1>
               <div className="flex flex-col gap-3 text-sm text-muted-foreground border-b pb-6">
+
                 <div className="flex items-center gap-2 flex-wrap">
                   {article.source && (
                     <>

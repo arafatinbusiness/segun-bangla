@@ -28,7 +28,7 @@ function HomePage() {
           getFeaturedArticles(10),
           getSpecialArticles(4),
           getRecentArticles(20),
-          getAllArticles(50),
+          getAllArticles(100),
           getAllCategories(),
         ])
         setLeadArticles(leadData)
@@ -137,11 +137,18 @@ function HomePage() {
                 <article className="group">
                   <a href={`/article/${specialArticlesList[0].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                      <img
-                        src={specialArticlesList[0].imageUrl}
-                        alt={specialArticlesList[0].title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {specialArticlesList[0].imageUrl ? (
+                        <img
+                          src={specialArticlesList[0].imageUrl}
+                          alt={specialArticlesList[0].title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        </div>
+                      )}
+
                     </div>
                     <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                       {specialArticlesList[0].source || 'বিশেষ'}
@@ -169,12 +176,19 @@ function HomePage() {
                 <article className="group pt-4 border-t border-[#f0f0f0]">
                   <a href={`/article/${specialArticlesList[2].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                      <img
-                        src={specialArticlesList[2].imageUrl}
-                        alt={specialArticlesList[2].title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {specialArticlesList[2].imageUrl ? (
+                        <img
+                          src={specialArticlesList[2].imageUrl}
+                          alt={specialArticlesList[2].title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        </div>
+                      )}
                     </div>
+
                     <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                       {specialArticlesList[2].source || 'বিশেষ'}
                     </span>
@@ -210,16 +224,23 @@ function HomePage() {
                     {mainArticle.excerpt}
                   </p>
                   <div className="relative h-64 md:h-80 rounded-lg overflow-hidden bg-muted">
-                    <img
-                      src={mainArticle.imageUrl}
-                      alt={mainArticle.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {mainArticle.imageUrl ? (
+                      <img
+                        src={mainArticle.imageUrl}
+                        alt={mainArticle.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                      </div>
+                    )}
                   </div>
+
                 </article>
               )}
               
-              {/* 2 more articles below the lead image - pushed down to align with SP-3/SP-4 */}
+              {/* 2 more articles below the lead image */}
               {(() => {
                 const specialIds = new Set(specialArticlesList.map(a => a.docId))
                 const extraArticles = [...allArticles]
@@ -228,17 +249,24 @@ function HomePage() {
                   .slice(0, 2)
                 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {extraArticles.map((article) => (
                       <article key={article.docId} className="group">
                         <a href={`/article/${article.slug}`}>
                           <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                            <img
-                              src={article.imageUrl}
-                              alt={article.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
+                            {article.imageUrl ? (
+                              <img
+                                src={article.imageUrl}
+                                alt={article.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                              </div>
+                            )}
                           </div>
+
                           <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                             {article.source || 'সর্বশেষ'}
                           </span>
@@ -278,12 +306,19 @@ function HomePage() {
                 <article className="group">
                   <a href={`/article/${specialArticlesList[1].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                      <img
-                        src={specialArticlesList[1].imageUrl}
-                        alt={specialArticlesList[1].title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {specialArticlesList[1].imageUrl ? (
+                        <img
+                          src={specialArticlesList[1].imageUrl}
+                          alt={specialArticlesList[1].title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        </div>
+                      )}
                     </div>
+
                     <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                       {specialArticlesList[1].source || 'বিশেষ'}
                     </span>
@@ -310,12 +345,19 @@ function HomePage() {
                 <article className="group pt-4 border-t border-[#f0f0f0]">
                   <a href={`/article/${specialArticlesList[3].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                      <img
-                        src={specialArticlesList[3].imageUrl}
-                        alt={specialArticlesList[3].title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {specialArticlesList[3].imageUrl ? (
+                        <img
+                          src={specialArticlesList[3].imageUrl}
+                          alt={specialArticlesList[3].title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        </div>
+                      )}
                     </div>
+
                     <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                       {specialArticlesList[3].source || 'বিশেষ'}
                     </span>
@@ -342,15 +384,22 @@ function HomePage() {
           {/* 2. Transitional Grid (Middle Row) - SP-5 to SP-8 */}
           <section className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
             {transitionalArticles.map((article, index) => (
-              <article key={article.docId} className="group">
-                <a href={`/article/${article.slug}`}>
+              <article key={article.docId} className="group flex flex-col">
+                <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
                   <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                    <img
-                      src={article.imageUrl}
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {article.imageUrl ? (
+                      <img
+                        src={article.imageUrl}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                      </div>
+                    )}
                   </div>
+
                   <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                     {article.source || 'বিশেষ'}
                   </span>
@@ -358,10 +407,10 @@ function HomePage() {
                     {article.title}
                   </h3>
                   <p
-                    className="text-[#444444] text-xs mt-1 leading-relaxed"
+                    className="text-[#444444] text-xs mt-1 leading-relaxed flex-1"
                     style={{
                       display: '-webkit-box',
-                      WebkitLineClamp: 3,
+                      WebkitLineClamp: 4,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                     }}
@@ -373,36 +422,48 @@ function HomePage() {
             ))}
           </section>
 
-          {/* 2.5 Special News Row (4 articles) - replaces old ad spot */}
+          {/* 2.5 Special News Row (4 articles) - no duplicates from above */}
           <section className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-8">
             {(() => {
-              // Use special articles first, then fill with latest by date
-              const specialIds = new Set(specialArticlesList.map(a => a.docId))
-              const latestArticles = [...allArticles]
-                .filter(a => !specialIds.has(a.docId) && a.status === 'published')
+              // Collect all article IDs already shown above to avoid duplicates
+              const alreadyShownIds = new Set<string>()
+              
+              // SP-1 to SP-4 (left/right sidebar)
+              specialArticlesList.forEach(a => { if (a.docId) alreadyShownIds.add(a.docId) })
+              // Lead article (center)
+              if (mainArticle?.docId) alreadyShownIds.add(mainArticle.docId)
+              // 2 extra articles below lead
+              const extraArticles = [...allArticles]
+                .filter(a => !alreadyShownIds.has(a.docId) && a.status === 'published' && a.docId !== mainArticle?.docId)
                 .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+                .slice(0, 2)
+              extraArticles.forEach(a => { if (a.docId) alreadyShownIds.add(a.docId) })
+              // SP-5 to SP-8 (transitional grid)
+              transitionalArticles.forEach(a => { if (a.docId) alreadyShownIds.add(a.docId) })
               
-              const rowArticles: FirestoreArticle[] = []
-              // Add special articles (up to 4)
-              for (const sa of specialArticlesList) {
-                if (rowArticles.length < 4) rowArticles.push(sa)
-              }
-              // Fill remaining slots with latest
-              for (const la of latestArticles) {
-                if (rowArticles.length >= 4) break
-                rowArticles.push(la)
-              }
+              // Get fresh articles not shown anywhere above
+              const freshArticles = [...allArticles]
+                .filter(a => !alreadyShownIds.has(a.docId) && a.status === 'published')
+                .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+                .slice(0, 4)
               
-              return rowArticles.map((article) => (
-                <article key={article.docId} className="group">
-                  <a href={`/article/${article.slug}`}>
+              return freshArticles.map((article) => (
+                <article key={article.docId} className="group flex flex-col">
+                  <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                      <img
-                        src={article.imageUrl}
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {article.imageUrl ? (
+                        <img
+                          src={article.imageUrl}
+                          alt={article.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        </div>
+                      )}
                     </div>
+
                     <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                       {article.source || 'বিশেষ'}
                     </span>
@@ -410,10 +471,10 @@ function HomePage() {
                       {article.title}
                     </h3>
                     <p
-                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      className="text-[#444444] text-xs mt-1 leading-relaxed flex-1"
                       style={{
                         display: '-webkit-box',
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: 4,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                       }}
@@ -428,10 +489,14 @@ function HomePage() {
 
           {/* 3. Category Specific Rows - skip categories with no articles */}
           {categories
-            .filter(cat => allArticles.some(article => article.categoryId === cat.id))
+            .filter(cat => allArticles.some(article => 
+              article.categoryIds?.includes(cat.id) || article.categoryId === cat.id
+            ))
             .slice(0, 3)
             .map((category, catIndex) => {
-            const categoryArticles = allArticles.filter(article => article.categoryId === category.id).slice(0, 7)
+            const categoryArticles = allArticles.filter(article => 
+              article.categoryIds?.includes(category.id) || article.categoryId === category.id
+            ).slice(0, 7)
             const leadCategoryArticle = categoryArticles[0]
             const listCategoryArticles = categoryArticles.slice(1, 7)
             
@@ -439,9 +504,14 @@ function HomePage() {
               <section key={category.id} className="mb-6">
                 {/* Category Header */}
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-[#000000] border-l-4 border-[#FF0000] pl-3 flex-1">
-                    {category.name}
-                  </h2>
+                  <a
+                    href={`/category/${category.slug}`}
+                    className="flex-1 group"
+                  >
+                    <h2 className="text-xl font-bold text-[#000000] border-l-4 border-[#FF0000] pl-3 group-hover:text-[#FF0000] transition-colors">
+                      {category.name}
+                    </h2>
+                  </a>
                   <a
                     href={`/category/${category.slug}`}
                     className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider"
@@ -449,6 +519,7 @@ function HomePage() {
                     সব দেখুন →
                   </a>
                 </div>
+
 
                 {/* Multi-Ad Break - 3 ads per category row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -472,18 +543,25 @@ function HomePage() {
                 {/* Lead + List Combo */}
                 {categoryArticles.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    {/* Lead Thumbnail + Heading (First Column) */}
+                    {/* Lead Thumbnail + Heading (First Column) - fills full height */}
                     {leadCategoryArticle && (
-                      <div className="md:col-span-1">
-                        <article className="group">
-                          <a href={`/article/${leadCategoryArticle.slug}`}>
+                      <div className="md:col-span-1 flex">
+                        <article className="group flex flex-col w-full">
+                          <a href={`/article/${leadCategoryArticle.slug}`} className="flex flex-col flex-1">
                             <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                              <img
-                                src={leadCategoryArticle.imageUrl}
-                                alt={leadCategoryArticle.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
+                              {leadCategoryArticle.imageUrl ? (
+                                <img
+                                  src={leadCategoryArticle.imageUrl}
+                                  alt={leadCategoryArticle.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                                </div>
+                              )}
                             </div>
+
                             <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                               {category.name}
                             </span>
@@ -491,10 +569,10 @@ function HomePage() {
                               {leadCategoryArticle.title}
                             </h3>
                             <p
-                              className="text-[#444444] text-xs mt-1 leading-relaxed"
+                              className="text-[#444444] text-xs mt-1 leading-relaxed flex-1"
                               style={{
                                 display: '-webkit-box',
-                                WebkitLineClamp: 3,
+                                WebkitLineClamp: 6,
                                 WebkitBoxOrient: 'vertical',
                                 overflow: 'hidden',
                               }}
@@ -513,12 +591,19 @@ function HomePage() {
                           <article key={article.docId} className="group">
                             <a href={`/article/${article.slug}`}>
                               <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                                <img
-                                  src={article.imageUrl}
-                                  alt={article.title}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
+                                {article.imageUrl ? (
+                                  <img
+                                    src={article.imageUrl}
+                                    alt={article.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                                  </div>
+                                )}
                               </div>
+
                               <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
                                 {category.name}
                               </span>

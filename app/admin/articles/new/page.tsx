@@ -32,11 +32,33 @@ function NewArticlePage() {
 
   const handleSubmit = async (data: any) => {
     try {
+      // Use first category as primary categoryId for backward compatibility
+      let categoryIds = data.categoryIds || []
+
+      // If isSpecial is checked, auto-assign to "special" category
+      if (data.isSpecial) {
+        const specialCat = categories.find(
+          (c) => c.slug === 'special' || c.slug === 'বিশেষ'
+        )
+        if (specialCat?.id && !categoryIds.includes(specialCat.id)) {
+          categoryIds = [...categoryIds, specialCat.id]
+        }
+      }
+
+      const primaryCategoryId = categoryIds.length > 0 ? categoryIds[0] : data.categoryId || ''
+      const subcategoryIds = data.subcategoryIds || []
+      const primarySubcategoryId = subcategoryIds.length > 0 ? subcategoryIds[0] : data.subcategoryId || ''
+
       const articleData = {
         ...data,
+        categoryId: primaryCategoryId,
+        categoryIds: categoryIds,
+        subcategoryId: primarySubcategoryId,
+        subcategoryIds: subcategoryIds,
         authorId: user?.uid || 'unknown',
       }
       const articleId = await createArticle(articleData)
+
       if (articleId) {
         alert('নিবন্ধ সফলভাবে তৈরি হয়েছে')
         router.push('/admin/articles')

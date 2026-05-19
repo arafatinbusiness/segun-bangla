@@ -32,7 +32,9 @@ export interface Article {
   excerpt: string
   imageUrl: string
   categoryId: string
+  categoryIds?: string[]
   subcategoryId?: string
+  subcategoryIds?: string[]
   authorId: string
   status: 'draft' | 'published' | 'scheduled'
   isLead: boolean
@@ -44,6 +46,7 @@ export interface Article {
   tags?: string[]
   source?: string
 }
+
 
 export interface FirestoreArticle extends Article {
   docId: string

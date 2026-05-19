@@ -63,15 +63,16 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       excerpt: '',
       imageUrl: '',
       categoryId: '',
+      categoryIds: [],
       subcategoryId: '',
+      subcategoryIds: [],
       source: '',
       isLead: false,
       isSpecial: false,
-      status: 'published',
     }
   )
 
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [allSubcategories, setAllSubcategories] = useState<Subcategory[]>([])
   const [subcategoriesLoading, setSubcategoriesLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [imageMode, setImageMode] = useState<'url' | 'upload'>('url')
@@ -81,43 +82,61 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Load subcategories when category changes
+  // Load subcategories for ALL selected categories
   useEffect(() => {
-    if (formData.categoryId) {
+    const selectedIds = formData.categoryIds || []
+    if (selectedIds.length > 0) {
       setSubcategoriesLoading(true)
-      getSubcategoriesByCategory(formData.categoryId)
-        .then((subs) => {
-          setSubcategories(subs)
-          // If editing and the article has a subcategoryId, keep it
-          // If the subcategory is no longer valid, clear it
-          if (formData.subcategoryId && !subs.find(s => s.id === formData.subcategoryId)) {
-            setFormData((prev) => ({ ...prev, subcategoryId: '' }))
+      Promise.all(selectedIds.map((catId) => getSubcategoriesByCategory(catId)))
+        .then((results) => {
+          const merged = results.flat()
+          // Deduplicate by id
+          const unique = merged.filter((sub, idx, self) => self.findIndex(s => s.id === sub.id) === idx)
+          setAllSubcategories(unique)
+          // Clean up subcategoryIds that are no longer valid
+          const currentSubIds = formData.subcategoryIds || []
+          const validSubIds = currentSubIds.filter((sid) => unique.some((s) => s.id === sid))
+          if (validSubIds.length !== currentSubIds.length) {
+            setFormData((prev) => ({ ...prev, subcategoryIds: validSubIds }))
           }
         })
         .catch((err) => console.error('Error loading subcategories:', err))
         .finally(() => setSubcategoriesLoading(false))
     } else {
-      setSubcategories([])
-      setFormData((prev) => ({ ...prev, subcategoryId: '' }))
+      setAllSubcategories([])
+      setFormData((prev) => ({ ...prev, subcategoryIds: [] }))
     }
-  }, [formData.categoryId])
+  }, [formData.categoryIds])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, categoryId: value, subcategoryId: '' }))
+  // Toggle a category on/off
+  const handleCategoryToggle = (catId: string) => {
+    setFormData((prev) => {
+      const current = prev.categoryIds || []
+      const exists = current.includes(catId)
+      const updated = exists ? current.filter((id) => id !== catId) : [...current, catId]
+      return { ...prev, categoryIds: updated }
+    })
   }
 
-  const handleSubcategoryChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, subcategoryId: value }))
+  // Toggle a subcategory on/off
+  const handleSubcategoryToggle = (subId: string) => {
+    setFormData((prev) => {
+      const current = prev.subcategoryIds || []
+      const exists = current.includes(subId)
+      const updated = exists ? current.filter((id) => id !== subId) : [...current, subId]
+      return { ...prev, subcategoryIds: updated }
+    })
   }
 
   const handleCheckChange = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -376,98 +395,102 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           </p>
         </div>
 
-        {/* Category */}
+        {/* Published At - Date/Time picker for reordering special news */}
         <div className="space-y-2">
-          <Label htmlFor="category" className="text-foreground font-semibold">বিভাগ</Label>
-          <Select value={formData.categoryId || ''} onValueChange={handleSelectChange}>
-            <SelectTrigger id="category" className="w-full">
-              <SelectValue placeholder="বিভাগ নির্বাচন করুন" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="publishedAt" className="text-foreground font-semibold">প্রকাশের তারিখ ও সময়</Label>
+          <p className="text-xs text-muted-foreground">
+            বিশেষ সংবাদ সাজানোর জন্য তারিখ পরিবর্তন করুন (নতুনতর = উপরে)
+          </p>
+          <Input
+            id="publishedAt"
+            type="datetime-local"
+            value={
+              formData.publishedAt
+                ? new Date(formData.publishedAt).toISOString().slice(0, 16)
+                : new Date().toISOString().slice(0, 16)
+            }
+            onChange={(e) => {
+              const val = e.target.value
+              if (val) {
+                const timestamp = new Date(val).getTime()
+                setFormData((prev) => ({ ...prev, publishedAt: timestamp }))
+              }
+            }}
+            className="w-full"
+          />
         </div>
 
-        {/* Subcategory - shown only when category has subcategories */}
-        {formData.categoryId && subcategories.length > 0 && (
-          <div className="space-y-2">
-            <Label htmlFor="subcategory" className="text-foreground font-semibold">
-              উপবিভাগ
-              <span className="text-xs text-muted-foreground ml-2">(আবশ্যক)</span>
-            </Label>
-            <Select value={formData.subcategoryId || ''} onValueChange={handleSubcategoryChange}>
-              <SelectTrigger id="subcategory" className="w-full">
-                <SelectValue placeholder="উপবিভাগ নির্বাচন করুন" />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Render root subcategories (no parentId) */}
-                {subcategories
-                  .filter((sub) => !sub.parentId)
-                  .map((sub) => (
-                    <SubcategoryTreeItem
+
+        {/* Categories - Multi-select checkboxes */}
+        <div className="space-y-3">
+          <Label className="text-foreground font-semibold">বিভাগ সমূহ</Label>
+          <p className="text-xs text-muted-foreground">এক বা একাধিক বিভাগ নির্বাচন করুন</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {categories.map((cat) => {
+              const isSelected = (formData.categoryIds || []).includes(cat.id!)
+              return (
+                <label
+                  key={cat.id}
+                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                  }`}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => handleCategoryToggle(cat.id!)}
+                  />
+                  <span className="text-sm font-medium">{cat.name}</span>
+                </label>
+              )
+            })}
+          </div>
+          {(formData.categoryIds || []).length === 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              অনুগ্রহ করে অন্তত একটি বিভাগ নির্বাচন করুন।
+            </p>
+          )}
+        </div>
+
+        {/* Subcategories - Multi-select checkboxes (shown when categories are selected) */}
+        {(formData.categoryIds || []).length > 0 && (
+          <div className="space-y-3">
+            <Label className="text-foreground font-semibold">উপবিভাগ সমূহ</Label>
+            <p className="text-xs text-muted-foreground">ঐচ্ছিক — এক বা একাধিক উপবিভাগ নির্বাচন করুন</p>
+            {subcategoriesLoading ? (
+              <div className="h-10 rounded-lg border bg-muted/30 flex items-center px-3 text-sm text-muted-foreground">
+                উপবিভাগ লোড হচ্ছে...
+              </div>
+            ) : allSubcategories.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {allSubcategories.map((sub) => {
+                  const isSelected = (formData.subcategoryIds || []).includes(sub.id!)
+                  return (
+                    <label
                       key={sub.id}
-                      subcategory={sub}
-                      allSubcategories={subcategories}
-                      depth={0}
-                    />
-                  ))}
-              </SelectContent>
-            </Select>
-            {!formData.subcategoryId && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                এই বিভাগে উপবিভাগ রয়েছে। অনুগ্রহ করে একটি উপবিভাগ নির্বাচন করুন।
-              </p>
+                      className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => handleSubcategoryToggle(sub.id!)}
+                      />
+                      <span className="text-sm font-medium">{sub.name}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">নির্বাচিত বিভাগে কোনো উপবিভাগ নেই।</p>
             )}
           </div>
         )}
 
-        {/* Subcategory loading state */}
-        {formData.categoryId && subcategoriesLoading && (
-          <div className="space-y-2">
-            <Label className="text-foreground font-semibold">উপবিভাগ</Label>
-            <div className="h-10 rounded-lg border bg-muted/30 flex items-center px-3 text-sm text-muted-foreground">
-              উপবিভাগ লোড হচ্ছে...
-            </div>
-          </div>
-        )}
 
-        {/* Status */}
-        <div className="space-y-2">
-          <Label htmlFor="status" className="text-foreground font-semibold">স্ট্যাটাস</Label>
-          <Select 
-            value={formData.status || 'draft'} 
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value as 'draft' | 'published' | 'scheduled' }))}
-          >
-            <SelectTrigger id="status" className="w-full">
-              <SelectValue placeholder="স্ট্যাটাস নির্বাচন করুন" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                  খসড়া (Draft)
-                </div>
-              </SelectItem>
-              <SelectItem value="published">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  প্রকাশিত (Published)
-                </div>
-              </SelectItem>
-              <SelectItem value="scheduled">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
-                  নির্ধারিত (Scheduled)
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         {/* Checkboxes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6">

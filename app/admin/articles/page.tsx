@@ -7,8 +7,20 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, AlertTriangle, X, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import Link from 'next/link'
+
 import { generateAndDownloadSocialCard } from '@/lib/social-card-generator'
 import type { SocialCardFormat } from '@/lib/social-card-generator'
 import type { FirestoreArticle, Category } from '@/lib/types'
@@ -21,9 +33,9 @@ function ArticlesPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'scheduled'>('all')
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
   const [deleting, setDeleting] = useState(false)
+
   const [lastDoc, setLastDoc] = useState<any>(null)
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -65,11 +77,20 @@ function ArticlesPage() {
     return category?.name || categoryId
   }
 
+  const getCategoryNames = (article: FirestoreArticle): string => {
+    const ids = article.categoryIds || (article.categoryId ? [article.categoryId] : [])
+    return ids.map(id => {
+      const cat = categories.find(c => c.id === id)
+      return cat?.name || id
+    }).join(', ')
+  }
+
+
   const filteredArticles = articles.filter((article) => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || article.status === statusFilter
-    return matchesSearch && matchesStatus
+    return matchesSearch
   })
+
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -108,7 +129,8 @@ function ArticlesPage() {
     try {
       await deleteArticle(articleId)
       setArticles((prev) => prev.filter((a) => a.docId !== articleId))
-      setDeleteConfirm(null)
+      // Dialog closes automatically via AlertDialog
+
     } catch (error) {
       console.error('Error deleting article:', error)
       alert('নিবন্ধ মুছতে ত্রুটি হয়েছে')
@@ -145,7 +167,7 @@ function ArticlesPage() {
       
       await generateAndDownloadSocialCard(
         { title: article.title, date: dateStr, imageUrl: article.imageUrl },
-        `${format}-${article.slug}.png`,
+        `Segun Bangla - ${article.slug}.png`,
         format,
         (msg) => {
           if (msg) setProgressMsg(msg)
@@ -209,19 +231,7 @@ function ArticlesPage() {
               className="pl-9"
             />
           </div>
-          <div className="flex gap-2">
-            {(['all', 'published', 'draft', 'scheduled'] as const).map((status) => (
-              <Button
-                key={status}
-                variant={statusFilter === status ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter(status)}
-                className="whitespace-nowrap"
-              >
-                {status === 'all' ? 'সব' : status === 'published' ? 'প্রকাশিত' : status === 'draft' ? 'খসড়া' : 'নির্ধারিত'}
-              </Button>
-            ))}
-          </div>
+
         </div>
       </Card>
 
@@ -265,8 +275,9 @@ function ArticlesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">
-                      {getCategoryName(article.categoryId)}
+                      {getCategoryNames(article)}
                     </td>
+
                     <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">
                       <div className="flex items-center gap-1">
                         <Eye className="w-3.5 h-3.5" />
@@ -353,33 +364,36 @@ function ArticlesPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                         </Link>
-                        {deleteConfirm === article.docId ? (
-                          <div className="flex items-center gap-1">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <button
-                              onClick={() => handleDelete(article.docId!)}
-                              disabled={deleting}
-                              className="p-2 text-red-600 hover:text-red-700 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                              title="নিশ্চিত করুন"
+                              className="p-2 text-muted-foreground hover:text-red-600 transition-colors rounded-lg hover:bg-muted"
+                              title="মুছুন"
                             >
-                              <AlertTriangle className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => setDeleteConfirm(null)}
-                              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
-                              title="বাতিল"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeleteConfirm(article.docId!)}
-                            className="p-2 text-muted-foreground hover:text-red-600 transition-colors rounded-lg hover:bg-muted"
-                            title="মুছুন"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>নিবন্ধটি মুছবেন?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                আপনি কি নিশ্চিতভাবে "{article.title}" নিবন্ধটি মুছতে চান? 
+                                এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(article.docId!)}
+                                disabled={deleting}
+                                className="bg-red-600 text-white hover:bg-red-700"
+                              >
+                                {deleting ? 'মুছছে...' : 'মুছুন'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
                       </div>
                     </td>
                   </tr>
@@ -392,11 +406,12 @@ function ArticlesPage() {
             <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">কোন নিবন্ধ পাওয়া যায়নি</h3>
             <p className="text-muted-foreground mb-6">
-              {searchQuery || statusFilter !== 'all'
+              {searchQuery
                 ? 'আপনার ফিল্টারের সাথে মিলে এমন কোন নিবন্ধ নেই'
                 : 'এখনও কোন নিবন্ধ তৈরি করা হয়নি'}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
+            {!searchQuery && (
+
               <Link href="/admin/articles/new">
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
                   <Plus className="w-4 h-4" />

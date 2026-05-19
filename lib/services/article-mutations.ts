@@ -9,12 +9,13 @@ export async function createArticle(articleData: Partial<Article>): Promise<stri
     const now = Date.now()
     const docRef = await addDoc(collection(db, ARTICLES_COLLECTION), {
       ...articleData,
-      status: articleData.status || 'draft',
+      status: 'published',
       publishedAt: now,
       updatedAt: now,
       viewCount: 0,
       isFeatured: false,
     })
+
     console.log('[v0] Article created successfully with ID:', docRef.id)
     return docRef.id
   } catch (error) {

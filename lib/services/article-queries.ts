@@ -108,7 +108,24 @@ export async function getSpecialArticles(limitCount: number = 4): Promise<Firest
     })) as FirestoreArticle[]
   } catch (error) {
     console.error('[v0] Error fetching special articles:', error)
-    return []
+    // Fallback: get recent published articles without isSpecial filter
+    try {
+      const fallbackQ = query(
+        collection(db, ARTICLES_COLLECTION),
+        where('status', '==', 'published'),
+        where('publishedAt', '<=', Date.now()),
+        orderBy('publishedAt', 'desc'),
+        limit(limitCount)
+      )
+      const snapshot = await getDocs(fallbackQ)
+      return snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        docId: doc.id,
+      })) as FirestoreArticle[]
+    } catch (fallbackError) {
+      console.error('[v0] Error fetching fallback articles:', fallbackError)
+      return []
+    }
   }
 }
 
@@ -117,8 +134,31 @@ export async function getArticlesByCategory(
   pageSize: number = 12,
   pageNumber: number = 0
 ): Promise<FirestoreArticle[]> {
+  // Try array-contains first (new format), fallback to single categoryId (old format)
   try {
     const q = query(
+      collection(db, ARTICLES_COLLECTION),
+      where('categoryIds', 'array-contains', categoryId),
+      where('status', '==', 'published'),
+      where('publishedAt', '<=', Date.now()),
+      orderBy('publishedAt', 'desc'),
+      limit(pageSize)
+    )
+    const snapshot = await getDocs(q)
+    if (!snapshot.empty) {
+      return snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        docId: doc.id,
+      })) as FirestoreArticle[]
+    }
+  } catch (e) {
+    // array-contains query may fail if index doesn't exist - fall through to fallback
+    console.warn('[v0] categoryIds query failed, trying categoryId fallback:', e)
+  }
+
+  // Fallback: try single categoryId for backward compatibility
+  try {
+    const fallbackQ = query(
       collection(db, ARTICLES_COLLECTION),
       where('categoryId', '==', categoryId),
       where('status', '==', 'published'),
@@ -126,16 +166,59 @@ export async function getArticlesByCategory(
       orderBy('publishedAt', 'desc'),
       limit(pageSize)
     )
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const fallbackSnapshot = await getDocs(fallbackQ)
+    return fallbackSnapshot.docs.map((doc) => ({
       ...doc.data(),
       docId: doc.id,
     })) as FirestoreArticle[]
   } catch (error) {
-    console.error('[v0] Error fetching articles by category:', error)
+    console.error('[v0] Error fetching articles by category (fallback):', error)
     return []
   }
 }
+
+
+export async function getArticlesByCategoryPaginated(
+  categoryId: string,
+  pageSize: number = 12,
+  lastDoc?: any
+): Promise<{ articles: FirestoreArticle[]; lastVisible: any; hasMore: boolean }> {
+  try {
+    let q
+    if (lastDoc) {
+      q = query(
+        collection(db, ARTICLES_COLLECTION),
+        where('categoryId', '==', categoryId),
+        where('status', '==', 'published'),
+        where('publishedAt', '<=', Date.now()),
+        orderBy('publishedAt', 'desc'),
+        startAfter(lastDoc),
+        limit(pageSize)
+      )
+    } else {
+      q = query(
+        collection(db, ARTICLES_COLLECTION),
+        where('categoryId', '==', categoryId),
+        where('status', '==', 'published'),
+        where('publishedAt', '<=', Date.now()),
+        orderBy('publishedAt', 'desc'),
+        limit(pageSize)
+      )
+    }
+    const snapshot = await getDocs(q)
+    const articles = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      docId: doc.id,
+    })) as FirestoreArticle[]
+    const lastVisible = snapshot.docs[snapshot.docs.length - 1]
+    const hasMore = snapshot.docs.length === pageSize
+    return { articles, lastVisible, hasMore }
+  } catch (error) {
+    console.error('[v0] Error fetching paginated articles by category:', error)
+    return { articles: [], lastVisible: null, hasMore: false }
+  }
+}
+
 
 export async function getArticlesBySubcategory(
   subcategoryId: string,
