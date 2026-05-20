@@ -178,7 +178,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
 
   // Generate slug from title - uses transliteration for Bengali text
   const generateSlug = () => {
-    if (!formData.title || formData.slug) return
+    if (!formData.title) return
     const slug = generateCleanSlug(formData.title)
     setFormData((prev) => ({ ...prev, slug }))
   }
@@ -243,7 +243,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           onChange={(value) => setFormData((prev) => ({ ...prev, slug: value }))}
           onAutoGenerate={() => generateCleanSlug(formData.title || '')}
           required
-          disabled={!!article}
           basePath="/article/"
           placeholder="article-slug"
         />
