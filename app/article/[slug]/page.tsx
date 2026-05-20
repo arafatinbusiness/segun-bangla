@@ -247,7 +247,10 @@ function ArticlePage() {
                   </div>
                   {/* Image Caption */}
                   {article.imageCaption && (
-                    <p className="text-xs text-muted-foreground text-center py-1.5 px-3 bg-muted/50 border-t italic">
+                    <p className={`text-xs text-muted-foreground py-1.5 px-3 bg-muted/50 border-t italic ${
+                      (article.imageCaptionAlign || 'left') === 'center' ? 'text-center' :
+                      (article.imageCaptionAlign || 'left') === 'right' ? 'text-right' : 'text-left'
+                    }`}>
                       {article.imageCaption}
                     </p>
                   )}

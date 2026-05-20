@@ -639,14 +639,40 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           {/* Image Caption */}
           <div className="mt-3">
             <Label htmlFor="imageCaption" className="text-xs text-muted-foreground mb-1.5 block">ছবির ক্যাপশন</Label>
-            <Input
-              id="imageCaption"
-              name="imageCaption"
-              value={formData.imageCaption || ''}
-              onChange={handleChange}
-              placeholder="ছবির নিচে ক্যাপশন লিখুন..."
-              className="w-full text-sm"
-            />
+            <div className="flex gap-2 items-start">
+              <div className="flex-1">
+                <Input
+                  id="imageCaption"
+                  name="imageCaption"
+                  value={formData.imageCaption || ''}
+                  onChange={handleChange}
+                  placeholder="ছবির নিচে ক্যাপশন লিখুন..."
+                  className="w-full text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                <span className="text-[10px] text-muted-foreground">সারিবদ্ধ:</span>
+                {[
+                  { value: 'left' as const, label: 'বাম', icon: '⬅' },
+                  { value: 'center' as const, label: 'মাঝ', icon: '⬌' },
+                  { value: 'right' as const, label: 'ডান', icon: '➡' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, imageCaptionAlign: opt.value }))}
+                    title={opt.label}
+                    className={`px-1.5 py-1 text-[10px] rounded border transition-colors ${
+                      (formData.imageCaptionAlign || 'left') === opt.value
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

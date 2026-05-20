@@ -34,6 +34,7 @@ export interface Article {
   imageSize?: 'landscape' | 'portrait' | 'square' | 'full'
   imageFocus?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   imageCaption?: string
+  imageCaptionAlign?: 'left' | 'center' | 'right'
   shoulder?: string
   shoulderColor?: string
   shoulderTextColor?: string
