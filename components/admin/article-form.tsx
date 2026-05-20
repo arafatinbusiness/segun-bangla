@@ -251,26 +251,28 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         {/* Excerpt */}
         <div className="space-y-2">
           <Label htmlFor="excerpt" className="text-foreground font-semibold">সংক্ষিপ্ত বর্ণনা</Label>
-          <div className="flex items-center gap-2 mb-2">
-            <label className="text-xs text-muted-foreground">ফন্টের রঙ:</label>
-            <input
-              type="color"
-              value={formData.excerptColor || '#111827'}
-              onChange={(e) => setFormData((prev) => ({ ...prev, excerptColor: e.target.value }))}
-              className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
-              title="সংক্ষিপ্ত বর্ণনার ফন্টের রঙ নির্বাচন করুন"
+          <div className="relative">
+            <Textarea
+              id="excerpt"
+              name="excerpt"
+              value={formData.excerpt || ''}
+              onChange={handleChange}
+              placeholder="নিবন্ধের সংক্ষিপ্ত বর্ণনা"
+              rows={3}
+              className="w-full"
             />
-            <span className="text-[10px] text-muted-foreground">(ডিফল্ট: গাঢ় কালো)</span>
+            <div className="absolute top-2 right-2 flex items-center gap-1" title="ফন্টের রঙ">
+              <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.excerptColor || '#111827' }} />
+              <input
+                type="color"
+                value={formData.excerptColor || '#111827'}
+                onChange={(e) => setFormData((prev) => ({ ...prev, excerptColor: e.target.value }))}
+                className="w-0 h-0 opacity-0 absolute pointer-events-none"
+                id="excerptColor"
+              />
+              <label htmlFor="excerptColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">রঙ</label>
+            </div>
           </div>
-          <Textarea
-            id="excerpt"
-            name="excerpt"
-            value={formData.excerpt || ''}
-            onChange={handleChange}
-            placeholder="নিবন্ধের সংক্ষিপ্ত বর্ণনা"
-            rows={3}
-            className="w-full"
-          />
         </div>
 
         {/* Shoulder (শোল্ডার) - Text above title */}
@@ -287,39 +289,40 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 className="w-full"
               />
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <label className="text-xs text-muted-foreground">পটভূমি:</label>
-              <input
-                type="color"
-                value={formData.shoulderColor || '#FF0000'}
-                onChange={(e) => setFormData((prev) => ({ ...prev, shoulderColor: e.target.value }))}
-                className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
-                title="শোল্ডারের পটভূমির রঙ নির্বাচন করুন"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <label className="text-xs text-muted-foreground">টেক্সট:</label>
-              <input
-                type="color"
-                value={formData.shoulderTextColor || '#ffffff'}
-                onChange={(e) => setFormData((prev) => ({ ...prev, shoulderTextColor: e.target.value }))}
-                className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
-                title="শোল্ডারের টেক্সটের রঙ নির্বাচন করুন"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <label className="text-xs text-muted-foreground">ফন্ট:</label>
+            <div className="flex items-center gap-1 shrink-0 flex-wrap">
+              <div className="flex items-center gap-1" title="পটভূমির রঙ">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.shoulderColor || '#FF0000' }} />
+                <input
+                  type="color"
+                  value={formData.shoulderColor || '#FF0000'}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, shoulderColor: e.target.value }))}
+                  className="w-0 h-0 opacity-0 absolute pointer-events-none"
+                  id="shoulderBgColor"
+                />
+                <label htmlFor="shoulderBgColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">পট</label>
+              </div>
+              <div className="flex items-center gap-1" title="টেক্সটের রঙ">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.shoulderTextColor || '#ffffff' }} />
+                <input
+                  type="color"
+                  value={formData.shoulderTextColor || '#ffffff'}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, shoulderTextColor: e.target.value }))}
+                  className="w-0 h-0 opacity-0 absolute pointer-events-none"
+                  id="shoulderTextColor"
+                />
+                <label htmlFor="shoulderTextColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">টেক্সট</label>
+              </div>
               <select
                 value={formData.shoulderFontSize || 'sm'}
                 onChange={(e) => setFormData((prev) => ({ ...prev, shoulderFontSize: e.target.value }))}
-                className="h-8 text-xs rounded border bg-background px-1.5 cursor-pointer"
-                title="শোল্ডারের ফন্টের সাইজ নির্বাচন করুন"
+                className="h-6 text-[10px] rounded border bg-background px-1 cursor-pointer"
+                title="ফন্ট সাইজ"
               >
-                <option value="xs">অতি ছোট</option>
+                <option value="xs">অ.ছোট</option>
                 <option value="sm">ছোট</option>
-                <option value="base">মাঝারি</option>
+                <option value="base">মাঝা</option>
                 <option value="lg">বড়</option>
-                <option value="xl">অতি বড়</option>
+                <option value="xl">অ.বড়</option>
               </select>
             </div>
           </div>
@@ -329,26 +332,28 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         <div className="space-y-2">
           <Label className="text-foreground font-semibold">বুলেটিন পয়েন্ট <span className="text-xs text-muted-foreground font-normal">(শিরোনামের নিচে মূল পয়েন্ট, সর্বোচ্চ ১০টি)</span></Label>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <label className="text-xs text-muted-foreground">ফন্টের রঙ:</label>
-            <input
-              type="color"
-              value={formData.bulletColor || '#374151'}
-              onChange={(e) => setFormData((prev) => ({ ...prev, bulletColor: e.target.value }))}
-              className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
-              title="বুলেটিন পয়েন্টের ফন্টের রঙ নির্বাচন করুন"
-            />
-            <label className="text-xs text-muted-foreground ml-2">ফন্ট সাইজ:</label>
+            <div className="flex items-center gap-1" title="ফন্টের রঙ">
+              <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.bulletColor || '#374151' }} />
+              <input
+                type="color"
+                value={formData.bulletColor || '#374151'}
+                onChange={(e) => setFormData((prev) => ({ ...prev, bulletColor: e.target.value }))}
+                className="w-0 h-0 opacity-0 absolute pointer-events-none"
+                id="bulletColor"
+              />
+              <label htmlFor="bulletColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">রঙ</label>
+            </div>
             <select
               value={formData.bulletFontSize || 'sm'}
               onChange={(e) => setFormData((prev) => ({ ...prev, bulletFontSize: e.target.value }))}
-              className="h-8 text-xs rounded border bg-background px-1.5 cursor-pointer"
-              title="বুলেটিন পয়েন্টের ফন্টের সাইজ নির্বাচন করুন"
+              className="h-6 text-[10px] rounded border bg-background px-1 cursor-pointer"
+              title="ফন্ট সাইজ"
             >
-              <option value="xs">অতি ছোট</option>
+              <option value="xs">অ.ছোট</option>
               <option value="sm">ছোট</option>
-              <option value="base">মাঝারি</option>
+              <option value="base">মাঝা</option>
               <option value="lg">বড়</option>
-              <option value="xl">অতি বড়</option>
+              <option value="xl">অ.বড়</option>
             </select>
           </div>
           <div className="space-y-1.5">
