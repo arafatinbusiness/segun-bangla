@@ -608,19 +608,47 @@ export function RichTextEditor({
       textNode.textContent = text
     })
     
-    // Remove empty paragraphs (no content or only <br>)
-    const emptyParagraphs = editorRef.current.querySelectorAll('p:empty, p:only-child:has(br):not(:has(*))')
-    emptyParagraphs.forEach(p => p.remove())
+    // Step 1: Remove ALL empty paragraphs (any form: <p></p>, <p><br></p>, <p> </p>, <p>\n</p>, etc.)
+    // We do this iteratively because removing one can affect the DOM tree
+    let removedAny = true
+    while (removedAny) {
+      removedAny = false
+      const allPs = editorRef.current.querySelectorAll('p')
+      for (const p of allPs) {
+        // Check if paragraph is effectively empty
+        const text = p.textContent?.trim() || ''
+        const hasOnlyBr = p.children.length === 1 && p.children[0].tagName === 'BR'
+        const hasNoChildren = p.children.length === 0
+        const hasOnlyEmptyChildren = p.children.length > 0 && Array.from(p.children).every(
+          child => child.tagName === 'BR' || (child.textContent?.trim() === '' && child.children.length === 0)
+        )
+        
+        if (text === '' && (hasNoChildren || hasOnlyBr || hasOnlyEmptyChildren)) {
+          p.remove()
+          removedAny = true
+        }
+      }
+    }
     
-    // Also remove <p> that contain only <br>
-    const brOnlyParagraphs = editorRef.current.querySelectorAll('p')
-    brOnlyParagraphs.forEach(p => {
-      if (p.children.length === 1 && p.children[0].tagName === 'BR' && !p.textContent?.trim()) {
-        p.remove()
+    // Step 2: Now collapse consecutive empty paragraphs (more than 2) into just 2
+    // After step 1, any remaining empty paragraphs are truly structural (e.g., <p>&nbsp;</p>)
+    const remainingPs = editorRef.current.querySelectorAll('p')
+    let consecutiveEmptyCount = 0
+    let paragraphsToRemove: HTMLElement[] = []
+    remainingPs.forEach((p) => {
+      const isEmpty = !p.textContent?.trim()
+      if (isEmpty) {
+        consecutiveEmptyCount++
+        if (consecutiveEmptyCount > 2) {
+          paragraphsToRemove.push(p)
+        }
+      } else {
+        consecutiveEmptyCount = 0
       }
     })
+    paragraphsToRemove.forEach(p => p.remove())
     
-    // Remove empty divs
+    // Step 3: Remove empty divs
     const emptyDivs = editorRef.current.querySelectorAll('div:empty')
     emptyDivs.forEach(d => d.remove())
     
