@@ -259,7 +259,7 @@ function ArticlePage() {
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1 min-w-0">
                 <div className="prose prose-sm max-w-none">
-                  <div className="prose prose-sm max-w-none dark:prose-invert text-foreground leading-relaxed article-content">
+                  <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed article-content">
                     <div dangerouslySetInnerHTML={{ __html: article.content.replace(/text-align:\s*justify/gi, 'text-align: left') }} />
                   </div>
                 </div>

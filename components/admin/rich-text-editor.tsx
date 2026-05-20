@@ -114,7 +114,8 @@ export function RichTextEditor({
     const range = sel.getRangeAt(0)
     const selectedText = range.extractContents()
     const wrapper = document.createElement('span')
-    wrapper.style[styleProp as any] = value
+    // Use !important to override Tailwind prose styles on the article detail page
+    wrapper.setAttribute('style', `${styleProp === 'backgroundColor' ? 'background-color' : styleProp}: ${value} !important`)
     wrapper.appendChild(selectedText)
     range.insertNode(wrapper)
     range.setStartAfter(wrapper)
