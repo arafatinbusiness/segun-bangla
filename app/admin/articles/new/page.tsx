@@ -57,7 +57,12 @@ function NewArticlePage() {
         subcategoryIds: subcategoryIds,
         authorId: user?.uid || 'unknown',
       }
-      const articleId = await createArticle(articleData)
+      const editor = user ? {
+        uid: user.uid,
+        name: user.displayName || user.email || 'Unknown',
+        email: user.email || 'unknown@email.com',
+      } : undefined
+      const articleId = await createArticle(articleData, editor)
 
       if (articleId) {
         alert('নিবন্ধ সফলভাবে তৈরি হয়েছে')

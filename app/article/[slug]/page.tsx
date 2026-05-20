@@ -109,7 +109,7 @@ function ArticlePage() {
     <>
       <Header categories={categories} />
       <main className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 py-8">
           {/* Article Header */}
           <article>
             <div className="mb-8">
@@ -154,45 +154,113 @@ function ArticlePage() {
                   )}
                 </div>
               )}
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+              {/* Shoulder - Above title (separate line) */}
+              {article.shoulder && (
+                <div className="mb-3">
+                  <span
+                    className="inline-block font-bold uppercase tracking-wider px-3 py-1.5 rounded-md"
+                    style={{
+                      backgroundColor: article.shoulderColor ? `${article.shoulderColor}1A` : '#fee2e2',
+                      color: article.shoulderTextColor || article.shoulderColor || '#dc2626',
+                      fontSize: article.shoulderFontSize === 'xs' ? '0.75rem' :
+                                article.shoulderFontSize === 'sm' ? '0.875rem' :
+                                article.shoulderFontSize === 'base' ? '1rem' :
+                                article.shoulderFontSize === 'lg' ? '1.125rem' :
+                                article.shoulderFontSize === 'xl' ? '1.25rem' : '0.875rem',
+                    }}
+                  >
+                    {article.shoulder}
+                  </span>
+                </div>
+              )}
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground leading-tight">
                 {article.title}
               </h1>
-              <div className="flex flex-col gap-3 text-sm text-muted-foreground border-b pb-6">
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  {article.source && (
-                    <>
-                      <span className="font-medium text-primary">{article.source}</span>
-                      <span>•</span>
-                    </>
-                  )}
-                  <span>{publishDate}</span>
-                  <span>•</span>
-                  <span>{article.viewCount} ভিউ</span>
+              {/* Bullet Points - Right after title (plain, no background/bar) */}
+              {article.bulletPoints && article.bulletPoints.length > 0 && article.bulletPoints.some(b => b.trim()) && (
+                <div className="mb-4">
+                  <ul className="space-y-1.5 list-disc list-inside">
+                    {article.bulletPoints.filter(b => b.trim()).map((point, idx) => (
+                      <li key={idx} style={{
+                        color: article.bulletColor || '#374151',
+                        fontSize: article.bulletFontSize === 'xs' ? '0.75rem' :
+                                  article.bulletFontSize === 'sm' ? '0.875rem' :
+                                  article.bulletFontSize === 'base' ? '1rem' :
+                                  article.bulletFontSize === 'lg' ? '1.125rem' :
+                                  article.bulletFontSize === 'xl' ? '1.25rem' : '0.875rem',
+                      }}>
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+              )}
+              {/* Byline, Date & Views */}
+              <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground mb-4 pb-4 border-b">
+                {article.reporterName ? (
+                  <span className="flex items-center gap-2">
+                    {article.reporterImage && (
+                      <img
+                        src={article.reporterImage}
+                        alt={article.reporterName}
+                        className="w-6 h-6 rounded-full object-cover border"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    )}
+                    <span className="font-medium text-primary">{article.reporterName}</span>
+                  </span>
+                ) : article.source ? (
+                  <span className="font-medium text-primary">{article.source}</span>
+                ) : null}
+                {(article.reporterName || article.source) && <span>•</span>}
+                <span>{publishDate}</span>
+                <span>•</span>
+                <span>{article.viewCount} ভিউ</span>
               </div>
+              {/* Excerpt (সংক্ষিপ্ত বর্ণনা) - After ticker */}
+              {article.excerpt && (
+                <p className="text-lg text-foreground mb-6 font-semibold leading-relaxed">
+                  {article.excerpt}
+                </p>
+              )}
             </div>
 
-            {/* Featured Image */}
+            {/* Featured Image - Always centered, full article width */}
             {article.imageUrl && (
-              <div className="relative h-96 w-full mb-8 rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={article.imageUrl}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-full mb-8 flex justify-center">
+                <div className={`relative rounded-lg overflow-hidden bg-muted ${
+                  article.imageSize === 'portrait' ? 'max-w-sm w-full' :
+                  article.imageSize === 'square' ? 'max-w-sm w-full' :
+                  article.imageSize === 'full' ? 'w-full' : 'w-full'
+                }`}>
+                  <div className={`${
+                    article.imageSize === 'portrait' ? 'aspect-[3/4]' :
+                    article.imageSize === 'square' ? 'aspect-square' :
+                    article.imageSize === 'full' ? '' : 'aspect-video'
+                  }`}>
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: article.imageFocus?.replace(/-/g, ' ') || 'center' }}
+                    />
+                  </div>
+                  {/* Image Caption */}
+                  {article.imageCaption && (
+                    <p className="text-xs text-muted-foreground text-center py-1.5 px-3 bg-muted/50 border-t italic">
+                      {article.imageCaption}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Article Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
+            {/* Article Content - Fixed Grid Layout */}
+            <div className="flex flex-col lg:flex-row gap-8">
+              <div className="flex-1 min-w-0">
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-lg text-foreground mb-6 font-semibold">
-                    {article.excerpt}
-                  </p>
-                  <div className="prose prose-sm max-w-none dark:prose-invert text-foreground leading-relaxed">
-                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                  <div className="prose prose-sm max-w-none dark:prose-invert text-foreground leading-relaxed article-content">
+                    <div dangerouslySetInnerHTML={{ __html: article.content.replace(/text-align:\s*justify/gi, 'text-align: left') }} />
                   </div>
                 </div>
 
@@ -215,10 +283,10 @@ function ArticlePage() {
                 )}
               </div>
 
-              {/* Sidebar */}
-              <aside>
+              {/* Sidebar - Fixed width, no overflow */}
+              <aside className="w-full lg:w-80 shrink-0">
                 {/* Related Articles */}
-                <div className="bg-muted p-6 rounded-lg">
+                <div className="bg-muted p-5 rounded-lg">
                   <h3 className="text-lg font-bold mb-4">সম্পর্কিত সংবাদ</h3>
                   <div className="space-y-4">
                     {recentArticles.map((relatedArticle) => (

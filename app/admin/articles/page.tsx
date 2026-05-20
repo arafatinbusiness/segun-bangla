@@ -7,7 +7,7 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film, History } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -364,6 +364,50 @@ function ArticlesPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                         </Link>
+                        {/* Edit History Button */}
+                        {article.editHistory && article.editHistory.length > 0 && (
+                          <div className="relative group">
+                            <button
+                              className="p-2 text-muted-foreground hover:text-amber-600 transition-colors rounded-lg hover:bg-muted"
+                              title="সম্পাদনার ইতিহাস"
+                            >
+                              <History className="w-4 h-4" />
+                            </button>
+                            <div className="absolute right-0 top-full mt-1 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                              <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                                <h4 className="text-sm font-semibold text-foreground">সম্পাদনার ইতিহাস</h4>
+                              </div>
+                              <div className="max-h-60 overflow-y-auto">
+                                {[...article.editHistory].reverse().map((entry, idx) => (
+                                  <div key={idx} className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                                        entry.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                        entry.action === 'published' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                        entry.action === 'updated' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                        'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                                      }`}>
+                                        {entry.action === 'created' ? 'তৈরি' :
+                                         entry.action === 'published' ? 'প্রকাশিত' :
+                                         entry.action === 'updated' ? 'হালনাগাদ' : 'অপ্রকাশিত'}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-foreground mt-1">{entry.editorName}</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {new Date(entry.timestamp).toLocaleString('bn-BD', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <button

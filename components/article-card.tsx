@@ -78,16 +78,21 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
   }
 
   // Default card
+  const cardImageAspect = article.imageSize === 'portrait' ? 'aspect-[3/4]' :
+    article.imageSize === 'square' ? 'aspect-square' : 'aspect-video'
+  const imageFocusStyle = article.imageFocus?.replace(/-/g, ' ') || 'center'
+  
   return (
     <article className="group">
       <Link href={`/article/${article.slug}`}>
-        <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+        <div className={`relative w-full ${cardImageAspect} overflow-hidden rounded bg-gray-100 mb-2`}>
           {article.imageUrl ? (
             <Image
               src={article.imageUrl}
               alt={article.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
+              style={{ objectPosition: imageFocusStyle }}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             />
           ) : (
@@ -97,11 +102,19 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
           )}
         </div>
 
-        <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-          {article.source || 'বিশেষ'}
-        </span>
-        <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-          {article.title}
+        <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-[#FF0000] transition-colors">
+          {article.shoulder ? (
+            <>
+              <span
+                className="text-[#FF0000]"
+                style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}
+              >
+                {article.shoulder}
+              </span>
+              <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+            </>
+          ) : null}
+          <span className="text-[#000000]">{article.title}</span>
         </h3>
       </Link>
       <p className="text-xs text-[#444444] mt-2">{publishDate}</p>

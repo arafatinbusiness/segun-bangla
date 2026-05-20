@@ -1,12 +1,34 @@
-import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore'
 import { db } from '../firebase'
-import type { Article } from '../types'
+import type { Article, EditHistoryEntry } from '../types'
 
 const ARTICLES_COLLECTION = 'articles'
 
-export async function createArticle(articleData: Partial<Article>): Promise<string | null> {
+function createEditEntry(
+  editorUid: string,
+  editorName: string,
+  editorEmail: string,
+  action: EditHistoryEntry['action']
+): EditHistoryEntry {
+  return {
+    editedBy: editorUid,
+    editorName,
+    editorEmail,
+    timestamp: Date.now(),
+    action,
+  }
+}
+
+export async function createArticle(
+  articleData: Partial<Article>,
+  editor?: { uid: string; name: string; email: string }
+): Promise<string | null> {
   try {
     const now = Date.now()
+    const editEntry = editor
+      ? [createEditEntry(editor.uid, editor.name, editor.email, 'created')]
+      : []
+
     const docRef = await addDoc(collection(db, ARTICLES_COLLECTION), {
       ...articleData,
       status: 'published',
@@ -14,6 +36,7 @@ export async function createArticle(articleData: Partial<Article>): Promise<stri
       updatedAt: now,
       viewCount: 0,
       isFeatured: false,
+      editHistory: editEntry,
     })
 
     console.log('[v0] Article created successfully with ID:', docRef.id)
@@ -24,13 +47,28 @@ export async function createArticle(articleData: Partial<Article>): Promise<stri
   }
 }
 
-export async function updateArticle(articleId: string, articleData: Partial<Article>): Promise<boolean> {
+export async function updateArticle(
+  articleId: string,
+  articleData: Partial<Article>,
+  editor?: { uid: string; name: string; email: string }
+): Promise<boolean> {
   try {
-    const docRef = doc(db, ARTICLES_COLLECTION, articleId)
-    await updateDoc(docRef, {
+    const now = Date.now()
+    const updatePayload: Record<string, any> = {
       ...articleData,
-      updatedAt: Date.now(),
-    })
+      updatedAt: now,
+    }
+
+    // Add edit history entry if editor info is provided
+    if (editor) {
+      const action = articleData.status === 'published' ? 'published' : 'updated'
+      updatePayload.editHistory = arrayUnion(
+        createEditEntry(editor.uid, editor.name, editor.email, action)
+      )
+    }
+
+    const docRef = doc(db, ARTICLES_COLLECTION, articleId)
+    await updateDoc(docRef, updatePayload)
     console.log('[v0] Article updated successfully:', articleId)
     return true
   } catch (error) {

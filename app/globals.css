@@ -123,3 +123,116 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Article content link styling */
+.article-content a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.article-content a:hover {
+  color: #1d4ed8;
+}
+
+.dark .article-content a {
+  color: #60a5fa;
+}
+
+.dark .article-content a:hover {
+  color: #93c5fd;
+}
+
+/* Article content layout fixes */
+.article-content {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.article-content p {
+  margin-bottom: 1rem;
+  line-height: 1.8;
+  max-width: 100%;
+}
+
+.article-content img,
+.article-content table,
+.article-content pre,
+.article-content blockquote {
+  max-width: 100% !important;
+  height: auto;
+}
+
+/* Image size variants for article content */
+.article-content img[data-image-size="landscape"] {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  width: 100%;
+}
+
+.article-content img[data-image-size="portrait"] {
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  max-height: 500px;
+  width: auto;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.article-content img[data-image-size="square"] {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  max-width: 400px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.article-content img[data-image-size="full"] {
+  width: 100% !important;
+  height: auto;
+}
+
+.article-content table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Fix for justified text - prevent bad spacing in Bengali text */
+/* Override justify to left for better Bengali readability */
+.article-content p[style*="text-align: justify"],
+.article-content p[style*="text-align:justify"],
+.article-content p[style*="text-align:justify "],
+.article-content p[style*="text-align: justify "] {
+  text-align: left !important;
+  text-align-last: left !important;
+  -webkit-text-align-last: left !important;
+}
+
+/* Image captions in article content (figure/figcaption from rich text editor) */
+.article-content figure {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+.article-content figure img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+.article-content figure figcaption {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  color: var(--muted-foreground);
+  text-align: center;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+

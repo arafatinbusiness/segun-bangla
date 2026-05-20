@@ -8,11 +8,13 @@ import { updateArticle } from '@/lib/services/article-mutations'
 import { ArticleForm } from '@/components/admin/article-form'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
 import type { Category } from '@/lib/types'
 
 function EditArticlePage() {
   const params = useParams()
   const router = useRouter()
+  const { user } = useAuth()
   const articleId = params?.id as string
 
   const [article, setArticle] = useState<any>(null)
@@ -79,7 +81,12 @@ function EditArticlePage() {
         subcategoryId: primarySubcategoryId,
         subcategoryIds: subcategoryIds,
       }
-      await updateArticle(articleId, articleData)
+      const editor = user ? {
+        uid: user.uid,
+        name: user.displayName || user.email || 'Unknown',
+        email: user.email || 'unknown@email.com',
+      } : undefined
+      await updateArticle(articleId, articleData, editor)
 
       alert('নিবন্ধ সফলভাবে আপডেট হয়েছে')
       router.push('/admin/articles')

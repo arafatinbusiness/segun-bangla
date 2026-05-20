@@ -184,9 +184,43 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
   }
 
   return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
+    <div className="relative">
+      {/* Sticky Top Save Bar */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border mb-6 -mx-6 px-6 py-3 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">
+          {article ? 'নিবন্ধ সম্পাদনা' : 'নতুন নিবন্ধ'}
+        </h2>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => window.history.back()}
+          >
+            বাতিল
+          </Button>
+          <Button
+            type="submit"
+            form="article-form"
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-[120px]"
+            disabled={submitting || isLoading}
+          >
+            {submitting || isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                সংরক্ষণ করছি...
+              </span>
+            ) : (
+              'সংরক্ষণ করুন'
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <Card className="p-6">
+        <form id="article-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
         <div className="space-y-2">
           <Label htmlFor="title" className="text-foreground font-semibold">শিরোনাম</Label>
           <Input
@@ -226,6 +260,125 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             rows={3}
             className="w-full"
           />
+        </div>
+
+        {/* Shoulder (শোল্ডার) - Text above title */}
+        <div className="space-y-2">
+          <Label htmlFor="shoulder" className="text-foreground font-semibold">শোল্ডার <span className="text-xs text-muted-foreground font-normal">(শিরোনামের উপরে দেখাবে)</span></Label>
+          <div className="flex gap-2 items-start">
+            <div className="flex-1">
+              <Input
+                id="shoulder"
+                name="shoulder"
+                value={formData.shoulder || ''}
+                onChange={handleChange}
+                placeholder="যেমন: বিশেষ প্রতিবেদন, ব্রেকিং নিউজ, এক্সক্লুসিভ"
+                className="w-full"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <label className="text-xs text-muted-foreground">পটভূমি:</label>
+              <input
+                type="color"
+                value={formData.shoulderColor || '#FF0000'}
+                onChange={(e) => setFormData((prev) => ({ ...prev, shoulderColor: e.target.value }))}
+                className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
+                title="শোল্ডারের পটভূমির রঙ নির্বাচন করুন"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <label className="text-xs text-muted-foreground">টেক্সট:</label>
+              <input
+                type="color"
+                value={formData.shoulderTextColor || '#ffffff'}
+                onChange={(e) => setFormData((prev) => ({ ...prev, shoulderTextColor: e.target.value }))}
+                className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
+                title="শোল্ডারের টেক্সটের রঙ নির্বাচন করুন"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <label className="text-xs text-muted-foreground">ফন্ট:</label>
+              <select
+                value={formData.shoulderFontSize || 'sm'}
+                onChange={(e) => setFormData((prev) => ({ ...prev, shoulderFontSize: e.target.value }))}
+                className="h-8 text-xs rounded border bg-background px-1.5 cursor-pointer"
+                title="শোল্ডারের ফন্টের সাইজ নির্বাচন করুন"
+              >
+                <option value="xs">অতি ছোট</option>
+                <option value="sm">ছোট</option>
+                <option value="base">মাঝারি</option>
+                <option value="lg">বড়</option>
+                <option value="xl">অতি বড়</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Bullet Points - Key points under title (right after title) */}
+        <div className="space-y-2">
+          <Label className="text-foreground font-semibold">বুলেটিন পয়েন্ট <span className="text-xs text-muted-foreground font-normal">(শিরোনামের নিচে মূল পয়েন্ট, সর্বোচ্চ ১০টি)</span></Label>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <label className="text-xs text-muted-foreground">ফন্টের রঙ:</label>
+            <input
+              type="color"
+              value={formData.bulletColor || '#374151'}
+              onChange={(e) => setFormData((prev) => ({ ...prev, bulletColor: e.target.value }))}
+              className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
+              title="বুলেটিন পয়েন্টের ফন্টের রঙ নির্বাচন করুন"
+            />
+            <label className="text-xs text-muted-foreground ml-2">ফন্ট সাইজ:</label>
+            <select
+              value={formData.bulletFontSize || 'sm'}
+              onChange={(e) => setFormData((prev) => ({ ...prev, bulletFontSize: e.target.value }))}
+              className="h-8 text-xs rounded border bg-background px-1.5 cursor-pointer"
+              title="বুলেটিন পয়েন্টের ফন্টের সাইজ নির্বাচন করুন"
+            >
+              <option value="xs">অতি ছোট</option>
+              <option value="sm">ছোট</option>
+              <option value="base">মাঝারি</option>
+              <option value="lg">বড়</option>
+              <option value="xl">অতি বড়</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            {(formData.bulletPoints?.length ? formData.bulletPoints : ['', '', '']).slice(0, 10).map((point, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground shrink-0 w-4">{idx + 1}.</span>
+                <Input
+                  value={point}
+                  onChange={(e) => {
+                    const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
+                    // Ensure array is long enough
+                    while (current.length <= idx) current.push('')
+                    current[idx] = e.target.value
+                    // Filter out empty trailing points but keep at least 3
+                    const cleaned = current.filter((p, i) => p.trim() || i < 3 || i < current.length - 1)
+                    setFormData((prev) => ({ ...prev, bulletPoints: cleaned }))
+                  }}
+                  placeholder={`পয়েন্ট ${idx + 1}`}
+                  className="w-full text-sm"
+                />
+              </div>
+            ))}
+          </div>
+          {/* Add more button - up to 10 */}
+          {(formData.bulletPoints?.length || 3) < 10 && (
+            <button
+              type="button"
+              onClick={() => {
+                const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
+                current.push('')
+                setFormData((prev) => ({ ...prev, bulletPoints: current }))
+              }}
+              className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 mt-1"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              আরো পয়েন্ট যোগ করুন ({formData.bulletPoints?.length || 3}/১০)
+            </button>
+          )}
         </div>
 
         {/* Content - Rich Text Editor */}
@@ -377,22 +530,169 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
               )}
             </div>
           )}
+
+          {/* Image Size Selector with Live Preview */}
+          <div className="mt-3">
+            <Label className="text-xs text-muted-foreground mb-1.5 block">ছবির ধরন</Label>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {[
+                { value: 'landscape' as const, label: 'ল্যান্ডস্কেপ', desc: '১৬:৯ - প্রশস্ত ছবি (ডিফল্ট)' },
+                { value: 'portrait' as const, label: 'পোর্ট্রেট', desc: '৩:৪ - ব্যক্তি/মুখের ছবির জন্য' },
+                { value: 'square' as const, label: 'স্কয়ার', desc: '১:১ - বর্গাকার ছবি' },
+                { value: 'full' as const, label: 'পূর্ণ প্রস্থ', desc: '১০০% - কন্টেইনারের পূর্ণ প্রস্থ' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, imageSize: opt.value }))}
+                  title={opt.desc}
+                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    (formData.imageSize || 'landscape') === opt.value
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Live Preview */}
+            {formData.imageUrl && (
+              <div className="border rounded-lg overflow-hidden bg-muted/30">
+                <div className={`${
+                  (formData.imageSize || 'landscape') === 'portrait' ? 'aspect-[3/4] max-w-[200px] mx-auto' :
+                  (formData.imageSize || 'landscape') === 'square' ? 'aspect-square max-w-[200px] mx-auto' :
+                  (formData.imageSize || 'landscape') === 'full' ? '' : 'aspect-video'
+                }`}>
+                  <img
+                    src={formData.imageUrl}
+                    alt="ছবির প্রিভিউ"
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: formData.imageFocus?.replace(/-/g, ' ') || 'center' }}
+                  />
+                </div>
+                <div className="px-3 py-1.5 text-xs text-muted-foreground bg-muted/50 border-t flex items-center gap-2">
+                  <span className="font-medium">প্রিভিউ:</span>
+                  <span>{
+                    (formData.imageSize || 'landscape') === 'portrait' ? 'পোর্ট্রেট (৩:৪)' :
+                    (formData.imageSize || 'landscape') === 'square' ? 'স্কয়ার (১:১)' :
+                    (formData.imageSize || 'landscape') === 'full' ? 'পূর্ণ প্রস্থ' :
+                    'ল্যান্ডস্কেপ (১৬:৯)'
+                  }</span>
+                  {formData.imageFocus && formData.imageFocus !== 'center' && (
+                    <span className="text-primary">• ফোকাস: {formData.imageFocus}</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Image Focus Position */}
+          <div className="mt-3">
+            <Label className="text-xs text-muted-foreground mb-1.5 block">ছবির ফোকাস অবস্থান</Label>
+            <p className="text-[10px] text-muted-foreground mb-2">ছবি কেটে ছোট আকারে দেখানোর সময় কোন অংশটি দেখাবে তা নির্ধারণ করুন (বিশেষ করে পোর্ট্রেট/স্কয়ার এর জন্য)</p>
+            <div className="grid grid-cols-3 gap-1 max-w-[240px]">
+              {[
+                { value: 'top-left' as const, label: 'উপরে-বাম' },
+                { value: 'top' as const, label: 'উপরে' },
+                { value: 'top-right' as const, label: 'উপরে-ডান' },
+                { value: 'left' as const, label: 'বাম' },
+                { value: 'center' as const, label: 'মাঝখানে' },
+                { value: 'right' as const, label: 'ডান' },
+                { value: 'bottom-left' as const, label: 'নিচে-বাম' },
+                { value: 'bottom' as const, label: 'নিচে' },
+                { value: 'bottom-right' as const, label: 'নিচে-ডান' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, imageFocus: opt.value }))}
+                  title={opt.label}
+                  className={`px-1.5 py-1 text-[10px] rounded border transition-colors ${
+                    (formData.imageFocus || 'center') === opt.value
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Image Caption */}
+          <div className="mt-3">
+            <Label htmlFor="imageCaption" className="text-xs text-muted-foreground mb-1.5 block">ছবির ক্যাপশন</Label>
+            <Input
+              id="imageCaption"
+              name="imageCaption"
+              value={formData.imageCaption || ''}
+              onChange={handleChange}
+              placeholder="ছবির নিচে ক্যাপশন লিখুন..."
+              className="w-full text-sm"
+            />
+          </div>
         </div>
 
-        {/* Source */}
-        <div className="space-y-2">
-          <Label htmlFor="source" className="text-foreground font-semibold">সোর্স/উৎস</Label>
-          <Input
-            id="source"
-            name="source"
-            value={formData.source || ''}
-            onChange={handleChange}
-            placeholder="যেমন: বাসস, ইউএনবি, নিজস্ব প্রতিবেদক"
-            className="w-full"
-          />
-          <p className="text-xs text-muted-foreground">
-            নিবন্ধের শীর্ষে প্রকাশের তারিখের পাশে দেখানো হবে
-          </p>
+        {/* Source + Reporter */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="source" className="text-foreground font-semibold">সোর্স/উৎস</Label>
+            <Input
+              id="source"
+              name="source"
+              value={formData.source || ''}
+              onChange={handleChange}
+              placeholder="যেমন: বাসস, ইউএনবি, নিজস্ব প্রতিবেদক"
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              নিবন্ধের শীর্ষে প্রকাশের তারিখের পাশে দেখানো হবে
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="reporterName" className="text-foreground font-semibold">প্রতিবেদকের নাম <span className="text-xs text-muted-foreground font-normal">(বিশেষ/অনুসন্ধানী নিউজের জন্য)</span></Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  id="reporterName"
+                  name="reporterName"
+                  value={formData.reporterName || ''}
+                  onChange={handleChange}
+                  placeholder="যেমন: জনাব এক্স ওয়াই জেড"
+                  className="w-full"
+                />
+              </div>
+              <div className="shrink-0">
+                <Input
+                  id="reporterImage"
+                  name="reporterImage"
+                  type="url"
+                  value={formData.reporterImage || ''}
+                  onChange={handleChange}
+                  placeholder="ছবির URL"
+                  className="w-32"
+                  title="প্রতিবেদকের ছবির URL"
+                />
+              </div>
+              {formData.reporterImage && (
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-muted border shrink-0 mt-0.5">
+                  <img
+                    src={formData.reporterImage}
+                    alt="প্রতিবেদক"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              পূরণ করলে সোর্সের জায়গায় প্রতিবেদকের নাম ও ছবি দেখাবে
+            </p>
+          </div>
         </div>
 
         {/* Published At - Date/Time picker for reordering special news */}
@@ -548,5 +848,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         </div>
       </form>
     </Card>
+    </div>
   )
 }

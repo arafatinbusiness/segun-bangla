@@ -2,6 +2,7 @@
 
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { ProtectedRoute } from '@/components/protected-route'
+import { Toaster } from '@/components/ui/sonner'
 
 export default function AdminLayout({
   children,
@@ -18,6 +19,7 @@ export default function AdminLayout({
           </div>
         </main>
       </div>
+      <Toaster position="top-right" richColors />
     </ProtectedRoute>
   )
 }

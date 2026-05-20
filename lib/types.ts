@@ -31,6 +31,18 @@ export interface Article {
   content: string
   excerpt: string
   imageUrl: string
+  imageSize?: 'landscape' | 'portrait' | 'square' | 'full'
+  imageFocus?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  imageCaption?: string
+  shoulder?: string
+  shoulderColor?: string
+  shoulderTextColor?: string
+  shoulderFontSize?: string
+  ticker?: string
+  tickerColor?: string
+  bulletPoints?: string[]
+  bulletColor?: string
+  bulletFontSize?: string
   categoryId: string
   categoryIds?: string[]
   subcategoryId?: string
@@ -45,6 +57,17 @@ export interface Article {
   viewCount: number
   tags?: string[]
   source?: string
+  reporterName?: string
+  reporterImage?: string
+  editHistory?: EditHistoryEntry[]
+}
+
+export interface EditHistoryEntry {
+  editedBy: string
+  editorName: string
+  editorEmail: string
+  timestamp: number
+  action: 'created' | 'updated' | 'published' | 'unpublished'
 }
 
 

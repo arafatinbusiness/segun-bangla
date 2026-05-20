@@ -150,10 +150,13 @@ function HomePage() {
                       )}
 
                     </div>
-                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                      {specialArticlesList[0].source || 'বিশেষ'}
-                    </span>
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                      {specialArticlesList[0].shoulder ? (
+                        <>
+                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || '#FF0000' }}>{specialArticlesList[0].shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || '#FF0000' }}>•</span>
+                        </>
+                      ) : null}
                       {specialArticlesList[0].title}
                     </h3>
                     <p
@@ -189,10 +192,13 @@ function HomePage() {
                       )}
                     </div>
 
-                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                      {specialArticlesList[2].source || 'বিশেষ'}
-                    </span>
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                      {specialArticlesList[2].shoulder ? (
+                        <>
+                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[2].shoulderTextColor || specialArticlesList[2].shoulderColor || '#FF0000' }}>{specialArticlesList[2].shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[2].shoulderTextColor || specialArticlesList[2].shoulderColor || '#FF0000' }}>•</span>
+                        </>
+                      ) : null}
                       {specialArticlesList[2].title}
                     </h3>
                     <p
@@ -267,10 +273,13 @@ function HomePage() {
                             )}
                           </div>
 
-                          <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                            {article.source || 'সর্বশেষ'}
-                          </span>
                           <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                            {article.shoulder ? (
+                              <>
+                                <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
+                                <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+                              </>
+                            ) : null}
                             {article.title}
                           </h3>
                           <p
@@ -319,10 +328,13 @@ function HomePage() {
                       )}
                     </div>
 
-                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                      {specialArticlesList[1].source || 'বিশেষ'}
-                    </span>
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                      {specialArticlesList[1].shoulder ? (
+                        <>
+                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[1].shoulderTextColor || specialArticlesList[1].shoulderColor || '#FF0000' }}>{specialArticlesList[1].shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[1].shoulderTextColor || specialArticlesList[1].shoulderColor || '#FF0000' }}>•</span>
+                        </>
+                      ) : null}
                       {specialArticlesList[1].title}
                     </h3>
                     <p
@@ -358,10 +370,13 @@ function HomePage() {
                       )}
                     </div>
 
-                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                      {specialArticlesList[3].source || 'বিশেষ'}
-                    </span>
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                      {specialArticlesList[3].shoulder ? (
+                        <>
+                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[3].shoulderTextColor || specialArticlesList[3].shoulderColor || '#FF0000' }}>{specialArticlesList[3].shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[3].shoulderTextColor || specialArticlesList[3].shoulderColor || '#FF0000' }}>•</span>
+                        </>
+                      ) : null}
                       {specialArticlesList[3].title}
                     </h3>
                     <p
@@ -400,10 +415,13 @@ function HomePage() {
                     )}
                   </div>
 
-                  <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                    {article.source || 'বিশেষ'}
-                  </span>
                   <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                    {article.shoulder ? (
+                      <>
+                        <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
+                        <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+                      </>
+                    ) : null}
                     {article.title}
                   </h3>
                   <p
@@ -464,10 +482,13 @@ function HomePage() {
                       )}
                     </div>
 
-                    <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                      {article.source || 'বিশেষ'}
-                    </span>
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                      {article.shoulder ? (
+                        <>
+                          <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+                        </>
+                      ) : null}
                       {article.title}
                     </h3>
                     <p
@@ -562,10 +583,13 @@ function HomePage() {
                               )}
                             </div>
 
-                            <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                              {category.name}
-                            </span>
                             <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                              {leadCategoryArticle.shoulder ? (
+                                <>
+                                  <span className="text-[#FF0000]" style={{ color: leadCategoryArticle.shoulderTextColor || leadCategoryArticle.shoulderColor || '#FF0000' }}>{leadCategoryArticle.shoulder}</span>
+                                  <span className="text-[#FF0000] mx-1.5" style={{ color: leadCategoryArticle.shoulderTextColor || leadCategoryArticle.shoulderColor || '#FF0000' }}>•</span>
+                                </>
+                              ) : null}
                               {leadCategoryArticle.title}
                             </h3>
                             <p
@@ -604,10 +628,13 @@ function HomePage() {
                                 )}
                               </div>
 
-                              <span className="text-[#FF0000] text-[10px] font-bold uppercase tracking-wider">
-                                {category.name}
-                              </span>
                               <h4 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                                {article.shoulder ? (
+                                  <>
+                                    <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
+                                    <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+                                  </>
+                                ) : null}
                                 {article.title}
                               </h4>
                               <p
@@ -674,3 +701,4 @@ function HomePage() {
 }
 
 export default HomePage
+               
