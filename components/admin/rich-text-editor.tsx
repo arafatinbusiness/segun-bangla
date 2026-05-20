@@ -392,7 +392,7 @@ export function RichTextEditor({
       const selectedText = savedRange.toString()
       if (selectedText) {
         savedRangeRef.current = savedRange.cloneRange()
-        setLinkUrl('https://')
+        setLinkUrl('')
         setLinkColor('#2563eb')
         setShowLinkInput(true)
         setTimeout(() => linkInputRef.current?.focus(), 50)
@@ -406,7 +406,7 @@ export function RichTextEditor({
       if (selection && selection.rangeCount > 0) {
         savedRangeRef.current = selection.getRangeAt(0).cloneRange()
       }
-      setLinkUrl('https://')
+      setLinkUrl('')
       setLinkColor('#2563eb')
       setShowLinkInput(true)
       setTimeout(() => linkInputRef.current?.focus(), 50)
