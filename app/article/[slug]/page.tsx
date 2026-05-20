@@ -219,7 +219,7 @@ function ArticlePage() {
               </div>
               {/* Excerpt (সংক্ষিপ্ত বর্ণনা) - After ticker */}
               {article.excerpt && (
-                <p className="text-lg text-foreground mb-6 font-semibold leading-relaxed">
+                <p className="text-lg mb-6 font-semibold leading-relaxed" style={{ color: article.excerptColor || 'inherit' }}>
                   {article.excerpt}
                 </p>
               )}

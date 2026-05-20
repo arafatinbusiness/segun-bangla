@@ -43,6 +43,7 @@ export interface Article {
   bulletPoints?: string[]
   bulletColor?: string
   bulletFontSize?: string
+  excerptColor?: string
   categoryId: string
   categoryIds?: string[]
   subcategoryId?: string

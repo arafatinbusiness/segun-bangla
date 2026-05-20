@@ -251,6 +251,17 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         {/* Excerpt */}
         <div className="space-y-2">
           <Label htmlFor="excerpt" className="text-foreground font-semibold">সংক্ষিপ্ত বর্ণনা</Label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-xs text-muted-foreground">ফন্টের রঙ:</label>
+            <input
+              type="color"
+              value={formData.excerptColor || '#111827'}
+              onChange={(e) => setFormData((prev) => ({ ...prev, excerptColor: e.target.value }))}
+              className="w-8 h-8 p-0.5 rounded cursor-pointer border bg-background"
+              title="সংক্ষিপ্ত বর্ণনার ফন্টের রঙ নির্বাচন করুন"
+            />
+            <span className="text-[10px] text-muted-foreground">(ডিফল্ট: গাঢ় কালো)</span>
+          </div>
           <Textarea
             id="excerpt"
             name="excerpt"
