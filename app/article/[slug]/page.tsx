@@ -6,6 +6,7 @@ import { getArticleBySlug, getRecentArticles } from '@/lib/services/article-quer
 import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { ArticleCard } from '@/components/article-card'
+import { SocialShare } from '@/components/social-share'
 import type { FirestoreArticle, Category, Subcategory } from '@/lib/types'
 
 function ArticlePage() {
@@ -284,6 +285,13 @@ function ArticlePage() {
                     </div>
                   </div>
                 )}
+
+                {/* Social Share */}
+                <SocialShare
+                  url={typeof window !== 'undefined' ? window.location.href : `https://segunbangla.com/article/${article.slug}`}
+                  title={article.title}
+                  description={article.excerpt}
+                />
               </div>
 
               {/* Sidebar - Fixed width, no overflow */}
