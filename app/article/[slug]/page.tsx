@@ -3,71 +3,45 @@ import { ArticleClient } from './article-client'
 
 async function getArticleMeta(slug: string) {
   try {
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
-    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+    // Use firebase-admin which works in server-side contexts
+    const { getFirestore } = await import('firebase-admin/firestore')
+    const { getApps, initializeApp, cert } = await import('firebase-admin/app')
     
-    // Firestore REST API: query articles collection where slug == slug
-    // Use v1beta1 which handles (default) better, and follow redirects
-    const url = `https://firestore.googleapis.com/v1beta1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
-    
-    const body = {
-      structuredQuery: {
-        from: [{ collectionId: 'articles' }],
-        where: {
-          fieldFilter: {
-            field: { fieldPath: 'slug' },
-            op: 'EQUAL',
-            value: { stringValue: slug }
-          }
-        },
-        limit: 1
+    if (!getApps().length) {
+      // Try to initialize with service account from env var
+      const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT
+      if (serviceAccountStr) {
+        try {
+          const serviceAccount = JSON.parse(serviceAccountStr)
+          initializeApp({ credential: cert(serviceAccount) })
+        } catch (e) {
+          console.error('Failed to initialize admin with service account:', e)
+          // Fall back to default credentials
+          initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla' })
+        }
+      } else {
+        // Initialize with default credentials (works on Vercer with GCP integration)
+        initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla' })
       }
     }
     
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    const adminDb = getFirestore()
+    const articlesRef = adminDb.collection('articles')
+    const snapshot = await articlesRef.where('slug', '==', slug).limit(1).get()
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      cache: 'no-store'
-    })
-    
-    clearTimeout(timeoutId)
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`Firestore API error (${response.status}):`, errorText)
+    if (snapshot.empty) {
       return null
     }
     
-    const data = await response.json()
-    
-    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].document) {
-      return null
-    }
-    
-    const doc = data[0].document
-    const fields = doc.fields || {}
-    
-    const extractValue = (field: any): any => {
-      if (!field) return null
-      if (field.stringValue !== undefined) return field.stringValue
-      if (field.integerValue !== undefined) return parseInt(field.integerValue)
-      if (field.booleanValue !== undefined) return field.booleanValue
-      if (field.timestampValue !== undefined) return field.timestampValue
-      if (field.doubleValue !== undefined) return field.doubleValue
-      return null
-    }
+    const doc = snapshot.docs[0]
+    const data = doc.data()
     
     return {
-      title: extractValue(fields.title),
-      excerpt: extractValue(fields.excerpt),
-      imageUrl: extractValue(fields.imageUrl),
-      slug: extractValue(fields.slug),
-      publishedAt: extractValue(fields.publishedAt),
+      title: data.title || null,
+      excerpt: data.excerpt || null,
+      imageUrl: data.imageUrl || null,
+      slug: data.slug || null,
+      publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt || null,
     }
   } catch (error) {
     console.error('Error in getArticleMeta:', error instanceof Error ? error.message : error)
