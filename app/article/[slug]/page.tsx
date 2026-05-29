@@ -3,45 +3,87 @@ import { ArticleClient } from './article-client'
 
 async function getArticleMeta(slug: string) {
   try {
-    // Use firebase-admin which works in server-side contexts
-    const { getFirestore } = await import('firebase-admin/firestore')
-    const { getApps, initializeApp, cert } = await import('firebase-admin/app')
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
     
-    if (!getApps().length) {
-      // Try to initialize with service account from env var
-      const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT
-      if (serviceAccountStr) {
-        try {
-          const serviceAccount = JSON.parse(serviceAccountStr)
-          initializeApp({ credential: cert(serviceAccount) })
-        } catch (e) {
-          console.error('Failed to initialize admin with service account:', e)
-          // Fall back to default credentials
-          initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla' })
-        }
-      } else {
-        // Initialize with default credentials (works on Vercer with GCP integration)
-        initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla' })
+    // Try to get an access token from the metadata server (works on Vercel with GCP integration)
+    // or use the API key as fallback
+    let token: string | null = null
+    try {
+      const metadataResponse = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://firestore.googleapis.com/', {
+        headers: { 'Metadata-Flavor': 'Google' },
+        signal: AbortSignal.timeout(3000)
+      })
+      if (metadataResponse.ok) {
+        token = await metadataResponse.text()
+      }
+    } catch {
+      // Metadata server not available, will use API key
+    }
+    
+    let url: string
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    
+    if (token) {
+      url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`
+      headers['Authorization'] = `Bearer ${token}`
+    } else {
+      // Fall back to API key - use the documents endpoint which supports API keys
+      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+      url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
+    }
+    
+    const body = {
+      structuredQuery: {
+        from: [{ collectionId: 'articles' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'slug' },
+            op: 'EQUAL',
+            value: { stringValue: slug }
+          }
+        },
+        limit: 1
       }
     }
     
-    const adminDb = getFirestore()
-    const articlesRef = adminDb.collection('articles')
-    const snapshot = await articlesRef.where('slug', '==', slug).limit(1).get()
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      cache: 'no-store'
+    })
     
-    if (snapshot.empty) {
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`Firestore API error (${response.status}):`, errorText)
       return null
     }
     
-    const doc = snapshot.docs[0]
-    const data = doc.data()
+    const data = await response.json()
+    
+    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].document) {
+      return null
+    }
+    
+    const doc = data[0].document
+    const fields = doc.fields || {}
+    
+    const extractValue = (field: any): any => {
+      if (!field) return null
+      if (field.stringValue !== undefined) return field.stringValue
+      if (field.integerValue !== undefined) return parseInt(field.integerValue)
+      if (field.booleanValue !== undefined) return field.booleanValue
+      if (field.timestampValue !== undefined) return field.timestampValue
+      if (field.doubleValue !== undefined) return field.doubleValue
+      return null
+    }
     
     return {
-      title: data.title || null,
-      excerpt: data.excerpt || null,
-      imageUrl: data.imageUrl || null,
-      slug: data.slug || null,
-      publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt || null,
+      title: extractValue(fields.title),
+      excerpt: extractValue(fields.excerpt),
+      imageUrl: extractValue(fields.imageUrl),
+      slug: extractValue(fields.slug),
+      publishedAt: extractValue(fields.publishedAt),
     }
   } catch (error) {
     console.error('Error in getArticleMeta:', error instanceof Error ? error.message : error)

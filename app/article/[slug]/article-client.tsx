@@ -290,12 +290,12 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                   </div>
                 )}
 
-                {/* Social Share */}
-                <SocialShare
+                {/* Social Share - Temporarily hidden */}
+                {/* <SocialShare
                   url={typeof window !== 'undefined' ? window.location.href : ''}
                   title={article.title}
                   description={article.excerpt}
-                />
+                /> */}
               </div>
 
               {/* Sidebar - Fixed width, no overflow */}
