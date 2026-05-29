@@ -7,9 +7,8 @@ async function getArticleMeta(slug: string) {
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
     
     // Firestore REST API: query articles collection where slug == slug
-    // URL-encode (default) to %28default%29 to avoid 308 redirect
-    const encodedDb = encodeURIComponent('(default)')
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${encodedDb}/documents:runQuery?key=${apiKey}`
+    // Use v1beta1 which handles (default) better, and follow redirects
+    const url = `https://firestore.googleapis.com/v1beta1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
     
     const body = {
       structuredQuery: {
