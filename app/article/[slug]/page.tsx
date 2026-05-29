@@ -2,17 +2,65 @@ import { Metadata } from 'next'
 import { ArticleClient } from './article-client'
 
 // Fetch article data server-side for metadata generation
-// Uses the internal API route which uses Firebase client SDK
+// Uses Firestore REST API directly - no SDK needed, works in any server environment
 async function getArticleMeta(slug: string) {
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
-    const response = await fetch(`${siteUrl}/api/article-meta/${encodeURIComponent(slug)}`, {
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
+    
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'articles' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'slug' },
+              op: 'EQUAL',
+              value: { stringValue: slug }
+            }
+          },
+          limit: 1
+        }
+      }),
       next: { revalidate: 60 },
     })
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      console.error('Firestore API error:', response.status, await response.text())
+      return null
+    }
 
-    return await response.json()
+    const data = await response.json()
+    
+    // Firestore REST API returns array of results
+    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].document) {
+      return null
+    }
+
+    const doc = data[0].document
+    const fields = doc.fields || {}
+
+    // Extract field values from Firestore document format
+    const getStringValue = (field: any) => {
+      if (!field) return ''
+      return field.stringValue || field.integerValue || ''
+    }
+
+    return {
+      title: getStringValue(fields.title),
+      slug: getStringValue(fields.slug),
+      excerpt: getStringValue(fields.excerpt),
+      imageUrl: getStringValue(fields.imageUrl),
+      publishedAt: fields.publishedAt?.integerValue 
+        ? parseInt(fields.publishedAt.integerValue) 
+        : fields.publishedAt?.stringValue 
+          ? parseInt(fields.publishedAt.stringValue) 
+          : Date.now(),
+    }
   } catch (error) {
     console.error('Error fetching article meta:', error)
     return null
