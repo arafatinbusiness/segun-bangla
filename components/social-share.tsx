@@ -89,6 +89,11 @@ export function SocialShare({ url, title, description }: SocialShareProps) {
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.backgroundColor = link.color
             }}
+            onClick={() => {
+              console.log(`[SocialShare] Clicked ${link.name}`)
+              console.log(`[SocialShare] URL: ${url}`)
+              console.log(`[SocialShare] Share href: ${link.href}`)
+            }}
             aria-label={`${link.name} এ শেয়ার করুন`}
           >
             <span className="flex-shrink-0">{link.icon}</span>

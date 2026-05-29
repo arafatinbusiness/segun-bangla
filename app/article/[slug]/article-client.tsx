@@ -292,7 +292,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
 
                 {/* Social Share */}
                 <SocialShare
-                  url={typeof window !== 'undefined' ? window.location.href : `https://segunbangla.com/article/${article.slug}`}
+                  url={typeof window !== 'undefined' ? window.location.href : ''}
                   title={article.title}
                   description={article.excerpt}
                 />
