@@ -1,15 +1,17 @@
 import { Metadata } from 'next'
 import { ArticleClient } from './article-client'
 
-// Direct Firebase Firestore REST API call - no Admin SDK needed
-// This runs server-side in generateMetadata
-const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
-const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
-
+// Fetch article data server-side for metadata generation
+// Uses Firebase Admin SDK which works in Node.js server environment
 async function getArticleMeta(slug: string) {
   try {
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery?key=${API_KEY}`
-
+    // Use Firebase REST API directly - simpler and more reliable
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+    
+    // Query Firestore REST API with a simple field filter on 'slug'
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
+    
     const body = {
       structuredQuery: {
         from: [{ collectionId: 'articles' }],
@@ -31,10 +33,14 @@ async function getArticleMeta(slug: string) {
       next: { revalidate: 60 },
     })
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Meta] Firestore query failed:', response.status, errorText.substring(0, 200))
+      return null
+    }
 
     const data = await response.json()
-    if (!data || data.length === 0 || !data[0].document) return null
+    if (!data || data.length === 0 || !data[0]?.document) return null
 
     const fields = data[0].document.fields || {}
 
