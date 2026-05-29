@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       url: 'https://example.com',
     },
   ],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'),
   icons: {
     icon: [
       {

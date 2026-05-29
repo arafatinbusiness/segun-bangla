@@ -4,7 +4,9 @@ import { ArticleClient } from './article-client'
 // Fetch article data server-side for metadata generation
 async function getArticleMeta(slug: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
+    // Use relative URL for server-side fetch (works in both dev and production)
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://segun-bangla.vercel.app')
     const response = await fetch(`${baseUrl}/api/article-meta/${encodeURIComponent(slug)}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     })
@@ -25,14 +27,23 @@ export async function generateMetadata(
   
   const article = await getArticleMeta(slug)
   
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://segun-bangla.vercel.app')
+  
   if (!article) {
     return {
       title: 'সেগুন বাংলা - বাংলাদেশের শীর্ষস্থানীয় সংবাদ পোর্টাল',
       description: 'সেগুন বাংলায় পান সর্বশেষ বাংলাদেশ এবং আন্তর্জাতিক সংবাদ।',
+      openGraph: {
+        title: 'সেগুন বাংলা',
+        description: 'সেগুন বাংলায় পান সর্বশেষ বাংলাদেশ এবং আন্তর্জাতিক সংবাদ।',
+        url: `${siteUrl}/article/${slug}`,
+        siteName: 'সেগুন বাংলা',
+        images: [{ url: `${siteUrl}/logo.png`, width: 1200, height: 630 }],
+      },
     }
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
   const articleUrl = `${siteUrl}/article/${article.slug}`
   const title = `${article.title} - সেগুন বাংলা`
   const description = article.excerpt || `${article.title} - সেগুন বাংলা থেকে পড়ুন`

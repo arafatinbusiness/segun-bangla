@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 // Firebase Admin SDK is not available, so we use the Firebase REST API
 // to fetch article data server-side for metadata generation
 const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
-const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || ''
+const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
 
 export async function GET(
   request: Request,
@@ -17,31 +17,17 @@ export async function GET(
 
   try {
     // Use Firebase Firestore REST API to query article by slug
-    // This works without Firebase Admin SDK
+    // Using a simple single-field query (no composite index needed)
     const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery?key=${API_KEY}`
 
     const body = {
       structuredQuery: {
         from: [{ collectionId: 'articles' }],
         where: {
-          compositeFilter: {
-            op: 'AND',
-            filters: [
-              {
-                fieldFilter: {
-                  field: { fieldPath: 'slug' },
-                  op: 'EQUAL',
-                  value: { stringValue: slug },
-                },
-              },
-              {
-                fieldFilter: {
-                  field: { fieldPath: 'status' },
-                  op: 'EQUAL',
-                  value: { stringValue: 'published' },
-                },
-              },
-            ],
+          fieldFilter: {
+            field: { fieldPath: 'slug' },
+            op: 'EQUAL',
+            value: { stringValue: slug },
           },
         },
         limit: 1,
@@ -55,7 +41,8 @@ export async function GET(
     })
 
     if (!response.ok) {
-      console.error('[API] Firestore query failed:', await response.text())
+      const errorText = await response.text()
+      console.error('[API] Firestore query failed:', errorText)
       return NextResponse.json({ error: 'Failed to fetch article' }, { status: 500 })
     }
 
