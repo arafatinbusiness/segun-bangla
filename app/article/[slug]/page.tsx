@@ -1,6 +1,78 @@
 import { Metadata } from 'next'
 import { ArticleClient } from './article-client'
-import { getArticleBySlug } from '@/lib/services/articles'
+
+async function getArticleMeta(slug: string) {
+  try {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+    
+    // Firestore REST API: query articles collection where slug == slug
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
+    
+    const body = {
+      structuredQuery: {
+        from: [{ collectionId: 'articles' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'slug' },
+            op: 'EQUAL',
+            value: { stringValue: slug }
+          }
+        },
+        limit: 1
+      }
+    }
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      cache: 'no-store'
+    })
+    
+    clearTimeout(timeoutId)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`Firestore API error (${response.status}):`, errorText)
+      return null
+    }
+    
+    const data = await response.json()
+    
+    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].document) {
+      return null
+    }
+    
+    const doc = data[0].document
+    const fields = doc.fields || {}
+    
+    const extractValue = (field: any): any => {
+      if (!field) return null
+      if (field.stringValue !== undefined) return field.stringValue
+      if (field.integerValue !== undefined) return parseInt(field.integerValue)
+      if (field.booleanValue !== undefined) return field.booleanValue
+      if (field.timestampValue !== undefined) return field.timestampValue
+      if (field.doubleValue !== undefined) return field.doubleValue
+      return null
+    }
+    
+    return {
+      title: extractValue(fields.title),
+      excerpt: extractValue(fields.excerpt),
+      imageUrl: extractValue(fields.imageUrl),
+      slug: extractValue(fields.slug),
+      publishedAt: extractValue(fields.publishedAt),
+    }
+  } catch (error) {
+    console.error('Error in getArticleMeta:', error instanceof Error ? error.message : error)
+    return null
+  }
+}
 
 export async function generateMetadata(
   { params }: { params: { slug: string } }
@@ -8,12 +80,7 @@ export async function generateMetadata(
   const rawSlug = params.slug
   const slug = rawSlug ? decodeURIComponent(rawSlug) : ''
   
-  let article = null
-  try {
-    article = await getArticleBySlug(slug)
-  } catch (error) {
-    console.error('Error in generateMetadata:', error)
-  }
+  const article = await getArticleMeta(slug)
   
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
   
