@@ -2,52 +2,17 @@ import { Metadata } from 'next'
 import { ArticleClient } from './article-client'
 
 // Fetch article data server-side for metadata generation
-// Uses Firebase Admin SDK which works in Node.js server environment
+// Uses the internal API route which uses Firebase client SDK
 async function getArticleMeta(slug: string) {
   try {
-    // Dynamic import to avoid issues during build
-    const { getFirestore } = await import('firebase-admin/firestore')
-    const { initializeApp, getApps, cert } = await import('firebase-admin/app')
-    
-    // Try to initialize with service account if available, otherwise use application default
-    if (getApps().length === 0) {
-      const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-        : undefined
-      
-      if (serviceAccount) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla',
-        })
-      } else {
-        // Fallback: initialize without explicit credentials
-        // This works on Vercel if GOOGLE_APPLICATION_CREDENTIALS is set
-        // or if the environment has default application credentials
-        initializeApp({
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla',
-        })
-      }
-    }
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
+    const response = await fetch(`${siteUrl}/api/article-meta/${encodeURIComponent(slug)}`, {
+      next: { revalidate: 60 },
+    })
 
-    const db = getFirestore()
-    const articlesRef = db.collection('articles')
-    const snapshot = await articlesRef
-      .where('slug', '==', slug)
-      .limit(1)
-      .get()
+    if (!response.ok) return null
 
-    if (snapshot.empty) return null
-
-    const data = snapshot.docs[0].data()
-
-    return {
-      title: data.title || '',
-      slug: data.slug || '',
-      excerpt: data.excerpt || '',
-      imageUrl: data.imageUrl || '',
-      publishedAt: data.publishedAt || Date.now(),
-    }
+    return await response.json()
   } catch (error) {
     console.error('Error fetching article meta:', error)
     return null
