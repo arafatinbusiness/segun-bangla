@@ -5,60 +5,48 @@ import { ArticleClient } from './article-client'
 // Uses Firebase Admin SDK which works in Node.js server environment
 async function getArticleMeta(slug: string) {
   try {
-    // Use Firebase REST API directly - simpler and more reliable
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
-    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+    // Dynamic import to avoid issues during build
+    const { getFirestore } = await import('firebase-admin/firestore')
+    const { initializeApp, getApps, cert } = await import('firebase-admin/app')
     
-    // Query Firestore REST API with a simple field filter on 'slug'
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
-    
-    const body = {
-      structuredQuery: {
-        from: [{ collectionId: 'articles' }],
-        where: {
-          fieldFilter: {
-            field: { fieldPath: 'slug' },
-            op: 'EQUAL',
-            value: { stringValue: slug },
-          },
-        },
-        limit: 1,
-      },
+    // Try to initialize with service account if available, otherwise use application default
+    if (getApps().length === 0) {
+      const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+        : undefined
+      
+      if (serviceAccount) {
+        initializeApp({
+          credential: cert(serviceAccount),
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla',
+        })
+      } else {
+        // Fallback: initialize without explicit credentials
+        // This works on Vercel if GOOGLE_APPLICATION_CREDENTIALS is set
+        // or if the environment has default application credentials
+        initializeApp({
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla',
+        })
+      }
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      next: { revalidate: 60 },
-    })
+    const db = getFirestore()
+    const articlesRef = db.collection('articles')
+    const snapshot = await articlesRef
+      .where('slug', '==', slug)
+      .limit(1)
+      .get()
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[Meta] Firestore query failed:', response.status, errorText.substring(0, 200))
-      return null
-    }
+    if (snapshot.empty) return null
 
-    const data = await response.json()
-    if (!data || data.length === 0 || !data[0]?.document) return null
-
-    const fields = data[0].document.fields || {}
-
-    const extractValue = (field: any) => {
-      if (!field) return null
-      if (field.stringValue !== undefined) return field.stringValue
-      if (field.integerValue !== undefined) return parseInt(field.integerValue, 10)
-      if (field.booleanValue !== undefined) return field.booleanValue
-      if (field.timestampValue) return new Date(field.timestampValue).getTime()
-      return null
-    }
+    const data = snapshot.docs[0].data()
 
     return {
-      title: extractValue(fields.title) || '',
-      slug: extractValue(fields.slug) || '',
-      excerpt: extractValue(fields.excerpt) || '',
-      imageUrl: extractValue(fields.imageUrl) || '',
-      publishedAt: extractValue(fields.publishedAt) || Date.now(),
+      title: data.title || '',
+      slug: data.slug || '',
+      excerpt: data.excerpt || '',
+      imageUrl: data.imageUrl || '',
+      publishedAt: data.publishedAt || Date.now(),
     }
   } catch (error) {
     console.error('Error fetching article meta:', error)
