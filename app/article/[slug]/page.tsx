@@ -1,18 +1,59 @@
 import { Metadata } from 'next'
 import { ArticleClient } from './article-client'
 
-// Fetch article data server-side for metadata generation
+// Direct Firebase Firestore REST API call - no Admin SDK needed
+// This runs server-side in generateMetadata
+const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
+const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
+
 async function getArticleMeta(slug: string) {
   try {
-    // Use relative URL for server-side fetch (works in both dev and production)
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://segun-bangla.vercel.app')
-    const response = await fetch(`${baseUrl}/api/article-meta/${encodeURIComponent(slug)}`, {
-      next: { revalidate: 60 }, // Cache for 60 seconds
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery?key=${API_KEY}`
+
+    const body = {
+      structuredQuery: {
+        from: [{ collectionId: 'articles' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'slug' },
+            op: 'EQUAL',
+            value: { stringValue: slug },
+          },
+        },
+        limit: 1,
+      },
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      next: { revalidate: 60 },
     })
+
     if (!response.ok) return null
+
     const data = await response.json()
-    return data.article
+    if (!data || data.length === 0 || !data[0].document) return null
+
+    const fields = data[0].document.fields || {}
+
+    const extractValue = (field: any) => {
+      if (!field) return null
+      if (field.stringValue !== undefined) return field.stringValue
+      if (field.integerValue !== undefined) return parseInt(field.integerValue, 10)
+      if (field.booleanValue !== undefined) return field.booleanValue
+      if (field.timestampValue) return new Date(field.timestampValue).getTime()
+      return null
+    }
+
+    return {
+      title: extractValue(fields.title) || '',
+      slug: extractValue(fields.slug) || '',
+      excerpt: extractValue(fields.excerpt) || '',
+      imageUrl: extractValue(fields.imageUrl) || '',
+      publishedAt: extractValue(fields.publishedAt) || Date.now(),
+    }
   } catch (error) {
     console.error('Error fetching article meta:', error)
     return null
@@ -27,8 +68,7 @@ export async function generateMetadata(
   
   const article = await getArticleMeta(slug)
   
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://segun-bangla.vercel.app')
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
   
   if (!article) {
     return {
