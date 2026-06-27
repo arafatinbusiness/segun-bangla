@@ -91,37 +91,63 @@ export async function getFeaturedArticles(limitCount: number = 3): Promise<Fires
   }
 }
 
-export async function getSpecialArticles(limitCount: number = 4): Promise<FirestoreArticle[]> {
+export async function getSpecialArticles(limitCount: number = 10): Promise<FirestoreArticle[]> {
   try {
+    // Try to fetch by isSpecialOrder first for proper ordering
     const q = query(
       collection(db, ARTICLES_COLLECTION),
       where('isSpecial', '==', true),
       where('status', '==', 'published'),
       where('publishedAt', '<=', Date.now()),
       orderBy('publishedAt', 'desc'),
-      limit(limitCount)
+      limit(50)
     )
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    let articles = snapshot.docs.map((doc) => ({
       ...doc.data(),
       docId: doc.id,
     })) as FirestoreArticle[]
+
+    // Sort by isSpecialOrder if available, then by publishedAt
+    articles.sort((a, b) => {
+      if (a.isSpecialOrder !== undefined && b.isSpecialOrder !== undefined) {
+        return a.isSpecialOrder - b.isSpecialOrder
+      }
+      if (a.isSpecialOrder !== undefined) return -1
+      if (b.isSpecialOrder !== undefined) return 1
+      return (b.publishedAt || 0) - (a.publishedAt || 0)
+    })
+
+    return articles.slice(0, limitCount)
   } catch (error) {
     console.error('[v0] Error fetching special articles:', error)
-    // Fallback: get recent published articles without isSpecial filter
+    // Fallback: get recent published articles
     try {
       const fallbackQ = query(
         collection(db, ARTICLES_COLLECTION),
         where('status', '==', 'published'),
         where('publishedAt', '<=', Date.now()),
         orderBy('publishedAt', 'desc'),
-        limit(limitCount)
+        limit(50)
       )
       const snapshot = await getDocs(fallbackQ)
-      return snapshot.docs.map((doc) => ({
+      const articles = snapshot.docs.map((doc) => ({
         ...doc.data(),
         docId: doc.id,
       })) as FirestoreArticle[]
+
+      // Filter isSpecial + sort by isSpecialOrder
+      const special = articles.filter(a => a.isSpecial)
+      special.sort((a, b) => {
+        if (a.isSpecialOrder !== undefined && b.isSpecialOrder !== undefined) {
+          return a.isSpecialOrder - b.isSpecialOrder
+        }
+        if (a.isSpecialOrder !== undefined) return -1
+        if (b.isSpecialOrder !== undefined) return 1
+        return (b.publishedAt || 0) - (a.publishedAt || 0)
+      })
+
+      return special.slice(0, limitCount)
     } catch (fallbackError) {
       console.error('[v0] Error fetching fallback articles:', fallbackError)
       return []

@@ -1,57 +1,25 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SlugInput } from '@/components/ui/slug-input'
-import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { generateCleanSlug } from '@/lib/slug-utils'
 import { uploadArticleImage, validateImageFile } from '@/lib/services/image-upload'
 import { ImagePlus, Upload, X, Link as LinkIcon } from 'lucide-react'
-import type { Article, Category, Subcategory } from '@/lib/types'
+import { CategoryPanel } from '@/components/admin/category-panel'
+import type { Article, Category } from '@/lib/types'
 
 interface ArticleFormProps {
   article?: Article
   categories: Category[]
   onSubmit: (data: Partial<Article>) => Promise<void>
   isLoading?: boolean
-}
-
-// Recursive component to render subcategory tree with text-based indentation
-function SubcategoryTreeItem({
-  subcategory,
-  allSubcategories,
-  depth,
-}: {
-  subcategory: Subcategory
-  allSubcategories: Subcategory[]
-  depth: number
-}) {
-  const children = allSubcategories.filter((s) => s.parentId === subcategory.id)
-  // Use text-based indentation since SelectItem doesn't support rich HTML
-  const indent = depth > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(depth) + '└ ' : ''
-
-  return (
-    <>
-      <SelectItem key={subcategory.id} value={subcategory.id!}>
-        {indent}{subcategory.name}
-      </SelectItem>
-      {children.map((child) => (
-        <SubcategoryTreeItem
-          key={child.id}
-          subcategory={child}
-          allSubcategories={allSubcategories}
-          depth={depth + 1}
-        />
-      ))}
-    </>
-  )
 }
 
 export function ArticleForm({ article, categories, onSubmit, isLoading }: ArticleFormProps) {
@@ -72,8 +40,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     }
   )
 
-  const [allSubcategories, setAllSubcategories] = useState<Subcategory[]>([])
-  const [subcategoriesLoading, setSubcategoriesLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [imageMode, setImageMode] = useState<'url' | 'upload'>('url')
   const [uploading, setUploading] = useState(false)
@@ -81,32 +47,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Load subcategories for ALL selected categories
-  useEffect(() => {
-    const selectedIds = formData.categoryIds || []
-    if (selectedIds.length > 0) {
-      setSubcategoriesLoading(true)
-      Promise.all(selectedIds.map((catId) => getSubcategoriesByCategory(catId)))
-        .then((results) => {
-          const merged = results.flat()
-          // Deduplicate by id
-          const unique = merged.filter((sub, idx, self) => self.findIndex(s => s.id === sub.id) === idx)
-          setAllSubcategories(unique)
-          // Clean up subcategoryIds that are no longer valid
-          const currentSubIds = formData.subcategoryIds || []
-          const validSubIds = currentSubIds.filter((sid) => unique.some((s) => s.id === sid))
-          if (validSubIds.length !== currentSubIds.length) {
-            setFormData((prev) => ({ ...prev, subcategoryIds: validSubIds }))
-          }
-        })
-        .catch((err) => console.error('Error loading subcategories:', err))
-        .finally(() => setSubcategoriesLoading(false))
-    } else {
-      setAllSubcategories([])
-      setFormData((prev) => ({ ...prev, subcategoryIds: [] }))
-    }
-  }, [formData.categoryIds])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -762,106 +702,24 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         </div>
 
 
-        {/* Categories - Multi-select checkboxes */}
-        <div className="space-y-3">
-          <Label className="text-foreground font-semibold">বিভাগ সমূহ</Label>
-          <p className="text-xs text-muted-foreground">এক বা একাধিক বিভাগ নির্বাচন করুন</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {categories.map((cat) => {
-              const isSelected = (formData.categoryIds || []).includes(cat.id!)
-              return (
-                <label
-                  key={cat.id}
-                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-                  }`}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => handleCategoryToggle(cat.id!)}
-                  />
-                  <span className="text-sm font-medium">{cat.name}</span>
-                </label>
-              )
-            })}
-          </div>
-          {(formData.categoryIds || []).length === 0 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              অনুগ্রহ করে অন্তত একটি বিভাগ নির্বাচন করুন।
-            </p>
-          )}
-        </div>
-
-        {/* Subcategories - Multi-select checkboxes (shown when categories are selected) */}
-        {(formData.categoryIds || []).length > 0 && (
-          <div className="space-y-3">
-            <Label className="text-foreground font-semibold">উপবিভাগ সমূহ</Label>
-            <p className="text-xs text-muted-foreground">ঐচ্ছিক — এক বা একাধিক উপবিভাগ নির্বাচন করুন</p>
-            {subcategoriesLoading ? (
-              <div className="h-10 rounded-lg border bg-muted/30 flex items-center px-3 text-sm text-muted-foreground">
-                উপবিভাগ লোড হচ্ছে...
-              </div>
-            ) : allSubcategories.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {allSubcategories.map((sub) => {
-                  const isSelected = (formData.subcategoryIds || []).includes(sub.id!)
-                  return (
-                    <label
-                      key={sub.id}
-                      className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'border-primary bg-primary/5'
-                          : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => handleSubcategoryToggle(sub.id!)}
-                      />
-                      <span className="text-sm font-medium">{sub.name}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">নির্বাচিত বিভাগে কোনো উপবিভাগ নেই।</p>
-            )}
-          </div>
-        )}
-
-
-
-        {/* Checkboxes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6">
-          <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/30 transition-colors">
-            <Checkbox
-              id="isLead"
-              checked={formData.isLead || false}
-              onCheckedChange={(checked) => handleCheckChange('isLead', checked as boolean)}
-            />
-            <div>
-              <Label htmlFor="isLead" className="text-foreground cursor-pointer font-medium">
-                প্রধান নিবন্ধ
-              </Label>
-              <p className="text-xs text-muted-foreground">হোমপেজের প্রধান স্লাইডারে দেখাবে</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/30 transition-colors">
-            <Checkbox
-              id="isSpecial"
-              checked={formData.isSpecial || false}
-              onCheckedChange={(checked) => handleCheckChange('isSpecial', checked as boolean)}
-            />
-            <div>
-              <Label htmlFor="isSpecial" className="text-foreground cursor-pointer font-medium">
-                বিশেষ নিবন্ধ
-              </Label>
-              <p className="text-xs text-muted-foreground">হোমপেজের সাইডবারে দেখাবে</p>
-            </div>
-          </div>
-        </div>
+        {/* 4-Column Category Panel (Special, Category, District, Upazila) */}
+        <CategoryPanel
+          categories={categories}
+          selectedCategoryIds={formData.categoryIds || []}
+          selectedSubcategoryIds={formData.subcategoryIds || []}
+          isLead={formData.isLead || false}
+          isSpecial={formData.isSpecial || false}
+          onCategoryToggle={handleCategoryToggle}
+          onSubcategoryToggle={handleSubcategoryToggle}
+          onSpecialChange={(type, index) => {
+            if (type === 'lead') {
+              setFormData((prev) => ({ ...prev, isLead: true, isSpecial: false }))
+            } else {
+              setFormData((prev) => ({ ...prev, isLead: false, isSpecial: true }))
+            }
+          }}
+          specialIndex={1}
+        />
 
         {/* Submit Buttons */}
         <div className="flex gap-4 pt-6 border-t">

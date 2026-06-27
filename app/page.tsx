@@ -1,16 +1,35 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { getLeadArticles, getFeaturedArticles, getSpecialArticles, getRecentArticles, getAllArticles } from '@/lib/services/article-queries'
 import { getAllCategories } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ArticleCard } from '@/components/article-card'
 import { AdRenderer } from '@/components/ad-renderer'
+import { NewsSlider } from '@/components/news-slider'
+import { useTheme } from '@/components/theme-provider'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category } from '@/lib/types'
 
+interface ExcerptConfig {
+  heroExcerpt: boolean
+  leadExcerpt: boolean
+  transitionalExcerpt: boolean
+  extraExcerpt: boolean
+  categoryLeadExcerpt: boolean
+  categoryListExcerpt: boolean
+}
+
+const DEFAULT_EXCERPT: ExcerptConfig = {
+  heroExcerpt: true, leadExcerpt: true, transitionalExcerpt: true,
+  extraExcerpt: true, categoryLeadExcerpt: true, categoryListExcerpt: true,
+}
+
 function HomePage() {
+  const { template } = useTheme()
   const [leadArticles, setLeadArticles] = useState<FirestoreArticle[]>([])
   const [featuredArticles, setFeaturedArticles] = useState<FirestoreArticle[]>([])
   const [specialArticles, setSpecialArticles] = useState<FirestoreArticle[]>([])
@@ -19,24 +38,35 @@ function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [excerptConfig, setExcerptConfig] = useState<ExcerptConfig>(DEFAULT_EXCERPT)
+  const [sliderConfig, setSliderConfig] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [leadData, featuredData, specialData, recentData, allData, categoriesData] = await Promise.all([
+        // Fetch all data in parallel to minimize Firestore reads
+        const [leadData, featuredData, specialData, recentData, allData, categoriesData, excerptSnap, sliderSnap] = await Promise.all([
           getLeadArticles(1),
-          getFeaturedArticles(10),
-          getSpecialArticles(4),
-          getRecentArticles(20),
-          getAllArticles(100),
+          getFeaturedArticles(5).catch(() => []), // reduced from 10
+          getSpecialArticles(12),
+          getRecentArticles(10).catch(() => []), // reduced from 20
+          getAllArticles(200).catch(() => []),
           getAllCategories(),
+          getDoc(doc(db, 'settings', 'homepage-excerpts')).catch(() => null),
+          getDoc(doc(db, 'settings', 'category-sliders')).catch(() => null),
         ])
-        setLeadArticles(leadData)
-        setFeaturedArticles(featuredData)
-        setSpecialArticles(specialData)
-        setRecentArticles(recentData)
-        setAllArticles(allData)
-        setCategories(categoriesData)
+        setLeadArticles(leadData || [])
+        setFeaturedArticles(featuredData || [])
+        setSpecialArticles(specialData || [])
+        setRecentArticles(recentData || [])
+        setAllArticles(allData || [])
+        setCategories(categoriesData || [])
+        if (excerptSnap?.exists()) {
+          setExcerptConfig({ ...DEFAULT_EXCERPT, ...excerptSnap.data() as Partial<ExcerptConfig> })
+        }
+        if (sliderSnap?.exists()) {
+          setSliderConfig(sliderSnap.data() as Record<string, boolean>)
+        }
       } catch (error) {
         console.error('[v0] Error loading home page:', error)
         setError(true)
@@ -97,9 +127,212 @@ function HomePage() {
     )
   }
 
-  const mainArticle = leadArticles[0]
-  const specialArticlesList = specialArticles.slice(0, 4) // SP-1 to SP-4
-  const transitionalArticles = featuredArticles.slice(4, 8) // SP-5 to SP-8
+  // Merge lead + special into a single 12-slot array ordered by isSpecialOrder (same as tool)
+  const allSlots: (FirestoreArticle | null)[] = new Array(12).fill(null)
+  const allSpecial = [...leadArticles, ...specialArticles]
+  for (const a of allSpecial) {
+    const order = (a as any).isSpecialOrder
+    if (typeof order === 'number' && order >= 0 && order < 12) {
+      allSlots[order] = a
+    }
+  }
+  // Fill empty slots with remaining unsorted articles
+  const usedIds = new Set(allSpecial.filter(a => a?.docId).map(a => a.docId))
+  const remaining = allSpecial.filter(a => !usedIds.has(a.docId))
+  for (let i = 0; i < 12; i++) {
+    if (!allSlots[i] && remaining.length > 0) {
+      allSlots[i] = remaining.shift()!
+    }
+  }
+  
+  const mainArticle = allSlots[0]  // Lead is slot 0
+  const specialArticlesList = [allSlots[1], allSlots[2], allSlots[3], allSlots[4]].filter(Boolean) as FirestoreArticle[] // SP-1 to SP-4
+  // Transitional/Dedicated row (before jatiyo) = SP-5 to SP-8 from tool slots 7,8,9,10
+  const transitionalArticles = [allSlots[7], allSlots[8], allSlots[9], allSlots[10]].filter(Boolean) as FirestoreArticle[] // SP-5 to SP-8
+  // EXTRA-1 (left), EXTRA-2 (right) below lead = from allSlots[5] and allSlots[6] (same as tool)
+  const extraArticles = [allSlots[5], allSlots[6]].filter((a): a is FirestoreArticle => !!a)
+  const isProthomAlo = template.layout === 'prothom-alo'
+  const isNewsGrid = template.layout === 'news-grid'
+
+  if (isNewsGrid) {
+    return (
+      <>
+        <Header categories={categories} />
+        <main className="min-h-screen bg-white text-[#1A1A1A]">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            {mainArticle && (
+              <div className="mb-6 pb-4 border-b border-gray-200">
+                <a href={`/article/${mainArticle.slug}`} className="block group">
+                  <div className="aspect-video bg-gray-100 mb-3">
+                    {mainArticle.imageUrl && <img src={mainArticle.imageUrl} alt="" className="w-full h-full object-cover" />}
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] leading-tight mb-2">{mainArticle.title}</h1>
+                  {excerptConfig.leadExcerpt && <p className="text-sm text-[#4A4A4A]">{mainArticle.excerpt}</p>}
+                </a>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-4 border-l border-r border-gray-200 divide-x-0 md:divide-x divide-gray-200">
+              {/* Col 1: Latest */}
+              <div className="md:col-span-1 px-4 py-3">
+                <h2 className="text-[10px] font-bold text-[#C00000] uppercase tracking-wider mb-4">সর্বশেষ</h2>
+                {recentArticles.slice(0, 6).map((article) => (
+                  <div key={article.docId} className="py-3 border-b border-gray-100 last:border-b-0">
+                    <a href={`/article/${article.slug}`} className="flex gap-3 group">
+                      {article.imageUrl && <div className="w-14 h-14 shrink-0 bg-gray-100"><img src={article.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[12px] font-bold leading-[1.4] text-[#1A1A1A] line-clamp-3 group-hover:text-[#C00000]">{article.title}</h3>
+                        <p className="text-[9px] text-[#888] mt-1.5">৪ ঘণ্টা আগে</p>
+                      </div>
+                    </a>
+                  </div>
+                ))}
+              </div>
+              <div className="md:col-span-2 px-3 py-2 border-r border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">{specialArticlesList.slice(0, 3).map((a) => (
+                  <div key={a.docId} className="border-b border-gray-200 pb-3"><a href={`/article/${a.slug}`} className="block group">
+                    <div className="aspect-video bg-gray-100 mb-2">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                    <h3 className="text-sm font-bold leading-snug line-clamp-2">{a.title}</h3>
+                    {excerptConfig.heroExcerpt && <p className="text-[11px] text-[#4A4A4A] mt-1">{a.excerpt}</p>}
+                  </a></div>
+                ))}</div>
+                <div className="divide-y divide-gray-200">{[...specialArticlesList.slice(3), ...extraArticles].filter(Boolean).map((a: FirestoreArticle) => (
+                  <div key={a.docId} className="py-3"><a href={`/article/${a.slug}`} className="flex gap-3 group">
+                    <div className="flex-1"><h3 className="text-sm font-bold leading-snug">{a.title}</h3></div>
+                    {a.imageUrl && <div className="w-20 h-16 shrink-0 bg-gray-100"><img src={a.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
+                  </a></div>
+                ))}</div>
+              </div>
+              <div className="md:col-span-1 px-3 py-2">
+                <AdRenderer slotName="right-sidebar" className="min-h-24 mb-4 border border-gray-200 bg-gray-50 flex items-center justify-center" imageClassName="rounded" />
+                {transitionalArticles.length > 0 && (<div><h2 className="text-[11px] font-bold text-[#C00000] uppercase mb-3">বিশেষ</h2>
+                  <div className="divide-y divide-gray-200">{transitionalArticles.map((a) => (
+                    <div key={a.docId} className="py-3"><a href={`/article/${a.slug}`} className="flex gap-3 group">
+                      {a.imageUrl && <div className="w-16 h-16 shrink-0 bg-gray-100"><img src={a.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
+                      <div className="flex-1"><h3 className="text-[13px] font-bold leading-snug">{a.title}</h3></div>
+                    </a></div>
+                  ))}</div>
+                </div>)}
+              </div>
+            </div>
+
+            {/* Category Sections */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((cat, ci) => {
+                const arts = allArticles.filter(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id).slice(0, 7)
+                const lead = arts[0]; const list = arts.slice(1, 7)
+                if (arts.length === 0) return null
+                return (
+                  <section key={cat.id} className="mb-6 pb-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center mb-4">
+                      <a href={`/category/${cat.slug}`}><h2 className="text-base font-bold border-l-3 border-[#C00000] pl-2">{cat.name}</h2></a>
+                      <a href={`/category/${cat.slug}`} className="text-[10px] text-[#888] hover:text-[#C00000]">সব দেখুন →</a>
+                    </div>
+                    <AdRenderer slotName={`category-row-${ci + 1}-1`} className="min-h-16 mb-4" imageClassName="rounded" />
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {lead && <div className="md:col-span-1"><a href={`/article/${lead.slug}`}>
+                        <div className="aspect-video bg-gray-100 mb-2">{lead.imageUrl && <img src={lead.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                        <h3 className="text-sm font-bold leading-snug">{lead.title}</h3>
+                        {excerptConfig.categoryLeadExcerpt && <p className="text-[11px] text-[#4A4A4A] mt-1">{lead.excerpt}</p>}
+                      </a></div>}
+                      <div className="md:col-span-3"><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{list.map((a) => (
+                        <div key={a.docId} className="border-b border-gray-200 pb-2"><a href={`/article/${a.slug}`}>
+                          <div className="aspect-video bg-gray-100 mb-1">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                          <h3 className="text-[13px] font-bold leading-snug">{a.title}</h3>
+                          {excerptConfig.categoryListExcerpt && <p className="text-[11px] text-[#4A4A4A] mt-1">{a.excerpt}</p>}
+                        </a></div>
+                      ))}</div></div>
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  if (isProthomAlo) {
+    return (
+      <>
+        <Header categories={categories} />
+        <main className="min-h-screen bg-background">
+          <div className="max-w-6xl mx-auto px-3 py-4">
+            {/* Top - 3 Column Grid */}
+            <section className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3">
+                {mainArticle && (
+                  <div className="md:col-span-2 border-b md:border-b-0 md:border-r border-gray-200 pr-0 md:pr-4 mb-4 md:mb-0">
+                    <a href={`/article/${mainArticle.slug}`} className="block group">
+                      <h1 className="text-xl md:text-2xl font-bold text-[#1A1A1A] leading-tight mb-2">{mainArticle.title}</h1>
+                      <div className="aspect-video bg-gray-100 mb-2">
+                        {mainArticle.imageUrl && <img src={mainArticle.imageUrl} alt="" className="w-full h-full object-cover" />}
+                      </div>
+                      {excerptConfig.leadExcerpt && <p className="text-xs text-[#444]">{mainArticle.excerpt}</p>}
+                    </a>
+                  </div>
+                )}
+                <div className="md:col-span-1 divide-y divide-gray-200">
+                  {specialArticlesList.slice(0, 4).map((article) => (
+                    <div key={article.docId} className="py-3 first:pt-0">
+                      <a href={`/article/${article.slug}`} className="flex gap-3 group">
+                        {article.imageUrl && <div className="w-20 h-20 shrink-0 bg-gray-100"><img src={article.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
+                        <div className="flex-1">
+                          <h3 className="text-sm font-bold text-[#1A1A1A] leading-snug line-clamp-3">{article.title}</h3>
+                        </div>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Dedicated Row */}
+            {transitionalArticles.length > 0 && (
+              <section className="mb-6 border-t border-gray-200 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  {transitionalArticles.map((article) => (
+                    <div key={article.docId} className="border-b border-gray-200 pb-3">
+                      <a href={`/article/${article.slug}`} className="block group">
+                        <div className="aspect-video bg-gray-100 mb-1">
+                          {article.imageUrl && <img src={article.imageUrl} alt="" className="w-full h-full object-cover" />}
+                        </div>
+                        <h3 className="text-sm font-bold text-[#1A1A1A]">{article.title}</h3>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Categories */}
+            {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category) => {
+              const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 5)
+              if (catArticles.length === 0) return null
+              return (
+                <section key={category.id} className="mb-6 border-t border-gray-200 pt-4">
+                  <a href={`/category/${category.slug}`} className="inline-block mb-3"><h2 className="text-base font-bold border-l-3 border-[#CC0000] pl-2">{category.name}</h2></a>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {catArticles.slice(0, 3).map((article) => (
+                      <div key={article.docId} className="border-b border-gray-200 pb-2">
+                        <a href={`/article/${article.slug}`} className="block group">
+                          {article.imageUrl && <div className="aspect-video bg-gray-100 mb-1"><img src={article.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
+                          <h3 className="text-sm font-bold text-[#1A1A1A]">{article.title}</h3>
+                          {excerptConfig.categoryListExcerpt && <p className="text-xs text-[#444] mt-1">{article.excerpt}</p>}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
 
   return (
     <>
@@ -137,6 +370,7 @@ function HomePage() {
                 <article className="group">
                   <a href={`/article/${specialArticlesList[0].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+
                       {specialArticlesList[0].imageUrl ? (
                         <img
                           src={specialArticlesList[0].imageUrl}
@@ -153,14 +387,14 @@ function HomePage() {
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
                       {specialArticlesList[0].shoulder ? (
                         <>
-                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || '#FF0000' }}>{specialArticlesList[0].shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || '#FF0000' }}>•</span>
+                          <span className="theme-shoulder" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || 'var(--theme-primary)' }}>{specialArticlesList[0].shoulder}</span>
+                          <span className="theme-shoulder mx-1.5" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || 'var(--theme-primary)' }}>•</span>
                         </>
                       ) : null}
                       {specialArticlesList[0].title}
                     </h3>
                     <p
-                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      className="text-[#444444] text-sm mt-1 leading-relaxed"
                       style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -168,7 +402,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {specialArticlesList[0].excerpt}
+                      {excerptConfig.heroExcerpt && specialArticlesList[0].excerpt}
                     </p>
                   </a>
                 </article>
@@ -179,6 +413,7 @@ function HomePage() {
                 <article className="group pt-4 border-t border-[#f0f0f0]">
                   <a href={`/article/${specialArticlesList[2].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+
                       {specialArticlesList[2].imageUrl ? (
                         <img
                           src={specialArticlesList[2].imageUrl}
@@ -202,7 +437,7 @@ function HomePage() {
                       {specialArticlesList[2].title}
                     </h3>
                     <p
-                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      className="text-[#444444] text-sm mt-1 leading-relaxed"
                       style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -210,7 +445,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {specialArticlesList[2].excerpt}
+                      {excerptConfig.heroExcerpt && specialArticlesList[2].excerpt}
                     </p>
                   </a>
                 </article>
@@ -226,9 +461,11 @@ function HomePage() {
                       {mainArticle.title}
                     </h1>
                   </a>
+                  {excerptConfig.leadExcerpt && (
                   <p className="text-foreground text-base mb-4 line-clamp-2 max-w-lg mx-auto">
                     {mainArticle.excerpt}
                   </p>
+                  )}
                   <div className="relative h-64 md:h-80 rounded-lg overflow-hidden bg-muted">
                     {mainArticle.imageUrl ? (
                       <img
@@ -246,13 +483,9 @@ function HomePage() {
                 </article>
               )}
               
-              {/* 2 more articles below the lead image */}
+              {/* 2 more articles below the lead image (EXTRA-1, EXTRA-2 from slots) */}
               {(() => {
-                const specialIds = new Set(specialArticlesList.map(a => a.docId))
-                const extraArticles = [...allArticles]
-                  .filter(a => !specialIds.has(a.docId) && a.status === 'published' && a.docId !== mainArticle?.docId)
-                  .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
-                  .slice(0, 2)
+                const extraArticlesForGrid = extraArticles.length > 0 ? extraArticles : []
                 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -283,7 +516,7 @@ function HomePage() {
                             {article.title}
                           </h3>
                           <p
-                            className="text-[#444444] text-xs mt-1 leading-relaxed"
+                            className="text-[#444444] text-sm mt-1 leading-relaxed"
                             style={{
                               display: '-webkit-box',
                               WebkitLineClamp: 6,
@@ -291,7 +524,7 @@ function HomePage() {
                               overflow: 'hidden',
                             }}
                           >
-                            {article.excerpt}
+                            {excerptConfig.extraExcerpt && article.excerpt}
                           </p>
                         </a>
                       </article>
@@ -315,6 +548,7 @@ function HomePage() {
                 <article className="group">
                   <a href={`/article/${specialArticlesList[1].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+
                       {specialArticlesList[1].imageUrl ? (
                         <img
                           src={specialArticlesList[1].imageUrl}
@@ -338,7 +572,7 @@ function HomePage() {
                       {specialArticlesList[1].title}
                     </h3>
                     <p
-                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      className="text-[#444444] text-sm mt-1 leading-relaxed"
                       style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -346,7 +580,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {specialArticlesList[1].excerpt}
+                      {excerptConfig.heroExcerpt && specialArticlesList[1].excerpt}
                     </p>
                   </a>
                 </article>
@@ -357,6 +591,7 @@ function HomePage() {
                 <article className="group pt-4 border-t border-[#f0f0f0]">
                   <a href={`/article/${specialArticlesList[3].slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+
                       {specialArticlesList[3].imageUrl ? (
                         <img
                           src={specialArticlesList[3].imageUrl}
@@ -380,7 +615,7 @@ function HomePage() {
                       {specialArticlesList[3].title}
                     </h3>
                     <p
-                      className="text-[#444444] text-xs mt-1 leading-relaxed"
+                      className="text-[#444444] text-sm mt-1 leading-relaxed"
                       style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -388,7 +623,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {specialArticlesList[3].excerpt}
+                      {excerptConfig.heroExcerpt && specialArticlesList[3].excerpt}
                     </p>
                   </a>
                 </article>
@@ -402,6 +637,7 @@ function HomePage() {
               <article key={article.docId} className="group flex flex-col">
                 <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
                   <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
+
                     {article.imageUrl ? (
                       <img
                         src={article.imageUrl}
@@ -425,7 +661,7 @@ function HomePage() {
                     {article.title}
                   </h3>
                   <p
-                    className="text-[#444444] text-xs mt-1 leading-relaxed flex-1"
+                    className="text-[#444444] text-sm mt-1 leading-relaxed flex-1"
                     style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 4,
@@ -433,80 +669,14 @@ function HomePage() {
                       overflow: 'hidden',
                     }}
                   >
-                    {article.excerpt}
+                    {excerptConfig.transitionalExcerpt && article.excerpt}
                   </p>
                 </a>
               </article>
             ))}
           </section>
 
-          {/* 2.5 Special News Row (4 articles) - no duplicates from above */}
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-8">
-            {(() => {
-              // Collect all article IDs already shown above to avoid duplicates
-              const alreadyShownIds = new Set<string>()
-              
-              // SP-1 to SP-4 (left/right sidebar)
-              specialArticlesList.forEach(a => { if (a.docId) alreadyShownIds.add(a.docId) })
-              // Lead article (center)
-              if (mainArticle?.docId) alreadyShownIds.add(mainArticle.docId)
-              // 2 extra articles below lead
-              const extraArticles = [...allArticles]
-                .filter(a => !alreadyShownIds.has(a.docId) && a.status === 'published' && a.docId !== mainArticle?.docId)
-                .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
-                .slice(0, 2)
-              extraArticles.forEach(a => { if (a.docId) alreadyShownIds.add(a.docId) })
-              // SP-5 to SP-8 (transitional grid)
-              transitionalArticles.forEach(a => { if (a.docId) alreadyShownIds.add(a.docId) })
-              
-              // Get fresh articles not shown anywhere above
-              const freshArticles = [...allArticles]
-                .filter(a => !alreadyShownIds.has(a.docId) && a.status === 'published')
-                .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
-                .slice(0, 4)
-              
-              return freshArticles.map((article) => (
-                <article key={article.docId} className="group flex flex-col">
-                  <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
-                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                      {article.imageUrl ? (
-                        <img
-                          src={article.imageUrl}
-                          alt={article.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        </div>
-                      )}
-                    </div>
-
-                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {article.shoulder ? (
-                        <>
-                          <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
-                        </>
-                      ) : null}
-                      {article.title}
-                    </h3>
-                    <p
-                      className="text-[#444444] text-xs mt-1 leading-relaxed flex-1"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 4,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {article.excerpt}
-                    </p>
-                  </a>
-                </article>
-              ))
-            })()}
-          </section>
+          {/* 2.5 Special News Row removed - only transitional grid SP-5 to SP-8 is shown */}
 
           {/* 3. Category Specific Rows - skip categories with no articles */}
           {categories
@@ -521,26 +691,30 @@ function HomePage() {
             const leadCategoryArticle = categoryArticles[0]
             const listCategoryArticles = categoryArticles.slice(1, 7)
             
+            const catArticles = categoryArticles
+            const sliderEnabled = sliderConfig[category.id] !== false
+            const showSlider = sliderEnabled && catArticles.length > 4
+
             return (
-              <section key={category.id} className="mb-6">
-                {/* Category Header */}
+              <section key={category.id} className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:pb-0 last:mb-6">
+                {/* Slider ON → show slider, hide grid */}
+                {showSlider && (
+                  <div className="mb-4">
+                    <NewsSlider articles={catArticles} name={category.name} slug={category.slug} />
+                  </div>
+                )}
+                {/* Slider OFF → show normal grid */}
+<div style={{ display: showSlider ? "none" : "block" }}>
                 <div className="flex justify-between items-center mb-4">
-                  <a
-                    href={`/category/${category.slug}`}
-                    className="flex-1 group"
-                  >
-                    <h2 className="text-xl font-bold text-[#000000] border-l-4 border-[#FF0000] pl-3 group-hover:text-[#FF0000] transition-colors">
+                  <a href={`/category/${category.slug}`} className="flex-1 group">
+                    <h2 className="text-xl font-bold text-[#000000] border-l-4 theme-border pl-3 category-heading transition-colors">
                       {category.name}
                     </h2>
                   </a>
-                  <a
-                    href={`/category/${category.slug}`}
-                    className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider"
-                  >
+                  <a href={`/category/${category.slug}`} className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider">
                     সব দেখুন →
                   </a>
                 </div>
-
 
                 {/* Multi-Ad Break - 3 ads per category row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -593,7 +767,7 @@ function HomePage() {
                               {leadCategoryArticle.title}
                             </h3>
                             <p
-                              className="text-[#444444] text-xs mt-1 leading-relaxed flex-1"
+                              className="text-[#444444] text-sm mt-1 leading-relaxed flex-1"
                               style={{
                                 display: '-webkit-box',
                                 WebkitLineClamp: 6,
@@ -601,7 +775,7 @@ function HomePage() {
                                 overflow: 'hidden',
                               }}
                             >
-                              {leadCategoryArticle.excerpt}
+                              {excerptConfig.categoryLeadExcerpt && leadCategoryArticle.excerpt}
                             </p>
                           </a>
                         </article>
@@ -638,7 +812,7 @@ function HomePage() {
                                 {article.title}
                               </h4>
                               <p
-                                className="text-[#444444] text-xs mt-1 leading-relaxed"
+                                className="text-[#444444] text-sm mt-1 leading-relaxed"
                                 style={{
                                   display: '-webkit-box',
                                   WebkitLineClamp: 3,
@@ -646,7 +820,7 @@ function HomePage() {
                                   overflow: 'hidden',
                                 }}
                               >
-                                {article.excerpt}
+                                {excerptConfig.categoryListExcerpt && article.excerpt}
                               </p>
                             </a>
                           </article>
@@ -664,6 +838,7 @@ function HomePage() {
                 {catIndex < 2 && (
                   <hr className="border-t border-[#f0f0f0] mt-6" />
                 )}
+              </div>
               </section>
             )
           })}

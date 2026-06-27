@@ -15,6 +15,7 @@ import {
   LogOut,
   Newspaper,
   Megaphone,
+  Wrench,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -60,6 +61,12 @@ const navItems = [
     labelEn: 'Settings',
     href: '/admin/settings',
     icon: Settings,
+  },
+  {
+    label: 'টুলস',
+    labelEn: 'Tools',
+    href: '/admin/tools',
+    icon: Wrench,
   },
 ]
 

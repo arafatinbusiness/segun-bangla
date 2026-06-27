@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth-context'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -57,7 +58,9 @@ export default function RootLayout({
     <html lang="bn" className="bg-background">
       <body className="font-sans antialiased" suppressHydrationWarning>
         <AuthProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
           {process.env.NODE_ENV === 'production' && <Analytics />}
         </AuthProvider>
       </body>

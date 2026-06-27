@@ -102,16 +102,16 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
           )}
         </div>
 
-        <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-[#FF0000] transition-colors">
+        <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-theme-primary transition-colors">
           {article.shoulder ? (
             <>
               <span
-                className="text-[#FF0000]"
-                style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}
+                className="theme-shoulder"
+                style={{ color: article.shoulderTextColor || article.shoulderColor || 'var(--theme-primary)' }}
               >
                 {article.shoulder}
               </span>
-              <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+              <span className="theme-shoulder mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || 'var(--theme-primary)' }}>•</span>
             </>
           ) : null}
           <span className="text-[#000000]">{article.title}</span>

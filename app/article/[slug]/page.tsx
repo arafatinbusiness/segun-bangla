@@ -1,23 +1,31 @@
 import { Metadata } from 'next'
 import { ArticleClient } from './article-client'
 
+// Simple in-memory cache for article metadata
+const metaCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 60000 // 1 minute
+
 async function getArticleMeta(slug: string) {
+  // Check cache first
+  const cached = metaCache.get(slug)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data
+  }
+  
   try {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
     
-    // Try to get an access token from the metadata server (works on Vercel with GCP integration)
-    // or use the API key as fallback
     let token: string | null = null
     try {
       const metadataResponse = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://firestore.googleapis.com/', {
         headers: { 'Metadata-Flavor': 'Google' },
-        signal: AbortSignal.timeout(3000)
+        signal: AbortSignal.timeout(2000)
       })
       if (metadataResponse.ok) {
         token = await metadataResponse.text()
       }
     } catch {
-      // Metadata server not available, will use API key
+      // Metadata server not available
     }
     
     let url: string
@@ -27,7 +35,6 @@ async function getArticleMeta(slug: string) {
       url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`
       headers['Authorization'] = `Bearer ${token}`
     } else {
-      // Fall back to API key - use the documents endpoint which supports API keys
       const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
       url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
     }
@@ -78,13 +85,16 @@ async function getArticleMeta(slug: string) {
       return null
     }
     
-    return {
+    const result = {
       title: extractValue(fields.title),
       excerpt: extractValue(fields.excerpt),
       imageUrl: extractValue(fields.imageUrl),
       slug: extractValue(fields.slug),
       publishedAt: extractValue(fields.publishedAt),
     }
+    // Cache the result
+    metaCache.set(slug, { data: result, timestamp: Date.now() })
+    return result
   } catch (error) {
     console.error('Error in getArticleMeta:', error instanceof Error ? error.message : error)
     return null

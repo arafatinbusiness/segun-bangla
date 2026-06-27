@@ -175,6 +175,18 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // SETTINGS COLLECTION - App Configuration (excerpt settings, etc.)
+    // ============================================================================
+    match /settings/{settingId} {
+      
+      // Everyone can read settings (for homepage display)
+      allow read: if true;
+      
+      // Only admins can write settings
+      allow write: if isAdmin();
+    }
+
+    // ============================================================================
     // DEFAULT DENY - All other access is denied
     // ============================================================================
     match /{document=**} {

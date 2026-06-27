@@ -53,6 +53,7 @@ export interface Article {
   status: 'draft' | 'published' | 'scheduled'
   isLead: boolean
   isSpecial: boolean
+  isSpecialOrder?: number // 0-9 for SP box position
   isFeatured: boolean
   publishedAt: number // timestamp
   updatedAt: number // timestamp

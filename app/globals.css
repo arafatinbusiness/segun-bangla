@@ -4,6 +4,20 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Theme variables (set by ThemeProvider) */
+  --theme-primary: #FF0000;
+  --theme-secondary: #000000;
+  --theme-accent: #FF4444;
+  --theme-bg: #FFFFFF;
+  --theme-card-bg: #FFFFFF;
+  --theme-text: #000000;
+  --theme-heading: #000000;
+  --theme-border: #E5E7EB;
+  --theme-radius: 8px;
+  --theme-card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --theme-image-radius: 8px;
+  --theme-spacing: 16px;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -113,6 +127,68 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Theme colors for dynamic template switching */
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-accent: var(--theme-accent);
+  --color-theme-bg: var(--theme-bg);
+  --color-theme-card-bg: var(--theme-card-bg);
+}
+
+/* Utility classes for theme */
+.text-theme-primary { color: var(--theme-primary) !important; }
+.bg-theme-primary { background-color: var(--theme-primary) !important; }
+.border-theme-primary { border-color: var(--theme-primary) !important; }
+.group:hover .group-hover-text-theme-primary { color: var(--theme-primary) !important; }
+
+/* Apply theme to key elements */
+.header-nav a:hover,
+.header-nav button:hover {
+  color: var(--theme-primary) !important;
+}
+/* Prothom Alo layout styles */
+.layout-prothom-alo .grid-section {
+  max-width: 100%;
+}
+.layout-prothom-alo .article-card {
+  border-bottom: 1px solid #E0E0E0;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.layout-prothom-alo .article-card:last-child {
+  border-bottom: none;
+}
+.layout-prothom-alo .article-title {
+  font-family: 'Noto Serif Bengali', serif;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.layout-prothom-alo .category-heading {
+  border-left: 3px solid #CC0000;
+  padding-left: 10px;
+  font-family: 'Noto Serif Bengali', serif;
+  font-weight: 700;
+}
+.theme-link {
+  color: var(--theme-primary) !important;
+}
+.theme-link:hover {
+  color: var(--theme-primary) !important;
+  opacity: 0.8;
+}
+.theme-bg {
+  background-color: var(--theme-primary) !important;
+}
+.theme-border {
+  border-color: var(--theme-primary) !important;
+}
+.category-heading {
+  border-left-color: var(--theme-primary) !important;
+}
+.category-heading:hover {
+  color: var(--theme-primary) !important;
+}
+.theme-shoulder {
+  color: var(--theme-primary) !important;
 }
 
 @layer base {
