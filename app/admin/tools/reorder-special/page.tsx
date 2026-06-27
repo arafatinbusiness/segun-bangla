@@ -331,8 +331,15 @@ function ReorderSpecialPage() {
               <GridCell slotIdx={GRID_POSITIONS[6].slotIdx} label={GRID_POSITIONS[6].label} />
             </div>
           </div>
-          {/* Right col: SP-2 + SP-4 */}
+          {/* Right col: Ad + SP-2 + SP-4 */}
           <div className="md:col-span-1 space-y-3">
+            {/* Ad Slot - on top (like homepage) */}
+            <div className="p-2 rounded-lg bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-850 border border-dashed border-gray-300 dark:border-gray-600 text-center">
+              <span className="text-[9px] text-gray-400 uppercase tracking-wider font-medium">Advertisement</span>
+              <div className="h-8 flex items-center justify-center">
+                <span className="text-[8px] text-gray-300">250x250</span>
+              </div>
+            </div>
             <GridCell slotIdx={GRID_POSITIONS[1].slotIdx} label={GRID_POSITIONS[1].label} />
             <GridCell slotIdx={GRID_POSITIONS[4].slotIdx} label={GRID_POSITIONS[4].label} />
           </div>
