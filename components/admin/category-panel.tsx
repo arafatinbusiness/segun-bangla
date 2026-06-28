@@ -19,18 +19,20 @@ interface CategoryPanelProps {
   specialIndex?: number // 0 = lead, 1-9 = special 1-9
 }
 
-// Special article types
+// Special article types - matching tool's GRID_POSITIONS
+// slot 0 = lead, slot 1 = SP-1, slot 2 = SP-2, ..., slot 8 = SP-8
 const SPECIAL_ITEMS = [
-  { value: 'lead', label: 'প্রধান নিবন্ধ' },
-  { value: 'special-1', label: 'বিশেষ নিবন্ধ ১' },
-  { value: 'special-2', label: 'বিশেষ নিবন্ধ ২' },
-  { value: 'special-3', label: 'বিশেষ নিবন্ধ ৩' },
-  { value: 'special-4', label: 'বিশেষ নিবন্ধ ৪' },
-  { value: 'special-5', label: 'বিশেষ নিবন্ধ ৫' },
-  { value: 'special-6', label: 'বিশেষ নিবন্ধ ৬' },
-  { value: 'special-7', label: 'বিশেষ নিবন্ধ ৭' },
-  { value: 'special-8', label: 'বিশেষ নিবন্ধ ৮' },
-  { value: 'special-9', label: 'বিশেষ নিবন্ধ ৯' },
+  { value: 'lead', label: '★ প্রধান নিবন্ধ (লিড)', slot: 0 },
+  { value: 'special-1', label: 'SP-1', slot: 1 },
+  { value: 'special-2', label: 'SP-2', slot: 2 },
+  { value: 'special-3', label: 'SP-3', slot: 3 },
+  { value: 'special-4', label: 'SP-4', slot: 4 },
+  { value: 'special-5', label: 'EXTRA-1', slot: 5 },
+  { value: 'special-6', label: 'EXTRA-2', slot: 6 },
+  { value: 'special-7', label: 'SP-5', slot: 7 },
+  { value: 'special-8', label: 'SP-6', slot: 8 },
+  { value: 'special-9', label: 'SP-7', slot: 9 },
+  { value: 'special-10', label: 'SP-8', slot: 10 },
 ]
 
 export function CategoryPanel({

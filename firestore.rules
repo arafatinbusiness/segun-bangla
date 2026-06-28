@@ -80,12 +80,10 @@ service cloud.firestore {
       // Authors can delete their own articles, admins can delete any
       allow delete: if (isAuthor() && resource.data.authorId == request.auth.uid) || isAdmin();
       
-      // Admins can update article status (featured, special, lead, and publish status)
+      // Admins can update article status and special ordering
       allow update: if isAdmin() && 
-                       ('isFeatured' in request.resource.data.diff(resource.data).changedKeys() ||
-                        'isSpecial' in request.resource.data.diff(resource.data).changedKeys() ||
-                        'isLead' in request.resource.data.diff(resource.data).changedKeys() ||
-                        'status' in request.resource.data.diff(resource.data).changedKeys());
+                       request.resource.data.diff(resource.data).affectedKeys()
+                       .hasAny(['isFeatured', 'isSpecial', 'isLead', 'isSpecialOrder', 'status']);
     }
 
     // ============================================================================

@@ -713,12 +713,13 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           onSubcategoryToggle={handleSubcategoryToggle}
           onSpecialChange={(type, index) => {
             if (type === 'lead') {
-              setFormData((prev) => ({ ...prev, isLead: true, isSpecial: false }))
+              setFormData((prev) => ({ ...prev, isLead: true, isSpecial: false, isSpecialOrder: 0 }))
             } else {
-              setFormData((prev) => ({ ...prev, isLead: false, isSpecial: true }))
+              const order = typeof index === 'number' ? index : 1
+              setFormData((prev) => ({ ...prev, isLead: false, isSpecial: true, isSpecialOrder: order }))
             }
           }}
-          specialIndex={1}
+          specialIndex={formData.isSpecialOrder !== undefined ? formData.isSpecialOrder : (formData.isLead ? 0 : 1)}
         />
 
         {/* Submit Buttons */}

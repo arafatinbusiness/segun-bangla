@@ -48,7 +48,7 @@ function HomePage() {
         const [leadData, featuredData, specialData, recentData, allData, categoriesData, excerptSnap, sliderSnap] = await Promise.all([
           getLeadArticles(1),
           getFeaturedArticles(5).catch(() => []), // reduced from 10
-          getSpecialArticles(12),
+          getSpecialArticles(50),
           getRecentArticles(10).catch(() => []), // reduced from 20
           getAllArticles(200).catch(() => []),
           getAllCategories(),
@@ -129,24 +129,18 @@ function HomePage() {
 
   // Merge lead + special into a single 12-slot array ordered by isSpecialOrder (same as tool)
   const allSlots: (FirestoreArticle | null)[] = new Array(12).fill(null)
-  const allSpecial = [...leadArticles, ...specialArticles]
-  for (const a of allSpecial) {
+  const allLeadAndSpecial = allArticles.filter(a => a.isLead || a.isSpecial)
+  for (const a of allLeadAndSpecial) {
     const order = (a as any).isSpecialOrder
     if (typeof order === 'number' && order >= 0 && order < 12) {
       allSlots[order] = a
     }
   }
-  // Fill empty slots with remaining unsorted articles
-  const usedIds = new Set(allSpecial.filter(a => a?.docId).map(a => a.docId))
-  const remaining = allSpecial.filter(a => !usedIds.has(a.docId))
-  for (let i = 0; i < 12; i++) {
-    if (!allSlots[i] && remaining.length > 0) {
-      allSlots[i] = remaining.shift()!
-    }
-  }
-  
-  const mainArticle = allSlots[0]  // Lead is slot 0
-  const specialArticlesList = [allSlots[1], allSlots[2], allSlots[3], allSlots[4]].filter(Boolean) as FirestoreArticle[] // SP-1 to SP-4
+
+  const mainArticle = allSlots[0]
+  const specialArticlesList = [
+    allSlots[1], allSlots[2], allSlots[3], allSlots[4]
+  ].filter(Boolean) as FirestoreArticle[]
   // Transitional/Dedicated row (before jatiyo) = SP-5 to SP-8 from tool slots 7,8,9,10
   const transitionalArticles = [allSlots[7], allSlots[8], allSlots[9], allSlots[10]].filter(Boolean) as FirestoreArticle[] // SP-5 to SP-8
   // EXTRA-1 (left), EXTRA-2 (right) below lead = from allSlots[5] and allSlots[6] (same as tool)
@@ -546,13 +540,13 @@ function HomePage() {
               {/* Special News SP-2 */}
               {specialArticlesList[1] && (
                 <article className="group">
-                  <a href={`/article/${specialArticlesList[1].slug}`}>
+                  <a href={`/article/${allSlots[2]!.slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
 
-                      {specialArticlesList[1].imageUrl ? (
+                      {allSlots[2]!.imageUrl ? (
                         <img
-                          src={specialArticlesList[1].imageUrl}
-                          alt={specialArticlesList[1].title}
+                          src={allSlots[2]!.imageUrl}
+                          alt={allSlots[2]!.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -563,13 +557,13 @@ function HomePage() {
                     </div>
 
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {specialArticlesList[1].shoulder ? (
+                      {allSlots[2]!.shoulder ? (
                         <>
-                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[1].shoulderTextColor || specialArticlesList[1].shoulderColor || '#FF0000' }}>{specialArticlesList[1].shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[1].shoulderTextColor || specialArticlesList[1].shoulderColor || '#FF0000' }}>•</span>
+                          <span className="text-[#FF0000]" style={{ color: allSlots[2]!.shoulderTextColor || allSlots[2]!.shoulderColor || '#FF0000' }}>{allSlots[2]!.shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: allSlots[2]!.shoulderTextColor || allSlots[2]!.shoulderColor || '#FF0000' }}>•</span>
                         </>
                       ) : null}
-                      {specialArticlesList[1].title}
+                      {allSlots[2]!.title}
                     </h3>
                     <p
                       className="text-[#444444] text-sm mt-1 leading-relaxed"
@@ -580,7 +574,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {excerptConfig.heroExcerpt && specialArticlesList[1].excerpt}
+                      {excerptConfig.heroExcerpt && allSlots[2]!.excerpt}
                     </p>
                   </a>
                 </article>
@@ -589,13 +583,13 @@ function HomePage() {
               {/* Special News SP-4 */}
               {specialArticlesList[3] && (
                 <article className="group pt-4 border-t border-[#f0f0f0]">
-                  <a href={`/article/${specialArticlesList[3].slug}`}>
+                  <a href={`/article/${allSlots[4]!.slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
 
-                      {specialArticlesList[3].imageUrl ? (
+                      {allSlots[4]!.imageUrl ? (
                         <img
-                          src={specialArticlesList[3].imageUrl}
-                          alt={specialArticlesList[3].title}
+                          src={allSlots[4]!.imageUrl}
+                          alt={allSlots[4]!.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -606,13 +600,13 @@ function HomePage() {
                     </div>
 
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {specialArticlesList[3].shoulder ? (
+                      {allSlots[4]!.shoulder ? (
                         <>
-                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[3].shoulderTextColor || specialArticlesList[3].shoulderColor || '#FF0000' }}>{specialArticlesList[3].shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[3].shoulderTextColor || specialArticlesList[3].shoulderColor || '#FF0000' }}>•</span>
+                          <span className="text-[#FF0000]" style={{ color: allSlots[4]!.shoulderTextColor || allSlots[4]!.shoulderColor || '#FF0000' }}>{allSlots[4]!.shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: allSlots[4]!.shoulderTextColor || allSlots[4]!.shoulderColor || '#FF0000' }}>•</span>
                         </>
                       ) : null}
-                      {specialArticlesList[3].title}
+                      {allSlots[4]!.title}
                     </h3>
                     <p
                       className="text-[#444444] text-sm mt-1 leading-relaxed"
@@ -623,7 +617,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {excerptConfig.heroExcerpt && specialArticlesList[3].excerpt}
+                      {excerptConfig.heroExcerpt && allSlots[4]!.excerpt}
                     </p>
                   </a>
                 </article>

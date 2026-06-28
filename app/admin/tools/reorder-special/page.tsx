@@ -9,7 +9,8 @@ import {
   limit,
   getDocs,
   writeBatch,
-  doc
+  doc,
+  getDoc
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import {
@@ -26,6 +27,9 @@ import type { FirestoreArticle } from '@/lib/types'
 // Row 2 (before jatiyo): [SP-5][SP-6][SP-7][SP-8]
 // EXTRA-1 = slot 5 (lead bottom left), EXTRA-2 = slot 6 (lead bottom right)
 // SP-5 = slot 7, SP-6 = slot 8, SP-7 = slot 9 (source), SP-8 = slot (source)
+// IMPORTANT: slotIdx matches isSpecialOrder value in Firestore
+// articles[] index = slotIdx = isSpecialOrder
+// Homepage specialArticlesList: [SP-1(1), SP-2(2), SP-3(3), SP-4(4)]
 const GRID_POSITIONS = [
   { slotIdx: 1, label: 'SP-1', row: 1 },
   { slotIdx: 2, label: 'SP-2', row: 1 },
@@ -58,7 +62,7 @@ function ReorderSpecialPage() {
         where('status', '==', 'published'),
         where('publishedAt', '<=', Date.now()),
         orderBy('publishedAt', 'desc'),
-        limit(30),
+        limit(100),
       )
       const snap = await getDocs(allQ)
       const allArts = snap.docs.map((d) => ({
@@ -169,7 +173,43 @@ function ReorderSpecialPage() {
     setSaving(true)
     setSaveStatus('idle')
     try {
+      // Build slot assignments map: slot name → docId
+      // This is the SINGLE SOURCE OF TRUTH for the entire portal
+      const slotAssignments: Record<string, string> = {}
       const batch = writeBatch(db)
+      
+      for (let order = 0; order < 12; order++) {
+        const article = articles[order]
+        if (!article || !article.docId) continue
+        
+        const slotKey = 
+          order === 0 ? 'lead' :
+          order === 1 ? 'sp1' :
+          order === 2 ? 'sp2' :
+          order === 3 ? 'sp3' :
+          order === 4 ? 'sp4' :
+          order === 5 ? 'extra1' :
+          order === 6 ? 'extra2' :
+          order === 7 ? 'sp5' :
+          order === 8 ? 'sp6' :
+          order === 9 ? 'sp7' :
+          order === 10 ? 'sp8' : 'sp9'
+        
+        slotAssignments[slotKey] = article.docId
+      }
+      
+      // Clear ALL existing isSpecialOrder and isSpecial/isLead to prevent conflicts
+      // Each slot in slot-assignments is the single source of truth
+      const allArts = await getDocs(query(collection(db, 'articles'), where('isSpecialOrder', '>=', 0)))
+      allArts.docs.forEach(docSnap => {
+        batch.update(docSnap.ref, {
+          isLead: false,
+          isSpecial: false,
+          isSpecialOrder: -1,
+        })
+      })
+      
+      // Now set only the articles that are in slots
       for (let order = 0; order < 12; order++) {
         const article = articles[order]
         if (!article || !article.docId) continue
@@ -180,7 +220,12 @@ function ReorderSpecialPage() {
           isSpecialOrder: order,
         })
       }
+      
+      // Save the slot mapping document (THE single source of truth)
+      batch.set(doc(db, 'settings', 'slot-assignments'), slotAssignments)
+      
       await batch.commit()
+      console.log('[Save] Slot assignments saved:', slotAssignments)
       setSaveStatus('success')
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (error) {
@@ -311,15 +356,9 @@ function ReorderSpecialPage() {
         
         {/* Row 1: Hero */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          {/* Left col: Ad + SP-1 + SP-3 (ad on top like homepage) */}
+          {/* Left col: SP-1 + SP-3 */}
           <div className="md:col-span-1 space-y-3">
-            {/* Ad Slot - on top (like homepage) */}
-            <div className="p-2 rounded-lg bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-850 border border-dashed border-gray-300 dark:border-gray-600 text-center">
-              <span className="text-[9px] text-gray-400 uppercase tracking-wider font-medium">Advertisement</span>
-              <div className="h-8 flex items-center justify-center">
-                <span className="text-[8px] text-gray-300">250x250</span>
-              </div>
-            </div>
+            <div className="text-[10px] font-bold text-center text-muted-foreground uppercase tracking-wider py-1 border-b border-dashed border-gray-200 dark:border-gray-700">সাইডবার স্পেশাল</div>
             <GridCell slotIdx={GRID_POSITIONS[0].slotIdx} label={GRID_POSITIONS[0].label} />
             <GridCell slotIdx={GRID_POSITIONS[3].slotIdx} label={GRID_POSITIONS[3].label} />
           </div>
@@ -331,15 +370,9 @@ function ReorderSpecialPage() {
               <GridCell slotIdx={GRID_POSITIONS[6].slotIdx} label={GRID_POSITIONS[6].label} />
             </div>
           </div>
-          {/* Right col: Ad + SP-2 + SP-4 */}
+          {/* Right col: SP-2 + SP-4 */}
           <div className="md:col-span-1 space-y-3">
-            {/* Ad Slot - on top (like homepage) */}
-            <div className="p-2 rounded-lg bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-850 border border-dashed border-gray-300 dark:border-gray-600 text-center">
-              <span className="text-[9px] text-gray-400 uppercase tracking-wider font-medium">Advertisement</span>
-              <div className="h-8 flex items-center justify-center">
-                <span className="text-[8px] text-gray-300">250x250</span>
-              </div>
-            </div>
+            <div className="text-[10px] font-bold text-center text-muted-foreground uppercase tracking-wider py-1 border-b border-dashed border-gray-200 dark:border-gray-700">সাইডবার স্পেশাল</div>
             <GridCell slotIdx={GRID_POSITIONS[1].slotIdx} label={GRID_POSITIONS[1].label} />
             <GridCell slotIdx={GRID_POSITIONS[4].slotIdx} label={GRID_POSITIONS[4].label} />
           </div>
