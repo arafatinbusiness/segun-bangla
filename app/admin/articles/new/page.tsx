@@ -49,18 +49,21 @@ function NewArticlePage() {
         }
       }
 
-      const primaryCategoryId = categoryIds.length > 0 ? categoryIds[0] : data.categoryId || ''
       const subcategoryIds = data.subcategoryIds || []
       const primarySubcategoryId = subcategoryIds.length > 0 ? subcategoryIds[0] : data.subcategoryId || ''
 
-      const articleData = {
+      const articleData: Record<string, any> = {
         ...data,
-        categoryId: primaryCategoryId,
         categoryIds: categoryIds,
         subcategoryId: primarySubcategoryId,
         subcategoryIds: subcategoryIds,
         authorId: user?.uid || 'unknown',
       }
+      // Only set categoryId if a category is selected (for backward compatibility)
+      if (categoryIds.length > 0) {
+        articleData.categoryId = categoryIds[0]
+      }
+
       const editor = user ? {
         uid: user.uid,
         name: user.displayName || user.email || 'Unknown',

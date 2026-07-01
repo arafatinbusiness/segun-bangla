@@ -70,9 +70,11 @@ service cloud.firestore {
       allow read: if isAuthor();
       
       // Authors and admins can create articles
+      // categoryId is optional - articles can be published without any category
       allow create: if isAuthor() &&
-                       request.resource.data.keys().hasAll(['title', 'slug', 'content', 'excerpt', 'categoryId', 'authorId']) &&
+                       request.resource.data.keys().hasAll(['title', 'slug', 'content', 'excerpt', 'authorId']) &&
                        request.resource.data.authorId == request.auth.uid;
+
       
       // Authors can update their own articles, admins can update any
       allow update: if (isAuthor() && resource.data.authorId == request.auth.uid) || isAdmin();
