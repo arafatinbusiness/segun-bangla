@@ -1,8 +1,12 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { Wrench, ArrowUpDown, UserSquare2, Eye, Palette, SlidersHorizontal } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Wrench, ArrowUpDown, UserSquare2, Eye, Palette, SlidersHorizontal, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+
+// Segun Bangla Studio URL — change to production URL when deployed
+const STUDIO_URL = process.env.NEXT_PUBLIC_STUDIO_URL || 'http://localhost:3000'
 
 const toolItems = [
   {
@@ -88,14 +92,33 @@ function ToolsPage() {
         })}
       </div>
 
-      {/* Placeholder info */}
-      <Card className="p-6 bg-muted/30">
-        <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-muted-foreground" />
-          <div>
-            <p className="text-sm text-muted-foreground">
-              এই টুলগুলি বর্তমানে নির্মাণাধীন। পরবর্তী আপডেটে সম্পূর্ণ কার্যকারিতা যুক্ত হবে।
+      {/* Segun Bangla Studio Integration */}
+      <Card className="p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+            <UserSquare2 className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-foreground">প্রোফাইল কার্ড জেনারেটর</h3>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                স্টুডিওতে খুলুন
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              সেগুন বাংলা স্টুডিওতে প্রোফাইল/কোট কার্ড তৈরি করুন — ২টি টেমপ্লেট, ফুল কালার কাস্টমাইজেশন, PNG ডাউনলোড
             </p>
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={() => {
+                const url = `${STUDIO_URL}/photocard`
+                window.open(url, 'segun-bangla-studio', 'width=1400,height=900,left=100,top=100')
+              }}
+            >
+              <ExternalLink className="w-4 h-4 mr-1.5" />
+              Segun Bangla Studio তে খুলুন
+            </Button>
           </div>
         </div>
       </Card>
