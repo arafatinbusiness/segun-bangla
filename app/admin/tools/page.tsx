@@ -41,14 +41,6 @@ const toolItems = [
     icon: Eye,
     status: 'available' as const,
   },
-  {
-    label: 'প্রোফাইল কার্ড জেনারেটর',
-    labelEn: 'Profile Card Generator',
-    description: 'সোশ্যাল কার্ডের মতো প্রোফাইল ছবি তৈরি করুন (সেগুন কালার ব্যাকগ্রাউন্ড)',
-    href: '/admin/tools/profile-card',
-    icon: UserSquare2,
-    status: 'coming-soon' as const,
-  },
 ]
 
 function ToolsPage() {
@@ -72,15 +64,9 @@ function ToolsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-foreground">{tool.label}</h3>
-                      {tool.status === 'coming-soon' ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium">
-                          শীঘ্রই আসছে
-                        </span>
-                      ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                          সক্রিয়
-                        </span>
-                      )}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                        সক্রিয়
+                      </span>
                     </div>
                     <p className="text-sm text-muted-foreground">{tool.description}</p>
                     <p className="text-xs text-muted-foreground mt-1">{tool.labelEn}</p>
@@ -108,17 +94,15 @@ function ToolsPage() {
             <p className="text-sm text-muted-foreground mb-3">
               সেগুন বাংলা স্টুডিওতে প্রোফাইল/কোট কার্ড তৈরি করুন — ২টি টেমপ্লেট, ফুল কালার কাস্টমাইজেশন, PNG ডাউনলোড
             </p>
-            <Button
-              size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => {
-                const url = `${STUDIO_URL}/photocard`
-                window.open(url, 'segun-bangla-studio', 'width=1400,height=900,left=100,top=100')
-              }}
+            <a
+              href={`${STUDIO_URL}/photocard`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
             >
-              <ExternalLink className="w-4 h-4 mr-1.5" />
+              <ExternalLink className="w-4 h-4" />
               Segun Bangla Studio তে খুলুন
-            </Button>
+            </a>
           </div>
         </div>
       </Card>
