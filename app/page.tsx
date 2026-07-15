@@ -538,15 +538,15 @@ function HomePage() {
               />
               
               {/* Special News SP-2 */}
-              {allSlots[2] && (
+              {specialArticlesList[1] && (
                 <article className="group">
-                  <a href={`/article/${allSlots[2].slug}`}>
+                  <a href={`/article/${allSlots[2]!.slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
 
-                      {allSlots[2].imageUrl ? (
+                      {allSlots[2]!.imageUrl ? (
                         <img
-                          src={allSlots[2].imageUrl}
-                          alt={allSlots[2].title}
+                          src={allSlots[2]!.imageUrl}
+                          alt={allSlots[2]!.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -557,13 +557,13 @@ function HomePage() {
                     </div>
 
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {allSlots[2].shoulder ? (
+                      {allSlots[2]!.shoulder ? (
                         <>
-                          <span className="text-[#FF0000]" style={{ color: allSlots[2].shoulderTextColor || allSlots[2].shoulderColor || '#FF0000' }}>{allSlots[2].shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: allSlots[2].shoulderTextColor || allSlots[2].shoulderColor || '#FF0000' }}>•</span>
+                          <span className="text-[#FF0000]" style={{ color: allSlots[2]!.shoulderTextColor || allSlots[2]!.shoulderColor || '#FF0000' }}>{allSlots[2]!.shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: allSlots[2]!.shoulderTextColor || allSlots[2]!.shoulderColor || '#FF0000' }}>•</span>
                         </>
                       ) : null}
-                      {allSlots[2].title}
+                      {allSlots[2]!.title}
                     </h3>
                     <p
                       className="text-[#444444] text-sm mt-1 leading-relaxed"
@@ -574,22 +574,22 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {excerptConfig.heroExcerpt && allSlots[2].excerpt}
+                      {excerptConfig.heroExcerpt && allSlots[2]!.excerpt}
                     </p>
                   </a>
                 </article>
               )}
               
               {/* Special News SP-4 */}
-              {allSlots[4] && (
+              {specialArticlesList[3] && (
                 <article className="group pt-4 border-t border-[#f0f0f0]">
-                  <a href={`/article/${allSlots[4].slug}`}>
+                  <a href={`/article/${allSlots[4]!.slug}`}>
                     <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
 
-                      {allSlots[4].imageUrl ? (
+                      {allSlots[4]!.imageUrl ? (
                         <img
-                          src={allSlots[4].imageUrl}
-                          alt={allSlots[4].title}
+                          src={allSlots[4]!.imageUrl}
+                          alt={allSlots[4]!.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -600,13 +600,13 @@ function HomePage() {
                     </div>
 
                     <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {allSlots[4].shoulder ? (
+                      {allSlots[4]!.shoulder ? (
                         <>
-                          <span className="text-[#FF0000]" style={{ color: allSlots[4].shoulderTextColor || allSlots[4].shoulderColor || '#FF0000' }}>{allSlots[4].shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: allSlots[4].shoulderTextColor || allSlots[4].shoulderColor || '#FF0000' }}>•</span>
+                          <span className="text-[#FF0000]" style={{ color: allSlots[4]!.shoulderTextColor || allSlots[4]!.shoulderColor || '#FF0000' }}>{allSlots[4]!.shoulder}</span>
+                          <span className="text-[#FF0000] mx-1.5" style={{ color: allSlots[4]!.shoulderTextColor || allSlots[4]!.shoulderColor || '#FF0000' }}>•</span>
                         </>
                       ) : null}
-                      {allSlots[4].title}
+                      {allSlots[4]!.title}
                     </h3>
                     <p
                       className="text-[#444444] text-sm mt-1 leading-relaxed"
@@ -617,7 +617,7 @@ function HomePage() {
                         overflow: 'hidden',
                       }}
                     >
-                      {excerptConfig.heroExcerpt && allSlots[4].excerpt}
+                      {excerptConfig.heroExcerpt && allSlots[4]!.excerpt}
                     </p>
                   </a>
                 </article>

@@ -1,12 +1,8 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Wrench, ArrowUpDown, UserSquare2, Eye, Palette, SlidersHorizontal, ExternalLink } from 'lucide-react'
+import { Wrench, ArrowUpDown, UserSquare2, Eye, Palette, SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'
-
-// Segun Bangla Studio URL — change to production URL when deployed
-const STUDIO_URL = process.env.NEXT_PUBLIC_STUDIO_URL || 'http://localhost:3000'
 
 const toolItems = [
   {
@@ -41,6 +37,14 @@ const toolItems = [
     icon: Eye,
     status: 'available' as const,
   },
+  {
+    label: 'প্রোফাইল কার্ড জেনারেটর',
+    labelEn: 'Profile Card Generator',
+    description: 'সোশ্যাল কার্ডের মতো প্রোফাইল ছবি তৈরি করুন (সেগুন কালার ব্যাকগ্রাউন্ড)',
+    href: '/admin/tools/profile-card',
+    icon: UserSquare2,
+    status: 'coming-soon' as const,
+  },
 ]
 
 function ToolsPage() {
@@ -64,9 +68,15 @@ function ToolsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-foreground">{tool.label}</h3>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                        সক্রিয়
-                      </span>
+                      {tool.status === 'coming-soon' ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium">
+                          শীঘ্রই আসছে
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                          সক্রিয়
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">{tool.description}</p>
                     <p className="text-xs text-muted-foreground mt-1">{tool.labelEn}</p>
@@ -78,31 +88,14 @@ function ToolsPage() {
         })}
       </div>
 
-      {/* Segun Bangla Studio Integration */}
-      <Card className="p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-            <UserSquare2 className="w-6 h-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-foreground">প্রোফাইল কার্ড জেনারেটর</h3>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                স্টুডিওতে খুলুন
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              সেগুন বাংলা স্টুডিওতে প্রোফাইল/কোট কার্ড তৈরি করুন — ২টি টেমপ্লেট, ফুল কালার কাস্টমাইজেশন, PNG ডাউনলোড
+      {/* Placeholder info */}
+      <Card className="p-6 bg-muted/30">
+        <div className="flex items-center gap-3">
+          <Wrench className="w-5 h-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">
+              এই টুলগুলি বর্তমানে নির্মাণাধীন। পরবর্তী আপডেটে সম্পূর্ণ কার্যকারিতা যুক্ত হবে।
             </p>
-            <a
-              href={`${STUDIO_URL}/photocard`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Segun Bangla Studio তে খুলুন
-            </a>
           </div>
         </div>
       </Card>

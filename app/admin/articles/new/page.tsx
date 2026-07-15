@@ -7,8 +7,9 @@ import { createArticle } from '@/lib/services/article-mutations'
 import { ArticleForm } from '@/components/admin/article-form'
 import { useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
+
 import { db } from '@/lib/firebase'
-import { cascadeSlotAssignment } from '@/lib/services/slot-cascade'
 import type { Category } from '@/lib/types'
 
 
@@ -71,10 +72,43 @@ function NewArticlePage() {
       const articleId = await createArticle(articleData, editor)
 
       if (articleId) {
-        // If this article is assigned to a special slot, cascade existing articles down
+        // If this article is assigned to a special slot, update slot-assignments
         if (data.isLead || data.isSpecial) {
-          const targetSlot = data.isSpecialOrder !== undefined ? data.isSpecialOrder : (data.isLead ? 0 : 1)
-          await cascadeSlotAssignment(targetSlot, articleId)
+          const slotKey = 
+            data.isSpecialOrder === 0 ? 'lead' :
+            data.isSpecialOrder === 1 ? 'sp1' :
+            data.isSpecialOrder === 2 ? 'sp2' :
+            data.isSpecialOrder === 3 ? 'sp3' :
+            data.isSpecialOrder === 4 ? 'sp4' :
+            data.isSpecialOrder === 5 ? 'extra1' :
+            data.isSpecialOrder === 6 ? 'extra2' :
+            data.isSpecialOrder === 7 ? 'sp5' :
+            data.isSpecialOrder === 8 ? 'sp6' :
+            data.isSpecialOrder === 9 ? 'sp7' :
+            data.isSpecialOrder === 10 ? 'sp8' : null
+          
+          if (slotKey) {
+            // Get current slot assignments
+            const slotDoc = await getDoc(doc(db, 'settings', 'slot-assignments'))
+            const currentSlots = slotDoc.exists() ? slotDoc.data() : {}
+            
+            // If this slot already has an article, clear its special flags
+            const existingArticleId = currentSlots[slotKey]
+            if (existingArticleId && existingArticleId !== articleId) {
+              const existingRef = doc(db, 'articles', existingArticleId)
+              await updateDoc(existingRef, {
+                isLead: false,
+                isSpecial: false,
+                isSpecialOrder: -1,
+              })
+            }
+            
+            // Update slot-assignments with new article
+            await setDoc(doc(db, 'settings', 'slot-assignments'), {
+              ...currentSlots,
+              [slotKey]: articleId,
+            })
+          }
         }
         
         alert('নিবন্ধ সফলভাবে তৈরি হয়েছে')
