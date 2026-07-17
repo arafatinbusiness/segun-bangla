@@ -523,7 +523,9 @@ function HomePage() {
                               className="text-[#000000] font-bold text-sm leading-tight mt-1 group-hover:text-[#FF0000] transition-colors"
                               style={{
                                 display: '-webkit-box',
-                                WebkitLineClamp: useAuto ? 3 : (excerptConfig.extraHeadingLineClamp || 2),
+                                // When auto proportion is ON and article has a shoulder,
+                                // reduce heading clamp to 2 since shoulder takes extra space
+                                WebkitLineClamp: useAuto ? (article.shoulder ? 2 : 3) : (excerptConfig.extraHeadingLineClamp || 2),
                                 WebkitBoxOrient: 'vertical',
                                 overflow: 'hidden',
                               }}
