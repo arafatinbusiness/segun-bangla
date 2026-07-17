@@ -10,7 +10,7 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
 // DEPLOY_VERSION = 'v5'  // Added "সর্বশেষ" as first menu item, "সব দেখুন" opens overlay with all categories
-const DEPLOY_VERSION = 'v17'
+const DEPLOY_VERSION = 'v18'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
@@ -37,10 +37,17 @@ export function Header({ categories }: HeaderProps) {
     setCurrentDate(new Date().toLocaleDateString('bn-BD'))
   }, [])
 
-  // Scroll detection for sticky behavior
+  // Scroll detection with hysteresis to prevent vibration
   useEffect(() => {
+    let lastScrollY = 0
     const handleScroll = () => {
-      setScrolled(window.scrollY > 120)
+      const currentScrollY = window.scrollY
+      if (currentScrollY > 120) {
+        setScrolled(true)
+      } else if (currentScrollY < 80) {
+        setScrolled(false)
+      }
+      lastScrollY = currentScrollY
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
@@ -167,20 +174,18 @@ export function Header({ categories }: HeaderProps) {
         </div>
       </div>
 
-      {/* Logo Section - Fixed height container to prevent layout shifts */}
-      <div className="relative h-[104px] overflow-hidden">
-        <div
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${
-            scrolled ? 'py-1' : 'py-6'
-          }`}
-        >
+      {/* Logo Section - Collapses completely on scroll to save space */}
+      <div
+        className={`relative overflow-hidden transition-all duration-300 ease-in-out ${
+          scrolled ? 'h-0' : 'h-[104px]'
+        }`}
+      >
+        <div className="absolute inset-0 flex items-center justify-center py-6">
           <a href="/">
             <img
               src="/logo.png"
               alt="সেগুন বাংলা"
-              className={`w-auto object-contain transition-all duration-300 ease-in-out ${
-                scrolled ? 'h-8' : 'h-14'
-              }`}
+              className="w-auto object-contain h-14"
             />
           </a>
         </div>

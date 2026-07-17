@@ -7,7 +7,7 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, Edit2, Eye, Plus, Search, FileText, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film, History } from 'lucide-react'
+import { Trash2, Edit2, Eye, Plus, Search, FileText, ChevronLeft, ChevronRight, Image, Facebook, Instagram, Video, IdCard, Film, History, LayoutGrid } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogTrigger,

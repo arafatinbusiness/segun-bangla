@@ -479,9 +479,6 @@ function CategoryPage() {
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="mb-8">
               <h1 className="text-4xl font-bold text-[#000000] mb-2">{category.name}</h1>
-              {category.description && (
-                <p className="text-lg text-[#444444]">{category.description}</p>
-              )}
             </div>
             <div className="text-center py-12">
               <p className="text-[#444444]">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>
@@ -500,9 +497,6 @@ function CategoryPage() {
           {/* ── Category Header ─────────────────────────────────────────────── */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-[#000000] mb-2">{category.name}</h1>
-            {category.description && (
-              <p className="text-lg text-[#444444]">{category.description}</p>
-            )}
           </div>
 
           {/* ── Subcategory Pills ──────────────────────────────────────────── */}

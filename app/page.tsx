@@ -21,11 +21,15 @@ interface ExcerptConfig {
   extraExcerpt: boolean
   categoryLeadExcerpt: boolean
   categoryListExcerpt: boolean
+  extraLineClamp: number
+  extraFontSize: string
 }
 
 const DEFAULT_EXCERPT: ExcerptConfig = {
   heroExcerpt: true, leadExcerpt: true, transitionalExcerpt: true,
   extraExcerpt: true, categoryLeadExcerpt: true, categoryListExcerpt: true,
+  extraLineClamp: 6,
+  extraFontSize: 'text-sm',
 }
 
 function HomePage() {
@@ -511,10 +515,10 @@ function HomePage() {
                             {article.title}
                           </h3>
                           <p
-                            className="text-[#444444] text-sm mt-1 leading-relaxed"
+                            className={`text-[#444444] ${excerptConfig.extraFontSize || 'text-sm'} mt-1 leading-relaxed`}
                             style={{
                               display: '-webkit-box',
-                              WebkitLineClamp: 6,
+                              WebkitLineClamp: excerptConfig.extraLineClamp || 6,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
                             }}

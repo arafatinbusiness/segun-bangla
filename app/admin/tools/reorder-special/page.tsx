@@ -54,39 +54,83 @@ function ReorderSpecialPage() {
   // Click-to-swap state: first click selects, second click swaps
   const [selectedSlot, setSelectedSlot] = useState<{ type: 'grid'|'source'; slotIdx?: number } | null>(null)
   const [sourceArticles, setSourceArticles] = useState<FirestoreArticle[]>([])
+  const [showSourceList, setShowSourceList] = useState(false)
   const fetchArticles = useCallback(async () => {
     setLoading(true)
     try {
-      const allQ = query(
+      // 1. First get the slot-assignments document (single source of truth)
+      const slotDoc = await getDoc(doc(db, 'settings', 'slot-assignments'))
+      const slotAssignments: Record<string, string> = slotDoc.exists() ? slotDoc.data() as Record<string, string> : {}
+      
+      // 2. Get all articles that are in slot-assignments
+      const slotArticleIds = Object.values(slotAssignments).filter(Boolean)
+      const slots: FirestoreArticle[] = new Array(12).fill(null)
+      
+      if (slotArticleIds.length > 0) {
+        // Fetch each article individually (Firestore doesn't support "IN" with more than 10)
+        // But we can batch them
+        const slotArticles: FirestoreArticle[] = []
+        for (const id of slotArticleIds) {
+          const docSnap = await getDoc(doc(db, 'articles', id))
+          if (docSnap.exists()) {
+            slotArticles.push({ ...docSnap.data(), docId: docSnap.id } as FirestoreArticle)
+          }
+        }
+        
+        // Map slot keys to slot indices
+        const SLOT_KEY_TO_IDX: Record<string, number> = {
+          'lead': 0, 'sp1': 1, 'sp2': 2, 'sp3': 3, 'sp4': 4,
+          'extra1': 5, 'extra2': 6, 'sp5': 7, 'sp6': 8, 'sp7': 9, 'sp8': 10
+        }
+        
+        for (const [slotKey, articleId] of Object.entries(slotAssignments)) {
+          const slotIdx = SLOT_KEY_TO_IDX[slotKey]
+          if (typeof slotIdx === 'number' && slotIdx >= 0 && slotIdx < 12) {
+            const article = slotArticles.find(a => a.docId === articleId)
+            if (article) {
+              slots[slotIdx] = article
+            }
+          }
+        }
+      }
+
+      // 3. Get source articles: published articles that are NOT in any slot
+      // Only fetch articles that have isSpecial=true OR isLead=true to keep list clean
+      const sourceQ = query(
         collection(db, 'articles'),
         where('status', '==', 'published'),
-        where('publishedAt', '<=', Date.now()),
+        where('isSpecial', '==', true),
         orderBy('publishedAt', 'desc'),
-        limit(100),
+        limit(50),
       )
-      const snap = await getDocs(allQ)
-      const allArts = snap.docs.map((d) => ({
+      const sourceSnap = await getDocs(sourceQ)
+      const allSpecialArts = sourceSnap.docs.map((d) => ({
         ...d.data(),
         docId: d.id,
       })) as FirestoreArticle[]
 
-      const leadArts = allArts.filter(a => a.isLead)
-      const specialArts = allArts.filter(a => a.isSpecial && !a.isLead)
+      // Also get lead articles that might not be in slot-assignments
+      const leadQ = query(
+        collection(db, 'articles'),
+        where('status', '==', 'published'),
+        where('isLead', '==', true),
+        orderBy('publishedAt', 'desc'),
+        limit(20),
+      )
+      const leadSnap = await getDocs(leadQ)
+      const leadArts = leadSnap.docs.map((d) => ({
+        ...d.data(),
+        docId: d.id,
+      })) as FirestoreArticle[]
 
-      // Grid slots: ONLY place articles that already have isSpecialOrder set
-      // Empty slots stay empty (user must drag from source to fill)
-      const slots: FirestoreArticle[] = new Array(12).fill(null)
-
-      for (const a of [...leadArts, ...specialArts]) {
-        const order = (a as any).isSpecialOrder
-        if (typeof order === 'number' && order >= 0 && order < 12) {
-          slots[order] = a
-        }
-      }
-
-      // Source list: all lead + special articles that are NOT in slots
-      const inSlots = new Set(slots.filter(Boolean).map(s => s.docId))
-      const sourceArticles = [...leadArts, ...specialArts].filter(a => !inSlots.has(a.docId))
+      // Source list: articles that are NOT already in slots
+      const inSlots = new Set(slotArticleIds)
+      const sourceArticles = [...allSpecialArts, ...leadArts]
+        .filter(a => !inSlots.has(a.docId))
+        // Remove duplicates (same article might be in both queries)
+        .filter((a, idx, self) => self.findIndex(s => s.docId === a.docId) === idx)
+        // Only show articles that have valid special flags
+        .filter(a => a.isLead || (a.isSpecial && typeof a.isSpecialOrder === 'number' && a.isSpecialOrder >= 0))
 
       console.log('[Reorder] slots:', slots.map((s, i) => s ? `${i}: ${s?.title?.slice(0,25)}` : `${i}: empty`))
       console.log('[Reorder] source:', sourceArticles.map(s => s?.title?.slice(0,30)))
@@ -385,41 +429,49 @@ function ReorderSpecialPage() {
               <GridCell key={pos.label} slotIdx={pos.slotIdx} label={pos.label} />
             ))}
           </div>
-      {/* Source List: special articles not yet assigned to grid */}
+      {/* Source List Toggle Button */}
       {sourceArticles.length > 0 && (
-        <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-4 pt-3 pb-1 flex items-center gap-2">
-            <span>📋 সোর্স লিস্ট</span>
-            <span className="text-[9px] font-normal text-muted-foreground">— এখান থেকে টেনে গ্রিডে ফেলুন ({sourceArticles.length})</span>
-          </div>
-          <div className="p-3 space-y-1.5">
-            {sourceArticles.map((article, idx) => {
-              if (!article || !article.docId) return null
-              return (
-                <div
-                  key={article.docId}
-                  className="flex items-center gap-2.5 px-3 py-2 transition-all duration-150 select-none rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow"
-                  onClick={() => handleSourceClick(idx)}
-                  style={{cursor: 'pointer'}}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{article.title}</p>
-                    <p className="text-[9px] text-muted-foreground truncate">/{article.slug}</p>
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+          <button
+            onClick={() => setShowSourceList(!showSourceList)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-full text-left"
+          >
+            <span className={`text-xs transition-transform ${showSourceList ? 'rotate-90' : ''}`}>▶</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+              📋 সোর্স লিস্ট {showSourceList ? 'লুকান' : 'দেখান'} ({sourceArticles.length})
+            </span>
+          </button>
+          
+          {showSourceList && (
+            <div className="mt-2 p-3 space-y-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+              {sourceArticles.map((article, idx) => {
+                if (!article || !article.docId) return null
+                return (
+                  <div
+                    key={article.docId}
+                    className="flex items-center gap-2.5 px-3 py-2 transition-all duration-150 select-none rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow"
+                    onClick={() => handleSourceClick(idx)}
+                    style={{cursor: 'pointer'}}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{article.title}</p>
+                      <p className="text-[9px] text-muted-foreground truncate">/{article.slug}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {article.imageUrl && (
+                        <div className="w-5 h-5 rounded overflow-hidden bg-muted shrink-0">
+                          <img src={article.imageUrl} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold text-white bg-gradient-to-r from-violet-500 to-purple-600">
+                        {article.isLead ? 'লিড' : 'SP'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {article.imageUrl && (
-                      <div className="w-5 h-5 rounded overflow-hidden bg-muted shrink-0">
-                        <img src={article.imageUrl} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold text-white bg-gradient-to-r from-violet-500 to-purple-600">
-                      {article.isLead ? 'লিড' : 'SP'}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
         </div>
