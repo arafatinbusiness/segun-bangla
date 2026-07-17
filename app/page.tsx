@@ -24,6 +24,7 @@ interface ExcerptConfig {
   extraLineClamp: number
   extraFontSize: string
   extraHeadingLineClamp: number
+  extraAutoProportion: boolean
 }
 
 const DEFAULT_EXCERPT: ExcerptConfig = {
@@ -32,7 +33,11 @@ const DEFAULT_EXCERPT: ExcerptConfig = {
   extraLineClamp: 6,
   extraFontSize: 'text-sm',
   extraHeadingLineClamp: 2,
+  extraAutoProportion: false,
 }
+
+// Total lines available for heading + excerpt combined (for auto proportion)
+const EXTRA_TOTAL_LINES = 8
 
 function HomePage() {
   const { template } = useTheme()
@@ -490,9 +495,14 @@ function HomePage() {
                 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {extraArticles.map((article) => (
-                      <article key={article.docId} className="group">
-                        <a href={`/article/${article.slug}`}>
+                    {extraArticles.map((article) => {
+                      // When auto proportion is ON, use a fixed-height text container
+                      // so both cards always end at the same imaginary line
+                      const useAuto = excerptConfig.extraAutoProportion
+                      
+                      return (
+                      <article key={article.docId} className="group flex flex-col">
+                        <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
                           <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
                             {article.imageUrl ? (
                               <img
@@ -507,37 +517,41 @@ function HomePage() {
                             )}
                           </div>
 
-                          <h3
-                            className="text-[#000000] font-bold text-sm leading-tight mt-1 group-hover:text-[#FF0000] transition-colors"
-                            style={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: excerptConfig.extraHeadingLineClamp || 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            {article.shoulder ? (
-                              <>
-                                <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
-                                <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
-                              </>
-                            ) : null}
-                            {article.title}
-                          </h3>
-                          <p
-                            className={`text-[#444444] ${excerptConfig.extraFontSize || 'text-sm'} mt-1 leading-relaxed`}
-                            style={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: excerptConfig.extraLineClamp || 6,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            {excerptConfig.extraExcerpt && article.excerpt}
-                          </p>
+                          {/* Text container: fixed height when auto proportion is ON */}
+                          <div className={useAuto ? 'h-[65px] overflow-hidden flex flex-col' : ''}>
+                            <h3
+                              className="text-[#000000] font-bold text-sm leading-tight mt-1 group-hover:text-[#FF0000] transition-colors"
+                              style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: useAuto ? 3 : (excerptConfig.extraHeadingLineClamp || 2),
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {article.shoulder ? (
+                                <>
+                                  <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
+                                  <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
+                                </>
+                              ) : null}
+                              {article.title}
+                            </h3>
+                            <p
+                              className={`text-[#444444] ${excerptConfig.extraFontSize || 'text-sm'} mt-1 leading-relaxed flex-1`}
+                              style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: useAuto ? 10 : (excerptConfig.extraLineClamp || 6),
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {excerptConfig.extraExcerpt && article.excerpt}
+                            </p>
+                          </div>
                         </a>
                       </article>
-                    ))}
+                      )
+                    })}
                   </div>
                 )
               })()}

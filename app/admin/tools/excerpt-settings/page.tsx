@@ -16,6 +16,7 @@ interface ExcerptConfig {
   extraLineClamp: number
   extraFontSize: string
   extraHeadingLineClamp: number
+  extraAutoProportion: boolean
 }
 
 const DEFAULT_CONFIG: ExcerptConfig = {
@@ -28,6 +29,7 @@ const DEFAULT_CONFIG: ExcerptConfig = {
   extraLineClamp: 6,
   extraFontSize: 'text-sm',
   extraHeadingLineClamp: 2,
+  extraAutoProportion: false,
 }
 
 const SETTINGS_DOC = 'homepage-excerpts'
@@ -139,73 +141,101 @@ function ExcerptSettingsPage() {
           <p className="text-xs text-muted-foreground mt-0.5">হেডিং ও এক্সসার্পটের লাইন সংখ্যা এবং ফন্ট সাইজ কন্ট্রোল</p>
         </div>
         <div className="p-4 space-y-4">
-          {/* Heading Line Clamp — controls how many lines the title takes */}
-          <div>
-            <label className="text-sm font-medium text-gray-700">হেডিং লাইনের সংখ্যা</label>
-            <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">শিরোনাম কত লাইন পর্যন্ত দেখাবে (বড় হেডিং ২ লাইনে ভেঙে пропорция নষ্ট করলে ১ লাইন সেট করুন)</p>
-            <div className="flex gap-2">
-              {[1, 2, 3].map(n => (
-                <button
-                  key={n}
-                  onClick={() => { setConfig(p => ({ ...p, extraHeadingLineClamp: n })); setSaveStatus('idle') }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    config.extraHeadingLineClamp === n
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {n} লাইন
-                </button>
-              ))}
+          {/* Auto Proportion Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200">
+            <div className="flex-1 mr-4">
+              <label className="text-sm font-bold text-gray-800">🔄 অটো প্রোপোর্শন</label>
+              <p className="text-[10px] text-gray-500 mt-0.5">চালু করলে EXTRA-1 ও EXTRA-2 সবসময় সমান উচ্চতায় থাকবে — বড় হেডিংয়ে এক্সসার্পট কম দেখাবে, ছোট হেডিংয়ে বেশি</p>
             </div>
+            <button
+              onClick={() => { setConfig(p => ({ ...p, extraAutoProportion: !p.extraAutoProportion })); setSaveStatus('idle') }}
+              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${config.extraAutoProportion ? 'bg-purple-600' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${config.extraAutoProportion ? 'translate-x-6' : ''}`} />
+            </button>
           </div>
 
-          {/* Excerpt Line Clamp */}
-          <div>
-            <label className="text-sm font-medium text-gray-700">এক্সসার্পট লাইনের সংখ্যা (Line Clamp)</label>
-            <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">এক্সসার্পট কত লাইন দেখাবে</p>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5, 6].map(n => (
-                <button
-                  key={n}
-                  onClick={() => { setConfig(p => ({ ...p, extraLineClamp: n })); setSaveStatus('idle') }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    config.extraLineClamp === n
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {n} লাইন
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Manual controls — shown only when auto proportion is OFF */}
+          {!config.extraAutoProportion && (
+            <>
+              {/* Heading Line Clamp */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">হেডিং লাইনের সংখ্যা</label>
+                <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">শিরোনাম কত লাইন পর্যন্ত দেখাবে</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => { setConfig(p => ({ ...p, extraHeadingLineClamp: n })); setSaveStatus('idle') }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        config.extraHeadingLineClamp === n
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {n} লাইন
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Font Size */}
-          <div>
-            <label className="text-sm font-medium text-gray-700">এক্সসার্পট ফন্ট সাইজ</label>
-            <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">এক্সসার্পটের টেক্সট সাইজ</p>
-            <div className="flex gap-2">
-              {[
-                { value: 'text-xs', label: 'অতি ছোট' },
-                { value: 'text-sm', label: 'ছোট' },
-                { value: 'text-base', label: 'মাঝারি' },
-                { value: 'text-lg', label: 'বড়' },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setConfig(p => ({ ...p, extraFontSize: opt.value })); setSaveStatus('idle') }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    config.extraFontSize === opt.value
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {/* Excerpt Line Clamp */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">এক্সসার্পট লাইনের সংখ্যা (Line Clamp)</label>
+                <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">এক্সসার্পট কত লাইন দেখাবে</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5, 6].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => { setConfig(p => ({ ...p, extraLineClamp: n })); setSaveStatus('idle') }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        config.extraLineClamp === n
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {n} লাইন
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Font Size */}
+              <div>
+                <label className="text-sm font-medium text-gray-700">এক্সসার্পট ফন্ট সাইজ</label>
+                <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">এক্সসার্পটের টেক্সট সাইজ</p>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'text-xs', label: 'অতি ছোট' },
+                    { value: 'text-sm', label: 'ছোট' },
+                    { value: 'text-base', label: 'মাঝারি' },
+                    { value: 'text-lg', label: 'বড়' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setConfig(p => ({ ...p, extraFontSize: opt.value })); setSaveStatus('idle') }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        config.extraFontSize === opt.value
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Auto proportion info — shown when auto is ON */}
+          {config.extraAutoProportion && (
+            <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+              <p className="text-xs text-purple-700">
+                <strong>🔄 অটো প্রোপোর্শন চালু:</strong> হেডিং যত লাইন নেবে, এক্সসার্পট তত লাইন কম পাবে — ফলে দুটি কার্ড সবসময় সমান উচ্চতায় থাকবে।
+              </p>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
