@@ -82,7 +82,14 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     e.preventDefault()
     setSubmitting(true)
     try {
-      await onSubmit(formData)
+      // Clean undefined values — Firestore doesn't accept undefined
+      const cleaned: Record<string, any> = {}
+      for (const [key, val] of Object.entries(formData)) {
+        if (val !== undefined) {
+          cleaned[key] = val
+        }
+      }
+      await onSubmit(cleaned as Partial<Article>)
     } finally {
       setSubmitting(false)
     }

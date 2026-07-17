@@ -120,7 +120,8 @@ export function CategoryPanel({
   // Determine current special value
 
 
-  const currentSpecial = isLead ? 'lead' : isSpecial ? `special-${specialIndex || 1}` : ''
+  // Default to 'none' when no special slot is selected (so "কোনটি নয়" is pre-selected)
+  const currentSpecial = isLead ? 'lead' : isSpecial ? `special-${specialIndex || 1}` : 'none'
 
   return (
     <div className="space-y-3">
