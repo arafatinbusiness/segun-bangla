@@ -15,13 +15,15 @@ interface CategoryPanelProps {
   isSpecial: boolean
   onCategoryToggle: (catId: string) => void
   onSubcategoryToggle: (subId: string) => void
-  onSpecialChange: (type: 'lead' | 'special', index?: number) => void
+  onSpecialChange: (type: 'lead' | 'special' | 'none', index?: number) => void
   specialIndex?: number // 0 = lead, 1-9 = special 1-9
 }
 
 // Special article types - matching tool's GRID_POSITIONS
 // slot 0 = lead, slot 1 = SP-1, slot 2 = SP-2, ..., slot 8 = SP-8
+// "none" means this article is NOT assigned to any special slot (just a regular article)
 const SPECIAL_ITEMS = [
+  { value: 'none', label: '— কোনটি নয় (সাধারণ নিবন্ধ)', slot: -1 },
   { value: 'lead', label: '★ প্রধান নিবন্ধ (লিড)', slot: 0 },
   { value: 'special-1', label: 'SP-1', slot: 1 },
   { value: 'special-2', label: 'SP-2', slot: 2 },
@@ -151,7 +153,10 @@ export function CategoryPanel({
                       name="special-article"
                       checked={isSelected}
                       onChange={() => {
-                        if (item.value === 'lead') {
+                        if (item.value === 'none') {
+                          // "None" selected — clear all special assignments
+                          onSpecialChange('none')
+                        } else if (item.value === 'lead') {
                           onSpecialChange('lead')
                         } else {
                           const idx = parseInt(item.value.split('-')[1])

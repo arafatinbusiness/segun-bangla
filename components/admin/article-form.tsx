@@ -712,7 +712,10 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           onCategoryToggle={handleCategoryToggle}
           onSubcategoryToggle={handleSubcategoryToggle}
           onSpecialChange={(type, index) => {
-            if (type === 'lead') {
+            if (type === 'none') {
+              // User chose "কোনটি নয়" — clear all special assignments
+              setFormData((prev) => ({ ...prev, isLead: false, isSpecial: false, isSpecialOrder: undefined }))
+            } else if (type === 'lead') {
               setFormData((prev) => ({ ...prev, isLead: true, isSpecial: false, isSpecialOrder: 0 }))
             } else {
               const order = typeof index === 'number' ? index : 1
