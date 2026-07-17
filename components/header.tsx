@@ -140,10 +140,10 @@ export function Header({ categories }: HeaderProps) {
     (c) => c.id !== specialCategory?.id && !hiddenCategorySlugs.includes(c.slug) && !hiddenCategorySlugs.includes(c.name)
   )
 
-  // Show special first, then up to 10 others (total 12: সর্বশেষ + special + 10 + সব দেখুন)
+  // Show special first, then up to 8 others (total 10: সর্বশেষ + special + 8 + সব দেখুন)
   const visibleCategories = specialCategory
-    ? [specialCategory, ...otherCategories.slice(0, 10)]
-    : otherCategories.slice(0, 11)
+    ? [specialCategory, ...otherCategories.slice(0, 8)]
+    : otherCategories.slice(0, 9)
 
   return (
     <header className="sticky top-0 z-50 bg-white">
