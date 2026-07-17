@@ -139,8 +139,16 @@ function HomePage() {
   }
 
   // Merge lead + special into a single 12-slot array ordered by isSpecialOrder (same as tool)
+  // Only include articles that have a valid isSpecialOrder (0-11).
+  // Articles with isSpecial=true but no isSpecialOrder are NOT grid articles —
+  // they just have "special" as a regular category.
   const allSlots: (FirestoreArticle | null)[] = new Array(12).fill(null)
-  const allLeadAndSpecial = allArticles.filter(a => a.isLead || a.isSpecial)
+  const allLeadAndSpecial = allArticles.filter(a => {
+    if (!a.isLead && !a.isSpecial) return false
+    // Must have a valid isSpecialOrder to be in the grid
+    const order = (a as any).isSpecialOrder
+    return typeof order === 'number' && order >= 0 && order < 12
+  })
   for (const a of allLeadAndSpecial) {
     const order = (a as any).isSpecialOrder
     if (typeof order === 'number' && order >= 0 && order < 12) {
