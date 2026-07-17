@@ -10,7 +10,7 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
 // DEPLOY_VERSION = 'v5'  // Added "সর্বশেষ" as first menu item, "সব দেখুন" opens overlay with all categories
-const DEPLOY_VERSION = 'v18'
+const DEPLOY_VERSION = 'v19'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
@@ -129,6 +129,22 @@ export function Header({ categories }: HeaderProps) {
   const activeChildSubs = activeCategory ? getChildSubs(activeCategory) : []
   const activeTopStories = activeCategory ? (topStories[activeCategory] || []) : []
 
+  // Categories to hide from the main menu bar (they still appear in "সব দেখুন" overlay)
+  const hiddenCategorySlugs = ['Health', 'Get-Help']
+
+  // Separate "বিশেষ" (special) category to pin it first
+  const specialCategory = categories.find(
+    (c) => c.slug === 'special' || c.slug === 'বিশেষ' || c.name === 'বিশেষ'
+  )
+  const otherCategories = categories.filter(
+    (c) => c.id !== specialCategory?.id && !hiddenCategorySlugs.includes(c.slug) && !hiddenCategorySlugs.includes(c.name)
+  )
+
+  // Show special first, then up to 10 others (total 12: সর্বশেষ + special + 10 + সব দেখুন)
+  const visibleCategories = specialCategory
+    ? [specialCategory, ...otherCategories.slice(0, 10)]
+    : otherCategories.slice(0, 11)
+
   return (
     <header className="sticky top-0 z-50 bg-white">
       {/* Top Bar - Always in layout, slides up via transform to prevent layout shifts */}
@@ -206,8 +222,8 @@ export function Header({ categories }: HeaderProps) {
             >
               সর্বশেষ
             </Link>
-            {/* Show up to 11 categories (total 13 items: সর্বশেষ + 11 categories + সব দেখুন) */}
-            {categories.slice(0, 11).map((category) => (
+            {/* Show categories. "বিশেষ" is pinned first so it's always visible. */}
+            {visibleCategories.map((category) => (
               <Link
                 key={category.id}
                 href={`/category/${category.slug}`}

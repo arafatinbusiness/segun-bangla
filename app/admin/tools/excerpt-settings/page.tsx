@@ -15,6 +15,7 @@ interface ExcerptConfig {
   categoryListExcerpt: boolean
   extraLineClamp: number
   extraFontSize: string
+  extraHeadingLineClamp: number
 }
 
 const DEFAULT_CONFIG: ExcerptConfig = {
@@ -26,6 +27,7 @@ const DEFAULT_CONFIG: ExcerptConfig = {
   categoryListExcerpt: true,
   extraLineClamp: 6,
   extraFontSize: 'text-sm',
+  extraHeadingLineClamp: 2,
 }
 
 const SETTINGS_DOC = 'homepage-excerpts'
@@ -134,12 +136,33 @@ function ExcerptSettingsPage() {
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-100">
           <h3 className="font-semibold">EXTRA-1 ও EXTRA-2 — বিস্তারিত সেটিংস</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">লাইনের সংখ্যা ও ফন্ট সাইজ কন্ট্রোল</p>
+          <p className="text-xs text-muted-foreground mt-0.5">হেডিং ও এক্সসার্পটের লাইন সংখ্যা এবং ফন্ট সাইজ কন্ট্রোল</p>
         </div>
         <div className="p-4 space-y-4">
-          {/* Line Clamp */}
+          {/* Heading Line Clamp — controls how many lines the title takes */}
           <div>
-            <label className="text-sm font-medium text-gray-700">লাইনের সংখ্যা (Line Clamp)</label>
+            <label className="text-sm font-medium text-gray-700">হেডিং লাইনের সংখ্যা</label>
+            <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">শিরোনাম কত লাইন পর্যন্ত দেখাবে (বড় হেডিং ২ লাইনে ভেঙে пропорция নষ্ট করলে ১ লাইন সেট করুন)</p>
+            <div className="flex gap-2">
+              {[1, 2, 3].map(n => (
+                <button
+                  key={n}
+                  onClick={() => { setConfig(p => ({ ...p, extraHeadingLineClamp: n })); setSaveStatus('idle') }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    config.extraHeadingLineClamp === n
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {n} লাইন
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Excerpt Line Clamp */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">এক্সসার্পট লাইনের সংখ্যা (Line Clamp)</label>
             <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">এক্সসার্পট কত লাইন দেখাবে</p>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5, 6].map(n => (
@@ -160,7 +183,7 @@ function ExcerptSettingsPage() {
 
           {/* Font Size */}
           <div>
-            <label className="text-sm font-medium text-gray-700">ফন্ট সাইজ</label>
+            <label className="text-sm font-medium text-gray-700">এক্সসার্পট ফন্ট সাইজ</label>
             <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">এক্সসার্পটের টেক্সট সাইজ</p>
             <div className="flex gap-2">
               {[

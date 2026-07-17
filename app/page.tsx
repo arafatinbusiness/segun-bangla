@@ -23,6 +23,7 @@ interface ExcerptConfig {
   categoryListExcerpt: boolean
   extraLineClamp: number
   extraFontSize: string
+  extraHeadingLineClamp: number
 }
 
 const DEFAULT_EXCERPT: ExcerptConfig = {
@@ -30,6 +31,7 @@ const DEFAULT_EXCERPT: ExcerptConfig = {
   extraExcerpt: true, categoryLeadExcerpt: true, categoryListExcerpt: true,
   extraLineClamp: 6,
   extraFontSize: 'text-sm',
+  extraHeadingLineClamp: 2,
 }
 
 function HomePage() {
@@ -505,7 +507,15 @@ function HomePage() {
                             )}
                           </div>
 
-                          <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
+                          <h3
+                            className="text-[#000000] font-bold text-sm leading-tight mt-1 group-hover:text-[#FF0000] transition-colors"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: excerptConfig.extraHeadingLineClamp || 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
                             {article.shoulder ? (
                               <>
                                 <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
