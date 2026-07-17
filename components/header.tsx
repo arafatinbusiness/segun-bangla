@@ -10,7 +10,7 @@ import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 // DEPLOY_VERSION = 'v1'  // Initial deployment
 // DEPLOY_VERSION = 'v2'  // After menu redesign
 // DEPLOY_VERSION = 'v5'  // Added "সর্বশেষ" as first menu item, "সব দেখুন" opens overlay with all categories
-const DEPLOY_VERSION = 'v19'
+const DEPLOY_VERSION = 'v20'
 // ────────────────────────────────────────────────────────────────────────────
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
