@@ -242,16 +242,21 @@ function ReorderSpecialPage() {
         slotAssignments[slotKey] = article.docId
       }
       
-      // Clear ALL existing isSpecialOrder and isSpecial/isLead to prevent conflicts
-      // Each slot in slot-assignments is the single source of truth
-      const allArts = await getDocs(query(collection(db, 'articles'), where('isSpecialOrder', '>=', 0)))
-      allArts.docs.forEach(docSnap => {
-        batch.update(docSnap.ref, {
-          isLead: false,
-          isSpecial: false,
-          isSpecialOrder: -1,
-        })
-      })
+      // Clear existing slot assignments by reading the previous slot-assignments doc
+      // This avoids needing a composite index on isSpecialOrder
+      const prevSlotDoc = await getDoc(doc(db, 'settings', 'slot-assignments'))
+      if (prevSlotDoc.exists()) {
+        const prevAssignments = prevSlotDoc.data() as Record<string, string>
+        const prevArticleIds = new Set(Object.values(prevAssignments).filter(Boolean))
+        for (const articleId of prevArticleIds) {
+          const articleRef = doc(db, 'articles', articleId)
+          batch.update(articleRef, {
+            isLead: false,
+            isSpecial: false,
+            isSpecialOrder: -1,
+          })
+        }
+      }
       
       // Now set only the articles that are in slots
       for (let order = 0; order < 12; order++) {

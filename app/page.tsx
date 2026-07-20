@@ -58,10 +58,10 @@ function HomePage() {
         // Fetch all data in parallel to minimize Firestore reads
         const [leadData, featuredData, specialData, recentData, allData, categoriesData, excerptSnap, sliderSnap] = await Promise.all([
           getLeadArticles(1),
-          getFeaturedArticles(5).catch(() => []), // reduced from 10
+          getFeaturedArticles(5).catch((e) => { console.error('[v0] featuredArticles failed:', e); return [] }),
           getSpecialArticles(50),
-          getRecentArticles(10).catch(() => []), // reduced from 20
-          getAllArticles(200).catch(() => []),
+          getRecentArticles(10).catch((e) => { console.error('[v0] recentArticles failed:', e); return [] }),
+          getAllArticles(200).catch((e) => { console.error('[v0] allArticles failed:', e); return [] }),
           getAllCategories(),
           getDoc(doc(db, 'settings', 'homepage-excerpts')).catch(() => null),
           getDoc(doc(db, 'settings', 'category-sliders')).catch(() => null),
@@ -146,13 +146,20 @@ function HomePage() {
   const allLeadAndSpecial = allArticles.filter(a => {
     if (!a.isLead && !a.isSpecial) return false
     // Must have a valid isSpecialOrder to be in the grid
+    // Handle both number and string types from Firestore
     const order = (a as any).isSpecialOrder
-    return typeof order === 'number' && order >= 0 && order < 12
+    const numOrder = typeof order === 'string' ? parseInt(order, 10) : order
+    return typeof numOrder === 'number' && !isNaN(numOrder) && numOrder >= 0 && numOrder < 12
   })
-  for (const a of allLeadAndSpecial) {
+  // Iterate in reverse (oldest first) so that newer articles take priority
+  // when multiple articles have the same isSpecialOrder.
+  // This ensures the most recently published article wins the slot.
+  for (let i = allLeadAndSpecial.length - 1; i >= 0; i--) {
+    const a = allLeadAndSpecial[i]
     const order = (a as any).isSpecialOrder
-    if (typeof order === 'number' && order >= 0 && order < 12) {
-      allSlots[order] = a
+    const numOrder = typeof order === 'string' ? parseInt(order, 10) : order
+    if (typeof numOrder === 'number' && !isNaN(numOrder) && numOrder >= 0 && numOrder < 12) {
+      allSlots[numOrder] = a
     }
   }
 
@@ -165,6 +172,15 @@ function HomePage() {
   const transitionalArticles = [allSlots[7], allSlots[8], allSlots[9], allSlots[10]].filter(Boolean) as FirestoreArticle[] // SP-5 to SP-8
   // EXTRA-1 (left), EXTRA-2 (right) below lead = from allSlots[5] and allSlots[6] (same as tool)
   const extraArticles = [allSlots[5], allSlots[6]].filter((a): a is FirestoreArticle => !!a)
+
+  // Debug: log all articles with isSpecial=true to check if they're being fetched
+  console.log('[v0] allArticles count:', allArticles.length)
+  console.log('[v0] special articles in allArticles:', allArticles.filter(a => a.isSpecial).map(a => ({ title: a.title, isSpecial: a.isSpecial, isSpecialOrder: (a as any).isSpecialOrder, slug: a.slug })))
+  console.log('[v0] allLeadAndSpecial count:', allLeadAndSpecial.length)
+  console.log('[v0] allLeadAndSpecial:', allLeadAndSpecial.map(a => ({ title: a.title, order: (a as any).isSpecialOrder })))
+  console.log('[v0] allSlots:', allSlots.map((a, i) => a ? `${i}: ${a.title} (slug: ${a.slug})` : `${i}: empty`))
+  console.log('[v0] specialArticlesList:', specialArticlesList.map(a => `${a.title} (slug: ${a.slug})`))
+  console.log('[v0] mainArticle:', mainArticle ? `${mainArticle.title} (slug: ${mainArticle.slug})` : 'none')
   const isProthomAlo = template.layout === 'prothom-alo'
   const isNewsGrid = template.layout === 'news-grid'
 

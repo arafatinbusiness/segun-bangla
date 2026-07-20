@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore'
+import { doc, getDoc, writeBatch, collection, query, where, getDocs, updateDoc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 
 /**
@@ -14,7 +14,6 @@ import { db } from '../firebase'
  * slot 8  = sp6
  * slot 9  = sp7
  * slot 10 = sp8
- * slot 11 = (unused)
  */
 const SLOT_KEYS = ['lead', 'sp1', 'sp2', 'sp3', 'sp4', 'extra1', 'extra2', 'sp5', 'sp6', 'sp7', 'sp8']
 
@@ -30,19 +29,60 @@ const SLOT_KEYS = ['lead', 'sp1', 'sp2', 'sp3', 'sp4', 'extra1', 'extra2', 'sp5'
  * 
  * @param targetSlot - The slot index (0-10) the new article is being assigned to
  * @param newArticleId - The docId of the article being assigned
- * @param oldArticleId - The previous article ID that was in this slot (if any), to avoid double-processing
  */
 export async function autoShiftSlots(
   targetSlot: number,
   newArticleId: string,
-  oldArticleId?: string | null
 ): Promise<void> {
   // Validate slot range
   if (targetSlot < 0 || targetSlot > 10) return
 
-  // Get current slot assignments from Firestore
-  const slotDoc = await getDoc(doc(db, 'settings', 'slot-assignments'))
-  const currentSlots: Record<string, string> = slotDoc.exists() ? slotDoc.data() as Record<string, string> : {}
+  // -------------------------------------------------------
+  // Build current slot map — try slot-assignments doc first,
+  // then fall back to querying articles with isSpecialOrder.
+  // -------------------------------------------------------
+  const currentSlots: Record<string, string> = {}
+
+  // Try 1: slot-assignments document (simple getDoc, no index needed)
+  try {
+    const slotDoc = await getDoc(doc(db, 'settings', 'slot-assignments'))
+    if (slotDoc.exists()) {
+      const data = slotDoc.data() as Record<string, string>
+      Object.assign(currentSlots, data)
+    }
+  } catch (e) {
+    console.warn('[SlotShift] Failed to read slot-assignments doc:', e)
+  }
+
+  // Try 2: If slot-assignments is empty, query articles directly
+  // (requires composite index on isSpecialOrder + status)
+  if (Object.keys(currentSlots).length === 0) {
+    try {
+      const q = query(
+        collection(db, 'articles'),
+        where('isSpecialOrder', '>=', 0),
+        where('isSpecialOrder', '<=', 10),
+        where('status', '==', 'published')
+      )
+      const snapshot = await getDocs(q)
+      snapshot.docs.forEach((docSnap) => {
+        if (docSnap.id === newArticleId) return
+        const data = docSnap.data()
+        const order = data.isSpecialOrder
+        if (typeof order === 'number' && order >= 0 && order <= 10) {
+          currentSlots[SLOT_KEYS[order]] = docSnap.id
+        }
+      })
+    } catch (e) {
+      console.warn('[SlotShift] Query fallback also failed:', e)
+    }
+  }
+
+  // If we still have no slots, nothing to shift
+  if (Object.keys(currentSlots).length === 0) {
+    console.log('[SlotShift] No existing slots found, nothing to shift')
+    return
+  }
 
   // Build the new slot assignments
   const newSlots: Record<string, string> = {}
@@ -51,76 +91,84 @@ export async function autoShiftSlots(
   newSlots[SLOT_KEYS[targetSlot]] = newArticleId
 
   // Step 2: Shift existing articles down from targetSlot+1 onwards
-  // For each slot from targetSlot+1 to the last slot (10/sp8):
-  //   Take the article that was in the previous slot (targetSlot, targetSlot+1, ...)
-  //   and move it to the current slot
   for (let shiftSlot = targetSlot + 1; shiftSlot <= 10; shiftSlot++) {
-    const sourceSlotKey = SLOT_KEYS[shiftSlot - 1]  // the slot we're shifting FROM
-    const targetSlotKey = SLOT_KEYS[shiftSlot]       // the slot we're shifting TO
-    
-    // The article to shift is whatever was in the source slot BEFORE this iteration
-    // For the first iteration, source is the old article from targetSlot
-    // For subsequent iterations, source is what we just moved
-    const articleToShift = shiftSlot === targetSlot + 1
-      ? currentSlots[sourceSlotKey]  // old article that was in targetSlot
-      : currentSlots[sourceSlotKey]  // article that was in the previous slot
-    
+    const sourceSlotKey = SLOT_KEYS[shiftSlot - 1]
+    const targetSlotKey = SLOT_KEYS[shiftSlot]
+    const articleToShift = currentSlots[sourceSlotKey]
     if (articleToShift && articleToShift !== newArticleId) {
       newSlots[targetSlotKey] = articleToShift
     }
   }
 
-  // Step 3: Collect all article IDs that need their flags updated
-  // We need to:
-  //   a) Clear flags for the article that gets pushed out (old SP-8 if exists)
-  //   b) Update flags for all shifted articles
-  //   c) Set flags for the new article
-
-  const batch = writeBatch(db)
-
-  // The article that gets pushed out (was in the last slot, now removed)
-  const pushedOutArticleId = currentSlots[SLOT_KEYS[10]] // old sp8
-  if (pushedOutArticleId && pushedOutArticleId !== newArticleId && !Object.values(newSlots).includes(pushedOutArticleId)) {
-    const pushedOutRef = doc(db, 'articles', pushedOutArticleId)
-    batch.update(pushedOutRef, {
-      isLead: false,
-      isSpecial: false,
-      isSpecialOrder: -1,
-    })
+  // Step 3: Verify all referenced articles exist before updating
+  // Collect all article IDs that need their flags updated
+  const articlesToUpdate = new Set<string>()
+  
+  for (const articleId of Object.values(newSlots)) {
+    if (articleId) articlesToUpdate.add(articleId)
   }
-
-  // Update flags for all articles that are now in slots
-  for (let slotIdx = 0; slotIdx <= 10; slotIdx++) {
-    const slotKey = SLOT_KEYS[slotIdx]
-    const articleId = newSlots[slotKey]
-    if (!articleId) continue
-
-    const articleRef = doc(db, 'articles', articleId)
-    batch.update(articleRef, {
-      isLead: slotIdx === 0,
-      isSpecial: slotIdx !== 0,
-      isSpecialOrder: slotIdx,
-    })
+  
+  const pushedOutArticleId = currentSlots[SLOT_KEYS[10]]
+  if (pushedOutArticleId && pushedOutArticleId !== newArticleId) {
+    articlesToUpdate.add(pushedOutArticleId)
   }
-
-  // Also handle the old article that was in the target slot (if different from new article)
-  // This covers the case where the old article is NOT being shifted (e.g., if it was already
-  // overwritten by a previous assignment)
+  
   const oldTargetArticleId = currentSlots[SLOT_KEYS[targetSlot]]
-  if (oldTargetArticleId && oldTargetArticleId !== newArticleId && !Object.values(newSlots).includes(oldTargetArticleId)) {
-    const oldTargetRef = doc(db, 'articles', oldTargetArticleId)
-    batch.update(oldTargetRef, {
-      isLead: false,
-      isSpecial: false,
-      isSpecialOrder: -1,
-    })
+  if (oldTargetArticleId && oldTargetArticleId !== newArticleId) {
+    articlesToUpdate.add(oldTargetArticleId)
+  }
+
+  // Verify each article exists — skip deleted ones
+  const validArticleIds = new Set<string>()
+  for (const articleId of articlesToUpdate) {
+    try {
+      const articleDoc = await getDoc(doc(db, 'articles', articleId))
+      if (articleDoc.exists()) {
+        validArticleIds.add(articleId)
+      } else {
+        console.warn(`[SlotShift] Article ${articleId} no longer exists, skipping`)
+      }
+    } catch (e) {
+      console.warn(`[SlotShift] Failed to verify article ${articleId}, skipping:`, e)
+    }
+  }
+
+  // Step 4: Update Firestore using individual updates (not batch)
+  // so that if one fails, others still succeed
+  for (const articleId of validArticleIds) {
+    try {
+      const articleRef = doc(db, 'articles', articleId)
+      let foundSlot = -1
+      for (let slotIdx = 0; slotIdx <= 10; slotIdx++) {
+        if (newSlots[SLOT_KEYS[slotIdx]] === articleId) {
+          foundSlot = slotIdx
+          break
+        }
+      }
+      if (foundSlot >= 0) {
+        await updateDoc(articleRef, {
+          isLead: foundSlot === 0,
+          isSpecial: foundSlot !== 0,
+          isSpecialOrder: foundSlot,
+        })
+      } else {
+        await updateDoc(articleRef, {
+          isLead: false,
+          isSpecial: false,
+          isSpecialOrder: -1,
+        })
+      }
+    } catch (e) {
+      console.warn(`[SlotShift] Failed to update article ${articleId}:`, e)
+    }
   }
 
   // Save the new slot assignments document
-  batch.set(doc(db, 'settings', 'slot-assignments'), newSlots)
-
-  // Commit all changes atomically
-  await batch.commit()
+  try {
+    await setDoc(doc(db, 'settings', 'slot-assignments'), newSlots)
+  } catch (e) {
+    console.warn('[SlotShift] Failed to save slot-assignments:', e)
+  }
 
   console.log(`[SlotShift] Auto-shift complete for slot ${targetSlot} (${SLOT_KEYS[targetSlot]})`)
   console.log('[SlotShift] New assignments:', newSlots)
