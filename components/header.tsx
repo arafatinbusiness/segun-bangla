@@ -190,13 +190,13 @@ export function Header({ categories }: HeaderProps) {
         </div>
       </div>
 
-      {/* Logo Section - Collapses completely on scroll to save space */}
-      <div
-        className={`relative overflow-hidden transition-all duration-300 ease-in-out ${
-          scrolled ? 'h-0' : 'h-[104px]'
-        }`}
-      >
-        <div className="absolute inset-0 flex items-center justify-center py-6">
+      {/* Logo Section - Uses transform instead of height to prevent layout vibration */}
+      <div className="relative h-[104px] overflow-hidden">
+        <div
+          className={`absolute inset-0 flex items-center justify-center py-6 transition-transform duration-300 ease-in-out ${
+            scrolled ? '-translate-y-full' : 'translate-y-0'
+          }`}
+        >
           <a href="/">
             <img
               src="/logo.png"
