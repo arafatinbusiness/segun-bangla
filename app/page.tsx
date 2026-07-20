@@ -384,7 +384,7 @@ function HomePage() {
                       <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{article.title}</h3>
                       {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{article.excerpt}</p>}
                     </a>
-                  ) : <p className="text-xs text-gray-400 italic">খালি</p>}
+                  ) : null}
                 </div>
               ))}
             </div>
