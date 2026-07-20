@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { SlugInput } from '@/components/ui/slug-input'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { generateCleanSlug } from '@/lib/slug-utils'
@@ -53,7 +52,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Toggle a category on/off
   const handleCategoryToggle = (catId: string) => {
     setFormData((prev) => {
       const current = prev.categoryIds || []
@@ -63,7 +61,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     })
   }
 
-  // Toggle a subcategory on/off
   const handleSubcategoryToggle = (subId: string) => {
     setFormData((prev) => {
       const current = prev.subcategoryIds || []
@@ -77,12 +74,10 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     try {
-      // Clean undefined values — Firestore doesn't accept undefined
       const cleaned: Record<string, any> = {}
       for (const [key, val] of Object.entries(formData)) {
         if (val !== undefined) {
@@ -95,21 +90,16 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     }
   }
 
-  // Handle file selection and upload to Firebase Storage
   const handleFileSelect = useCallback(async (file: File) => {
-    // Validate file
     const error = validateImageFile(file)
     if (error) {
       setUploadError(error)
       return
     }
-
     setUploadError(null)
     setUploading(true)
     setUploadProgress(0)
-
     try {
-      // Use a temporary ID for new articles, or the existing article ID
       const articleId = article?.id || 'temp-' + Date.now()
       const downloadUrl = await uploadArticleImage(file, articleId, (progress) => {
         setUploadProgress(progress)
@@ -117,13 +107,12 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       setFormData((prev) => ({ ...prev, imageUrl: downloadUrl }))
     } catch (err) {
       console.error('[v0] Upload failed:', err)
-      setUploadError('ছবি আপলোড করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।')
+      setUploadError('Image upload failed. Please try again.')
     } finally {
       setUploading(false)
     }
   }, [article])
 
-  // Generate slug from title - uses transliteration for Bengali text
   const generateSlug = () => {
     if (!formData.title) return
     const slug = generateCleanSlug(formData.title)
@@ -135,7 +124,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       {/* Sticky Top Save Bar */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border mb-6 -mx-6 px-6 py-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">
-          {article ? 'নিবন্ধ সম্পাদনা' : 'নতুন নিবন্ধ'}
+          {article ? 'Edit Article' : 'New Article'}
         </h2>
         <div className="flex items-center gap-3">
           <Button
@@ -144,7 +133,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             size="sm"
             onClick={() => window.history.back()}
           >
-            বাতিল
+            Cancel
           </Button>
           <Button
             type="submit"
@@ -156,10 +145,10 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             {submitting || isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                সংরক্ষণ করছি...
+                Saving...
               </span>
             ) : (
-              'সংরক্ষণ করুন'
+              'Save'
             )}
           </Button>
         </div>
@@ -169,7 +158,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         <form id="article-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
         <div className="space-y-2">
-          <Label htmlFor="title" className="text-foreground font-semibold">শিরোনাম</Label>
+          <Label htmlFor="title" className="text-foreground font-semibold">Title</Label>
           <Input
             id="title"
             name="title"
@@ -178,7 +167,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
               handleChange(e)
               if (!article) generateSlug()
             }}
-            placeholder="নিবন্ধ শিরোনাম প্রবেশ করুন"
+            placeholder="Enter article title"
             className="w-full text-lg"
             required
           />
@@ -196,18 +185,18 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
 
         {/* Excerpt */}
         <div className="space-y-2">
-          <Label htmlFor="excerpt" className="text-foreground font-semibold">সংক্ষিপ্ত বর্ণনা</Label>
+          <Label htmlFor="excerpt" className="text-foreground font-semibold">Excerpt</Label>
           <div className="relative">
             <Textarea
               id="excerpt"
               name="excerpt"
               value={formData.excerpt || ''}
               onChange={handleChange}
-              placeholder="নিবন্ধের সংক্ষিপ্ত বর্ণনা"
+              placeholder="Short description of the article"
               rows={3}
               className="w-full"
             />
-            <div className="absolute top-2 right-2 flex items-center gap-1" title="ফন্টের রঙ">
+            <div className="absolute top-2 right-2 flex items-center gap-1" title="Font color">
               <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.excerptColor || '#111827' }} />
               <input
                 type="color"
@@ -216,14 +205,14 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 className="w-0 h-0 opacity-0 absolute pointer-events-none"
                 id="excerptColor"
               />
-              <label htmlFor="excerptColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">রঙ</label>
+              <label htmlFor="excerptColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Color</label>
             </div>
           </div>
         </div>
 
-        {/* Shoulder (শোল্ডার) - Text above title */}
+        {/* Shoulder - Text above title */}
         <div className="space-y-2">
-          <Label htmlFor="shoulder" className="text-foreground font-semibold">শোল্ডার <span className="text-xs text-muted-foreground font-normal">(শিরোনামের উপরে দেখাবে)</span></Label>
+          <Label htmlFor="shoulder" className="text-foreground font-semibold">Shoulder <span className="text-xs text-muted-foreground font-normal">(shown above title)</span></Label>
           <div className="flex gap-2 items-start">
             <div className="flex-1">
               <Input
@@ -231,12 +220,12 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 name="shoulder"
                 value={formData.shoulder || ''}
                 onChange={handleChange}
-                placeholder="যেমন: বিশেষ প্রতিবেদন, ব্রেকিং নিউজ, এক্সক্লুসিভ"
+                placeholder="e.g. Special Report, Breaking News, Exclusive"
                 className="w-full"
               />
             </div>
             <div className="flex items-center gap-1 shrink-0 flex-wrap">
-              <div className="flex items-center gap-1" title="পটভূমির রঙ">
+              <div className="flex items-center gap-1" title="Background color">
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.shoulderColor || '#FF0000' }} />
                 <input
                   type="color"
@@ -245,9 +234,9 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   className="w-0 h-0 opacity-0 absolute pointer-events-none"
                   id="shoulderBgColor"
                 />
-                <label htmlFor="shoulderBgColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">পট</label>
+                <label htmlFor="shoulderBgColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Bg</label>
               </div>
-              <div className="flex items-center gap-1" title="টেক্সটের রঙ">
+              <div className="flex items-center gap-1" title="Text color">
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.shoulderTextColor || '#ffffff' }} />
                 <input
                   type="color"
@@ -256,29 +245,29 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   className="w-0 h-0 opacity-0 absolute pointer-events-none"
                   id="shoulderTextColor"
                 />
-                <label htmlFor="shoulderTextColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">টেক্সট</label>
+                <label htmlFor="shoulderTextColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Text</label>
               </div>
               <select
                 value={formData.shoulderFontSize || 'sm'}
                 onChange={(e) => setFormData((prev) => ({ ...prev, shoulderFontSize: e.target.value }))}
                 className="h-6 text-[10px] rounded border bg-background px-1 cursor-pointer"
-                title="ফন্ট সাইজ"
+                title="Font size"
               >
-                <option value="xs">অ.ছোট</option>
-                <option value="sm">ছোট</option>
-                <option value="base">মাঝা</option>
-                <option value="lg">বড়</option>
-                <option value="xl">অ.বড়</option>
+                <option value="xs">XS</option>
+                <option value="sm">S</option>
+                <option value="base">M</option>
+                <option value="lg">L</option>
+                <option value="xl">XL</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Bullet Points - Key points under title (right after title) */}
+        {/* Bullet Points */}
         <div className="space-y-2">
-          <Label className="text-foreground font-semibold">বুলেটিন পয়েন্ট <span className="text-xs text-muted-foreground font-normal">(শিরোনামের নিচে মূল পয়েন্ট, সর্বোচ্চ ১০টি)</span></Label>
+          <Label className="text-foreground font-semibold">Bullet Points <span className="text-xs text-muted-foreground font-normal">(key points under title, max 10)</span></Label>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <div className="flex items-center gap-1" title="ফন্টের রঙ">
+            <div className="flex items-center gap-1" title="Font color">
               <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.bulletColor || '#374151' }} />
               <input
                 type="color"
@@ -287,19 +276,19 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 className="w-0 h-0 opacity-0 absolute pointer-events-none"
                 id="bulletColor"
               />
-              <label htmlFor="bulletColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">রঙ</label>
+              <label htmlFor="bulletColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Color</label>
             </div>
             <select
               value={formData.bulletFontSize || 'sm'}
               onChange={(e) => setFormData((prev) => ({ ...prev, bulletFontSize: e.target.value }))}
               className="h-6 text-[10px] rounded border bg-background px-1 cursor-pointer"
-              title="ফন্ট সাইজ"
+              title="Font size"
             >
-              <option value="xs">অ.ছোট</option>
-              <option value="sm">ছোট</option>
-              <option value="base">মাঝা</option>
-              <option value="lg">বড়</option>
-              <option value="xl">অ.বড়</option>
+              <option value="xs">XS</option>
+              <option value="sm">S</option>
+              <option value="base">M</option>
+              <option value="lg">L</option>
+              <option value="xl">XL</option>
             </select>
           </div>
           <div className="space-y-1.5">
@@ -310,20 +299,17 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   value={point}
                   onChange={(e) => {
                     const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
-                    // Ensure array is long enough
                     while (current.length <= idx) current.push('')
                     current[idx] = e.target.value
-                    // Filter out empty trailing points but keep at least 3
                     const cleaned = current.filter((p, i) => p.trim() || i < 3 || i < current.length - 1)
                     setFormData((prev) => ({ ...prev, bulletPoints: cleaned }))
                   }}
-                  placeholder={`পয়েন্ট ${idx + 1}`}
+                  placeholder={`Point ${idx + 1}`}
                   className="w-full text-sm"
                 />
               </div>
             ))}
           </div>
-          {/* Add more button - up to 10 */}
           {(formData.bulletPoints?.length || 3) < 10 && (
             <button
               type="button"
@@ -338,14 +324,14 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              আরো পয়েন্ট যোগ করুন ({formData.bulletPoints?.length || 3}/১০)
+              Add more points ({formData.bulletPoints?.length || 3}/10)
             </button>
           )}
         </div>
 
         {/* Content - Rich Text Editor */}
         <div className="space-y-2">
-          <Label className="text-foreground font-semibold">বিষয়বস্তু</Label>
+          <Label className="text-foreground font-semibold">Content</Label>
           <RichTextEditor
             value={formData.content || ''}
             onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
@@ -355,9 +341,8 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
 
         {/* Image Upload / URL */}
         <div className="space-y-2">
-          <Label className="text-foreground font-semibold">প্রধান ছবি</Label>
+          <Label className="text-foreground font-semibold">Main Image</Label>
           
-          {/* Tabs: URL or Upload */}
           <div className="flex gap-2 mb-3">
             <button
               type="button"
@@ -369,7 +354,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
               }`}
             >
               <LinkIcon className="w-3.5 h-3.5" />
-              URL লিংক
+              URL Link
             </button>
             <button
               type="button"
@@ -381,7 +366,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
               }`}
             >
               <Upload className="w-3.5 h-3.5" />
-              আপলোড
+              Upload
             </button>
           </div>
 
@@ -402,18 +387,17 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted border shrink-0">
                   <img
                     src={formData.imageUrl}
-                    alt="প্রিভিউ"
+                    alt="Preview"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>'
-                      }}
+                    }}
                   />
                 </div>
               )}
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Upload area */}
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                   isDragging
@@ -444,7 +428,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
                       <Upload className="w-6 h-6 text-primary animate-pulse" />
-                      <span className="text-sm font-medium">আপলোড হচ্ছে...</span>
+                      <span className="text-sm font-medium">Uploading...</span>
                     </div>
                     <div className="w-full max-w-xs mx-auto bg-muted rounded-full h-2">
                       <div
@@ -458,7 +442,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   <div className="relative inline-block">
                     <img
                       src={formData.imageUrl}
-                      alt="আপলোড করা ছবি"
+                      alt="Uploaded image"
                       className="max-h-40 rounded-lg object-contain"
                     />
                     <button
@@ -476,9 +460,9 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   <div className="space-y-2">
                     <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">ছবি আপলোড করতে ক্লিক করুন</p>
+                      <p className="text-sm font-medium">Click to upload image</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        অথবা ড্র্যাগ ও ড্রপ করুন (সর্বোচ্চ ৫MB)
+                        Or drag and drop (max 5MB)
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -493,15 +477,15 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             </div>
           )}
 
-          {/* Image Size Selector with Live Preview */}
+          {/* Image Size Selector */}
           <div className="mt-3">
-            <Label className="text-xs text-muted-foreground mb-1.5 block">ছবির ধরন</Label>
+            <Label className="text-xs text-muted-foreground mb-1.5 block">Image Size</Label>
             <div className="flex flex-wrap gap-1.5 mb-3">
               {[
-                { value: 'landscape' as const, label: 'ল্যান্ডস্কেপ', desc: '১৬:৯ - প্রশস্ত ছবি (ডিফল্ট)' },
-                { value: 'portrait' as const, label: 'পোর্ট্রেট', desc: '৩:৪ - ব্যক্তি/মুখের ছবির জন্য' },
-                { value: 'square' as const, label: 'স্কয়ার', desc: '১:১ - বর্গাকার ছবি' },
-                { value: 'full' as const, label: 'পূর্ণ প্রস্থ', desc: '১০০% - কন্টেইনারের পূর্ণ প্রস্থ' },
+                { value: 'landscape' as const, label: 'Landscape', desc: '16:9 - Wide image (default)' },
+                { value: 'portrait' as const, label: 'Portrait', desc: '3:4 - For people/face images' },
+                { value: 'square' as const, label: 'Square', desc: '1:1 - Square image' },
+                { value: 'full' as const, label: 'Full Width', desc: '100% - Container full width' },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -529,21 +513,21 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 }`}>
                   <img
                     src={formData.imageUrl}
-                    alt="ছবির প্রিভিউ"
+                    alt="Image preview"
                     className="w-full h-full object-cover"
                     style={{ objectPosition: formData.imageFocus?.replace(/-/g, ' ') || 'center' }}
                   />
                 </div>
                 <div className="px-3 py-1.5 text-xs text-muted-foreground bg-muted/50 border-t flex items-center gap-2">
-                  <span className="font-medium">প্রিভিউ:</span>
+                  <span className="font-medium">Preview:</span>
                   <span>{
-                    (formData.imageSize || 'landscape') === 'portrait' ? 'পোর্ট্রেট (৩:৪)' :
-                    (formData.imageSize || 'landscape') === 'square' ? 'স্কয়ার (১:১)' :
-                    (formData.imageSize || 'landscape') === 'full' ? 'পূর্ণ প্রস্থ' :
-                    'ল্যান্ডস্কেপ (১৬:৯)'
+                    (formData.imageSize || 'landscape') === 'portrait' ? 'Portrait (3:4)' :
+                    (formData.imageSize || 'landscape') === 'square' ? 'Square (1:1)' :
+                    (formData.imageSize || 'landscape') === 'full' ? 'Full Width' :
+                    'Landscape (16:9)'
                   }</span>
                   {formData.imageFocus && formData.imageFocus !== 'center' && (
-                    <span className="text-primary">• ফোকাস: {formData.imageFocus}</span>
+                    <span className="text-primary">• Focus: {formData.imageFocus}</span>
                   )}
                 </div>
               </div>
@@ -552,19 +536,19 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
 
           {/* Image Focus Position */}
           <div className="mt-3">
-            <Label className="text-xs text-muted-foreground mb-1.5 block">ছবির ফোকাস অবস্থান</Label>
-            <p className="text-[10px] text-muted-foreground mb-2">ছবি কেটে ছোট আকারে দেখানোর সময় কোন অংশটি দেখাবে তা নির্ধারণ করুন (বিশেষ করে পোর্ট্রেট/স্কয়ার এর জন্য)</p>
+            <Label className="text-xs text-muted-foreground mb-1.5 block">Image Focus Position</Label>
+            <p className="text-[10px] text-muted-foreground mb-2">Determines which part of the image is visible when cropped (especially for portrait/square)</p>
             <div className="grid grid-cols-3 gap-1 max-w-[240px]">
               {[
-                { value: 'top-left' as const, label: 'উপরে-বাম' },
-                { value: 'top' as const, label: 'উপরে' },
-                { value: 'top-right' as const, label: 'উপরে-ডান' },
-                { value: 'left' as const, label: 'বাম' },
-                { value: 'center' as const, label: 'মাঝখানে' },
-                { value: 'right' as const, label: 'ডান' },
-                { value: 'bottom-left' as const, label: 'নিচে-বাম' },
-                { value: 'bottom' as const, label: 'নিচে' },
-                { value: 'bottom-right' as const, label: 'নিচে-ডান' },
+                { value: 'top-left' as const, label: 'Top-Left' },
+                { value: 'top' as const, label: 'Top' },
+                { value: 'top-right' as const, label: 'Top-Right' },
+                { value: 'left' as const, label: 'Left' },
+                { value: 'center' as const, label: 'Center' },
+                { value: 'right' as const, label: 'Right' },
+                { value: 'bottom-left' as const, label: 'Bottom-Left' },
+                { value: 'bottom' as const, label: 'Bottom' },
+                { value: 'bottom-right' as const, label: 'Bottom-Right' },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -585,7 +569,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
 
           {/* Image Caption */}
           <div className="mt-3">
-            <Label htmlFor="imageCaption" className="text-xs text-muted-foreground mb-1.5 block">ছবির ক্যাপশন</Label>
+            <Label htmlFor="imageCaption" className="text-xs text-muted-foreground mb-1.5 block">Image Caption</Label>
             <div className="flex gap-2 items-start">
               <div className="flex-1">
                 <Input
@@ -593,16 +577,16 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   name="imageCaption"
                   value={formData.imageCaption || ''}
                   onChange={handleChange}
-                  placeholder="ছবির নিচে ক্যাপশন লিখুন..."
+                  placeholder="Write caption below image..."
                   className="w-full text-sm"
                 />
               </div>
               <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                <span className="text-[10px] text-muted-foreground">সারিবদ্ধ:</span>
+                <span className="text-[10px] text-muted-foreground">Align:</span>
                 {[
-                  { value: 'left' as const, label: 'বাম', icon: '⬅' },
-                  { value: 'center' as const, label: 'মাঝ', icon: '⬌' },
-                  { value: 'right' as const, label: 'ডান', icon: '➡' },
+                  { value: 'left' as const, label: 'Left' },
+                  { value: 'center' as const, label: 'Center' },
+                  { value: 'right' as const, label: 'Right' },
                 ].map((opt) => (
                   <button
                     key={opt.value}
@@ -626,21 +610,21 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         {/* Source + Reporter */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="source" className="text-foreground font-semibold">সোর্স/উৎস</Label>
+            <Label htmlFor="source" className="text-foreground font-semibold">Source</Label>
             <Input
               id="source"
               name="source"
               value={formData.source || ''}
               onChange={handleChange}
-              placeholder="যেমন: বাসস, ইউএনবি, নিজস্ব প্রতিবেদক"
+              placeholder="e.g. BSS, UNB, Staff Reporter"
               className="w-full"
             />
             <p className="text-xs text-muted-foreground">
-              নিবন্ধের শীর্ষে প্রকাশের তারিখের পাশে দেখানো হবে
+              Shown next to published date at article top
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="reporterName" className="text-foreground font-semibold">প্রতিবেদকের নাম <span className="text-xs text-muted-foreground font-normal">(বিশেষ/অনুসন্ধানী নিউজের জন্য)</span></Label>
+            <Label htmlFor="reporterName" className="text-foreground font-semibold">Reporter Name <span className="text-xs text-muted-foreground font-normal">(for special/investigative news)</span></Label>
             <div className="flex gap-2">
               <div className="flex-1">
                 <Input
@@ -648,7 +632,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   name="reporterName"
                   value={formData.reporterName || ''}
                   onChange={handleChange}
-                  placeholder="যেমন: জনাব এক্স ওয়াই জেড"
+                  placeholder="e.g. Mr. X Y Z"
                   className="w-full"
                 />
               </div>
@@ -659,16 +643,16 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   type="url"
                   value={formData.reporterImage || ''}
                   onChange={handleChange}
-                  placeholder="ছবির URL"
+                  placeholder="Photo URL"
                   className="w-32"
-                  title="প্রতিবেদকের ছবির URL"
+                  title="Reporter photo URL"
                 />
               </div>
               {formData.reporterImage && (
                 <div className="w-9 h-9 rounded-full overflow-hidden bg-muted border shrink-0 mt-0.5">
                   <img
                     src={formData.reporterImage}
-                    alt="প্রতিবেদক"
+                    alt="Reporter"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none'
@@ -678,16 +662,16 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              পূরণ করলে সোর্সের জায়গায় প্রতিবেদকের নাম ও ছবি দেখাবে
+              If filled, reporter name & photo replaces source
             </p>
           </div>
         </div>
 
-        {/* Published At - Date/Time picker for reordering special news */}
+        {/* Published At */}
         <div className="space-y-2">
-          <Label htmlFor="publishedAt" className="text-foreground font-semibold">প্রকাশের তারিখ ও সময়</Label>
+          <Label htmlFor="publishedAt" className="text-foreground font-semibold">Published Date & Time</Label>
           <p className="text-xs text-muted-foreground">
-            বিশেষ সংবাদ সাজানোর জন্য তারিখ পরিবর্তন করুন (নতুনতর = উপরে)
+            Change date for reordering special news (newer = above)
           </p>
           <Input
             id="publishedAt"
@@ -708,8 +692,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           />
         </div>
 
-
-        {/* 4-Column Category Panel (Special, Category, District, Upazila) */}
+        {/* Category Panel */}
         <CategoryPanel
           categories={categories}
           selectedCategoryIds={formData.categoryIds || []}
@@ -720,7 +703,6 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           onSubcategoryToggle={handleSubcategoryToggle}
           onSpecialChange={(type, index) => {
             if (type === 'none') {
-              // User chose "কোনটি নয়" — clear all special assignments
               setFormData((prev) => ({ ...prev, isLead: false, isSpecial: false, isSpecialOrder: undefined }))
             } else if (type === 'lead') {
               setFormData((prev) => ({ ...prev, isLead: true, isSpecial: false, isSpecialOrder: 0 }))
@@ -742,10 +724,10 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             {submitting || isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                সংরক্ষণ করছি...
+                Saving...
               </span>
             ) : (
-              'সংরক্ষণ করুন'
+              'Save Article'
             )}
           </Button>
           <Button
@@ -753,7 +735,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             variant="outline"
             onClick={() => window.history.back()}
           >
-            বাতিল করুন
+            Cancel
           </Button>
         </div>
       </form>

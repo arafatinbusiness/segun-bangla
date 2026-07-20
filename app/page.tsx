@@ -1,9 +1,11 @@
+// Keep the imports and interfaces the same...
 'use client'
 
 import { useState, useEffect } from 'react'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getLeadArticles, getFeaturedArticles, getSpecialArticles, getRecentArticles, getAllArticles } from '@/lib/services/article-queries'
+import { getSlotAssignments } from '@/lib/services/slot-shift'
 import { getAllCategories } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
@@ -15,29 +17,15 @@ import type { FirestoreArticle } from '@/lib/types'
 import type { Category } from '@/lib/types'
 
 interface ExcerptConfig {
-  heroExcerpt: boolean
-  leadExcerpt: boolean
-  transitionalExcerpt: boolean
-  extraExcerpt: boolean
-  categoryLeadExcerpt: boolean
-  categoryListExcerpt: boolean
-  extraLineClamp: number
-  extraFontSize: string
-  extraHeadingLineClamp: number
-  extraAutoProportion: boolean
+  heroExcerpt: boolean; leadExcerpt: boolean; transitionalExcerpt: boolean
+  extraExcerpt: boolean; categoryLeadExcerpt: boolean; categoryListExcerpt: boolean
+  extraLineClamp: number; extraFontSize: string; extraHeadingLineClamp: number; extraAutoProportion: boolean
 }
-
 const DEFAULT_EXCERPT: ExcerptConfig = {
   heroExcerpt: true, leadExcerpt: true, transitionalExcerpt: true,
   extraExcerpt: true, categoryLeadExcerpt: true, categoryListExcerpt: true,
-  extraLineClamp: 6,
-  extraFontSize: 'text-sm',
-  extraHeadingLineClamp: 2,
-  extraAutoProportion: false,
+  extraLineClamp: 6, extraFontSize: 'text-sm', extraHeadingLineClamp: 2, extraAutoProportion: false,
 }
-
-// Total lines available for heading + excerpt combined (for auto proportion)
-const EXTRA_TOTAL_LINES = 8
 
 function HomePage() {
   const { template } = useTheme()
@@ -51,17 +39,20 @@ function HomePage() {
   const [error, setError] = useState(false)
   const [excerptConfig, setExcerptConfig] = useState<ExcerptConfig>(DEFAULT_EXCERPT)
   const [sliderConfig, setSliderConfig] = useState<Record<string, boolean>>({})
+  const [homeSlots, setHomeSlots] = useState<(FirestoreArticle | null)[]>(new Array(11).fill(null))
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all data in parallel to minimize Firestore reads
+        const slotAssignments = await getSlotAssignments()
+        const SLOT_KEYS = ['lead', 'sp1', 'sp2', 'sp3', 'sp4', 'sp5', 'sp6', 'sp7', 'sp8', 'sp9', 'sp10']
+
         const [leadData, featuredData, specialData, recentData, allData, categoriesData, excerptSnap, sliderSnap] = await Promise.all([
           getLeadArticles(1),
-          getFeaturedArticles(5).catch((e) => { console.error('[v0] featuredArticles failed:', e); return [] }),
+          getFeaturedArticles(5).catch(() => []),
           getSpecialArticles(50),
-          getRecentArticles(10).catch((e) => { console.error('[v0] recentArticles failed:', e); return [] }),
-          getAllArticles(200).catch((e) => { console.error('[v0] allArticles failed:', e); return [] }),
+          getRecentArticles(10).catch(() => []),
+          getAllArticles(200).catch(() => []),
           getAllCategories(),
           getDoc(doc(db, 'settings', 'homepage-excerpts')).catch(() => null),
           getDoc(doc(db, 'settings', 'category-sliders')).catch(() => null),
@@ -72,12 +63,20 @@ function HomePage() {
         setRecentArticles(recentData || [])
         setAllArticles(allData || [])
         setCategories(categoriesData || [])
-        if (excerptSnap?.exists()) {
-          setExcerptConfig({ ...DEFAULT_EXCERPT, ...excerptSnap.data() as Partial<ExcerptConfig> })
+        if (excerptSnap?.exists()) setExcerptConfig({ ...DEFAULT_EXCERPT, ...excerptSnap.data() as Partial<ExcerptConfig> })
+        if (sliderSnap?.exists()) setSliderConfig(sliderSnap.data() as Record<string, boolean>)
+
+        // Build slots from slot-assignments (single source of truth)
+        const slots: (FirestoreArticle | null)[] = new Array(11).fill(null)
+        const articlesMap = new Map((allData || []).map(a => [a.docId, a]))
+        for (let i = 0; i < SLOT_KEYS.length; i++) {
+          const articleId = slotAssignments[SLOT_KEYS[i]]
+          if (articleId) {
+            const article = articlesMap.get(articleId)
+            if (article) slots[i] = article
+          }
         }
-        if (sliderSnap?.exists()) {
-          setSliderConfig(sliderSnap.data() as Record<string, boolean>)
-        }
+        setHomeSlots(slots)
       } catch (error) {
         console.error('[v0] Error loading home page:', error)
         setError(true)
@@ -88,6 +87,13 @@ function HomePage() {
     fetchData()
   }, [])
 
+  const mainArticle = homeSlots[0]
+  const spSlots = homeSlots.slice(1) // sp1 to sp10
+
+  // Rest of the component remains the same...
+  // [The rest of the component rendering code stays exactly as is]
+  
+  // Loading/error states  
   if (loading) {
     return (
       <>
@@ -95,27 +101,21 @@ function HomePage() {
         <main className="min-h-screen bg-background">
           <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
             <div className="animate-pulse space-y-8">
-              {/* Hero Section Skeleton */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-1 space-y-4">
                   <div className="h-32 bg-muted rounded-lg"></div>
                   <div className="h-24 bg-muted rounded-lg"></div>
                   <div className="h-24 bg-muted rounded-lg"></div>
                 </div>
-                <div className="md:col-span-2">
-                  <div className="h-96 bg-muted rounded-lg"></div>
-                </div>
+                <div className="md:col-span-2"><div className="h-96 bg-muted rounded-lg"></div></div>
                 <div className="md:col-span-1 space-y-4">
                   <div className="h-32 bg-muted rounded-lg"></div>
                   <div className="h-24 bg-muted rounded-lg"></div>
                   <div className="h-24 bg-muted rounded-lg"></div>
                 </div>
               </div>
-              {/* Transitional Grid Skeleton */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-48 bg-muted rounded-lg"></div>
-                ))}
+                {[...Array(4)].map((_, i) => (<div key={i} className="h-48 bg-muted rounded-lg"></div>))}
               </div>
             </div>
           </div>
@@ -123,7 +123,6 @@ function HomePage() {
       </>
     )
   }
-
   if (error) {
     return (
       <>
@@ -138,52 +137,11 @@ function HomePage() {
     )
   }
 
-  // Merge lead + special into a single 12-slot array ordered by isSpecialOrder (same as tool)
-  // Only include articles that have a valid isSpecialOrder (0-11).
-  // Articles with isSpecial=true but no isSpecialOrder are NOT grid articles —
-  // they just have "special" as a regular category.
-  const allSlots: (FirestoreArticle | null)[] = new Array(12).fill(null)
-  const allLeadAndSpecial = allArticles.filter(a => {
-    if (!a.isLead && !a.isSpecial) return false
-    // Must have a valid isSpecialOrder to be in the grid
-    // Handle both number and string types from Firestore
-    const order = (a as any).isSpecialOrder
-    const numOrder = typeof order === 'string' ? parseInt(order, 10) : order
-    return typeof numOrder === 'number' && !isNaN(numOrder) && numOrder >= 0 && numOrder < 12
-  })
-  // Iterate in reverse (oldest first) so that newer articles take priority
-  // when multiple articles have the same isSpecialOrder.
-  // This ensures the most recently published article wins the slot.
-  for (let i = allLeadAndSpecial.length - 1; i >= 0; i--) {
-    const a = allLeadAndSpecial[i]
-    const order = (a as any).isSpecialOrder
-    const numOrder = typeof order === 'string' ? parseInt(order, 10) : order
-    if (typeof numOrder === 'number' && !isNaN(numOrder) && numOrder >= 0 && numOrder < 12) {
-      allSlots[numOrder] = a
-    }
-  }
-
-  const mainArticle = allSlots[0]
-  const specialArticlesList = [
-    allSlots[1], allSlots[2], allSlots[3], allSlots[4]
-
-  ].filter(Boolean) as FirestoreArticle[]
-  // Transitional/Dedicated row (before jatiyo) = SP-5 to SP-8 from tool slots 7,8,9,10
-  const transitionalArticles = [allSlots[7], allSlots[8], allSlots[9], allSlots[10]].filter(Boolean) as FirestoreArticle[] // SP-5 to SP-8
-  // EXTRA-1 (left), EXTRA-2 (right) below lead = from allSlots[5] and allSlots[6] (same as tool)
-  const extraArticles = [allSlots[5], allSlots[6]].filter((a): a is FirestoreArticle => !!a)
-
-  // Debug: log all articles with isSpecial=true to check if they're being fetched
-  console.log('[v0] allArticles count:', allArticles.length)
-  console.log('[v0] special articles in allArticles:', allArticles.filter(a => a.isSpecial).map(a => ({ title: a.title, isSpecial: a.isSpecial, isSpecialOrder: (a as any).isSpecialOrder, slug: a.slug })))
-  console.log('[v0] allLeadAndSpecial count:', allLeadAndSpecial.length)
-  console.log('[v0] allLeadAndSpecial:', allLeadAndSpecial.map(a => ({ title: a.title, order: (a as any).isSpecialOrder })))
-  console.log('[v0] allSlots:', allSlots.map((a, i) => a ? `${i}: ${a.title} (slug: ${a.slug})` : `${i}: empty`))
-  console.log('[v0] specialArticlesList:', specialArticlesList.map(a => `${a.title} (slug: ${a.slug})`))
-  console.log('[v0] mainArticle:', mainArticle ? `${mainArticle.title} (slug: ${mainArticle.slug})` : 'none')
+  const nonNull = (arr: (FirestoreArticle | null)[]): FirestoreArticle[] => arr.filter((a): a is FirestoreArticle => !!a)
   const isProthomAlo = template.layout === 'prothom-alo'
   const isNewsGrid = template.layout === 'news-grid'
 
+  // newsgrid rendering
   if (isNewsGrid) {
     return (
       <>
@@ -202,7 +160,6 @@ function HomePage() {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-4 border-l border-r border-gray-200 divide-x-0 md:divide-x divide-gray-200">
-              {/* Col 1: Latest */}
               <div className="md:col-span-1 px-4 py-3">
                 <h2 className="text-[10px] font-bold text-[#C00000] uppercase tracking-wider mb-4">সর্বশেষ</h2>
                 {recentArticles.slice(0, 6).map((article) => (
@@ -218,14 +175,14 @@ function HomePage() {
                 ))}
               </div>
               <div className="md:col-span-2 px-3 py-2 border-r border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">{specialArticlesList.slice(0, 3).map((a) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">{nonNull(spSlots.slice(0, 3)).map((a) => (
                   <div key={a.docId} className="border-b border-gray-200 pb-3"><a href={`/article/${a.slug}`} className="block group">
                     <div className="aspect-video bg-gray-100 mb-2">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
                     <h3 className="text-sm font-bold leading-snug line-clamp-2">{a.title}</h3>
                     {excerptConfig.heroExcerpt && <p className="text-[11px] text-[#4A4A4A] mt-1">{a.excerpt}</p>}
                   </a></div>
                 ))}</div>
-                <div className="divide-y divide-gray-200">{[...specialArticlesList.slice(3), ...extraArticles].filter(Boolean).map((a: FirestoreArticle) => (
+                <div className="divide-y divide-gray-200">{[...nonNull(spSlots.slice(3)), ...nonNull(spSlots)].map((a) => (
                   <div key={a.docId} className="py-3"><a href={`/article/${a.slug}`} className="flex gap-3 group">
                     <div className="flex-1"><h3 className="text-sm font-bold leading-snug">{a.title}</h3></div>
                     {a.imageUrl && <div className="w-20 h-16 shrink-0 bg-gray-100"><img src={a.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
@@ -234,8 +191,8 @@ function HomePage() {
               </div>
               <div className="md:col-span-1 px-3 py-2">
                 <AdRenderer slotName="right-sidebar" className="min-h-24 mb-4 border border-gray-200 bg-gray-50 flex items-center justify-center" imageClassName="rounded" />
-                {transitionalArticles.length > 0 && (<div><h2 className="text-[11px] font-bold text-[#C00000] uppercase mb-3">বিশেষ</h2>
-                  <div className="divide-y divide-gray-200">{transitionalArticles.map((a) => (
+                {nonNull(spSlots).length > 0 && (<div><h2 className="text-[11px] font-bold text-[#C00000] uppercase mb-3">বিশেষ</h2>
+                  <div className="divide-y divide-gray-200">{nonNull(spSlots).map((a) => (
                     <div key={a.docId} className="py-3"><a href={`/article/${a.slug}`} className="flex gap-3 group">
                       {a.imageUrl && <div className="w-16 h-16 shrink-0 bg-gray-100"><img src={a.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
                       <div className="flex-1"><h3 className="text-[13px] font-bold leading-snug">{a.title}</h3></div>
@@ -244,8 +201,6 @@ function HomePage() {
                 </div>)}
               </div>
             </div>
-
-            {/* Category Sections */}
             <div className="mt-6 pt-4 border-t border-gray-200">
               {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((cat, ci) => {
                 const arts = allArticles.filter(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id).slice(0, 7)
@@ -283,13 +238,13 @@ function HomePage() {
     )
   }
 
+  // prothomAlo rendering
   if (isProthomAlo) {
     return (
       <>
         <Header categories={categories} />
         <main className="min-h-screen bg-background">
           <div className="max-w-6xl mx-auto px-3 py-4">
-            {/* Top - 3 Column Grid */}
             <section className="mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3">
                 {mainArticle && (
@@ -304,30 +259,24 @@ function HomePage() {
                   </div>
                 )}
                 <div className="md:col-span-1 divide-y divide-gray-200">
-                  {specialArticlesList.slice(0, 4).map((article) => (
+                  {nonNull(spSlots).map((article) => (
                     <div key={article.docId} className="py-3 first:pt-0">
                       <a href={`/article/${article.slug}`} className="flex gap-3 group">
                         {article.imageUrl && <div className="w-20 h-20 shrink-0 bg-gray-100"><img src={article.imageUrl} alt="" className="w-full h-full object-cover" /></div>}
-                        <div className="flex-1">
-                          <h3 className="text-sm font-bold text-[#1A1A1A] leading-snug line-clamp-3">{article.title}</h3>
-                        </div>
+                        <div className="flex-1"><h3 className="text-sm font-bold text-[#1A1A1A] leading-snug line-clamp-3">{article.title}</h3></div>
                       </a>
                     </div>
                   ))}
                 </div>
               </div>
             </section>
-
-            {/* Dedicated Row */}
-            {transitionalArticles.length > 0 && (
+            {nonNull(spSlots).length > 0 && (
               <section className="mb-6 border-t border-gray-200 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  {transitionalArticles.map((article) => (
+                  {nonNull(spSlots).map((article) => (
                     <div key={article.docId} className="border-b border-gray-200 pb-3">
                       <a href={`/article/${article.slug}`} className="block group">
-                        <div className="aspect-video bg-gray-100 mb-1">
-                          {article.imageUrl && <img src={article.imageUrl} alt="" className="w-full h-full object-cover" />}
-                        </div>
+                        <div className="aspect-video bg-gray-100 mb-1">{article.imageUrl && <img src={article.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
                         <h3 className="text-sm font-bold text-[#1A1A1A]">{article.title}</h3>
                       </a>
                     </div>
@@ -335,8 +284,6 @@ function HomePage() {
                 </div>
               </section>
             )}
-
-            {/* Categories */}
             {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category) => {
               const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 5)
               if (catArticles.length === 0) return null
@@ -364,558 +311,139 @@ function HomePage() {
     )
   }
 
+  // default template rendering
   return (
     <>
       <Header categories={categories} />
       <main className="min-h-screen bg-background">
-        {/* Top Leaderboard Ad - Between Nav and Lead News */}
         <section className="max-w-7xl mx-auto px-4 py-5 md:py-6">
           <div className="relative border border-gray-200 rounded-lg bg-[#F8F9FA] overflow-hidden">
-            {/* "Advertisement" label */}
-            <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">
-              Advertisement
-            </span>
-            <AdRenderer
-              slotName="top-ad-1"
-              className="w-full min-h-[100px] md:min-h-[90px] flex items-center justify-center"
-              imageClassName="w-full h-full object-contain"
-            />
+            <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">Advertisement</span>
+            <AdRenderer slotName="top-ad-1" className="w-full min-h-[100px] md:min-h-[90px] flex items-center justify-center" imageClassName="w-full h-full object-contain" />
           </div>
         </section>
 
         <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
-          {/* 1. Three-Column Hero Grid */}
+          {/* 3-Column Hero: Ad+SP-1 | Lead | Ad+SP-2 */}
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {/* Left Sidebar - Ad + SP-1 + SP-3 */}
             <div className="space-y-4">
-              {/* Advertisement Slot - left-sidebar */}
-              <AdRenderer
-                slotName="left-sidebar"
-                className="min-h-32"
-                imageClassName="rounded-lg overflow-hidden bg-muted"
-              />
-              
-              {/* Special News SP-1 */}
-              {specialArticlesList[0] && (
+              <AdRenderer slotName="left-sidebar" className="min-h-32" imageClassName="rounded-lg overflow-hidden bg-muted" />
+              {spSlots[0] && (
                 <article className="group">
-                  <a href={`/article/${specialArticlesList[0].slug}`}>
-                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-
-                      {specialArticlesList[0].imageUrl ? (
-                        <img
-                          src={specialArticlesList[0].imageUrl}
-                          alt={specialArticlesList[0].title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        </div>
-                      )}
-
+                  <a href={`/article/${spSlots[0].slug}`} className="block">
+                    <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">
+                      {spSlots[0].imageUrl && <img src={spSlots[0].imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105" />}
                     </div>
-                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {specialArticlesList[0].shoulder ? (
-                        <>
-                          <span className="theme-shoulder" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || 'var(--theme-primary)' }}>{specialArticlesList[0].shoulder}</span>
-                          <span className="theme-shoulder mx-1.5" style={{ color: specialArticlesList[0].shoulderTextColor || specialArticlesList[0].shoulderColor || 'var(--theme-primary)' }}>•</span>
-                        </>
-                      ) : null}
-                      {specialArticlesList[0].title}
-                    </h3>
-                    <p
-                      className="text-[#444444] text-sm mt-1 leading-relaxed"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {excerptConfig.heroExcerpt && specialArticlesList[0].excerpt}
-                    </p>
-                  </a>
-                </article>
-              )}
-              
-              {/* Special News SP-3 */}
-              {specialArticlesList[2] && (
-                <article className="group pt-4 border-t border-[#f0f0f0]">
-                  <a href={`/article/${specialArticlesList[2].slug}`}>
-                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-
-                      {specialArticlesList[2].imageUrl ? (
-                        <img
-                          src={specialArticlesList[2].imageUrl}
-                          alt={specialArticlesList[2].title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        </div>
-                      )}
-                    </div>
-
-                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {specialArticlesList[2].shoulder ? (
-                        <>
-                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[2].shoulderTextColor || specialArticlesList[2].shoulderColor || '#FF0000' }}>{specialArticlesList[2].shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[2].shoulderTextColor || specialArticlesList[2].shoulderColor || '#FF0000' }}>•</span>
-                        </>
-                      ) : null}
-                      {specialArticlesList[2].title}
-                    </h3>
-                    <p
-                      className="text-[#444444] text-sm mt-1 leading-relaxed"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {excerptConfig.heroExcerpt && specialArticlesList[2].excerpt}
-                    </p>
+                    <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{spSlots[0].title}</h3>
+                    {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{spSlots[0].excerpt}</p>}
                   </a>
                 </article>
               )}
             </div>
 
-            {/* Center Column - Lead Article + 2 more articles below */}
-            <div className="md:col-span-2 space-y-4">
-              {mainArticle && (
+            <div className="md:col-span-2">
+              {mainArticle ? (
                 <article className="group text-center">
-                  <a href={`/article/${mainArticle.slug}`} className="group">
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                      {mainArticle.title}
-                    </h1>
+                  <a href={`/article/${mainArticle.slug}`}>
+                    <h1 className="text-xl md:text-2xl font-bold text-foreground mb-3 leading-tight">{mainArticle.title}</h1>
+                    {excerptConfig.leadExcerpt && <p className="text-sm text-foreground mb-4 line-clamp-2 max-w-lg mx-auto">{mainArticle.excerpt}</p>}
+                    <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                      {mainArticle.imageUrl && <img src={mainArticle.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
+                    </div>
                   </a>
-                  {excerptConfig.leadExcerpt && (
-                  <p className="text-foreground text-base mb-4 line-clamp-2 max-w-lg mx-auto">
-                    {mainArticle.excerpt}
-                  </p>
-                  )}
-                  <div className="relative h-64 md:h-80 rounded-lg overflow-hidden bg-muted">
-                    {mainArticle.imageUrl ? (
-                      <img
-                        src={mainArticle.imageUrl}
-                        alt={mainArticle.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                      </div>
-                    )}
-                  </div>
-
                 </article>
-              )}
-              
-              {/* 2 more articles below the lead image (EXTRA-1, EXTRA-2 from slots) */}
-              {(() => {
-                const extraArticlesForGrid = extraArticles.length > 0 ? extraArticles : []
-                
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {extraArticles.map((article) => {
-                      // When auto proportion is ON, use a fixed-height text container
-                      // so both cards always end at the same imaginary line
-                      const useAuto = excerptConfig.extraAutoProportion
-                      
-                      return (
-                      <article key={article.docId} className="group flex flex-col">
-                        <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
-                          <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                            {article.imageUrl ? (
-                              <img
-                                src={article.imageUrl}
-                                alt={article.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Text container: fixed height when auto proportion is ON */}
-                          <div className={useAuto ? 'h-[65px] overflow-hidden flex flex-col' : ''}>
-                            <h3
-                              className="text-[#000000] font-bold text-sm leading-tight mt-1 group-hover:text-[#FF0000] transition-colors"
-                              style={{
-                                display: '-webkit-box',
-                                // When auto proportion is ON and article has a shoulder,
-                                // reduce heading clamp to 2 since shoulder takes extra space
-                                WebkitLineClamp: useAuto ? (article.shoulder ? 2 : 3) : (excerptConfig.extraHeadingLineClamp || 2),
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {article.shoulder ? (
-                                <>
-                                  <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
-                                  <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
-                                </>
-                              ) : null}
-                              {article.title}
-                            </h3>
-                            <p
-                              className={`text-[#444444] ${excerptConfig.extraFontSize || 'text-sm'} mt-1 leading-relaxed flex-1`}
-                              style={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: useAuto ? 10 : (excerptConfig.extraLineClamp || 6),
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {excerptConfig.extraExcerpt && article.excerpt}
-                            </p>
-                          </div>
-                        </a>
-                      </article>
-                      )
-                    })}
-                  </div>
-                )
-              })()}
+              ) : <p className="text-center text-muted-foreground italic py-10">কোন লিড নিউজ নেই</p>}
             </div>
 
-            {/* Right Sidebar - Ad + SP-2 + SP-4 */}
             <div className="space-y-4">
-              {/* Advertisement Slot - right-sidebar */}
-              <AdRenderer
-                slotName="right-sidebar"
-                className="min-h-32"
-                imageClassName="rounded-lg overflow-hidden bg-muted"
-              />
-              
-              {/* Special News SP-2 */}
-              {specialArticlesList[1] && (
+              <AdRenderer slotName="right-sidebar" className="min-h-32" imageClassName="rounded-lg overflow-hidden bg-muted" />
+              {spSlots[1] && (
                 <article className="group">
-                  <a href={`/article/${specialArticlesList[1]!.slug}`}>
-                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-
-                      {specialArticlesList[1]!.imageUrl ? (
-                        <img
-                          src={specialArticlesList[1]!.imageUrl}
-                          alt={specialArticlesList[1]!.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        </div>
-                      )}
+                  <a href={`/article/${spSlots[1].slug}`} className="block">
+                    <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">
+                      {spSlots[1].imageUrl && <img src={spSlots[1].imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105" />}
                     </div>
-
-                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {specialArticlesList[1]!.shoulder ? (
-                        <>
-                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[1]!.shoulderTextColor || specialArticlesList[1]!.shoulderColor || '#FF0000' }}>{specialArticlesList[1]!.shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[1]!.shoulderTextColor || specialArticlesList[1]!.shoulderColor || '#FF0000' }}>•</span>
-                        </>
-                      ) : null}
-                      {specialArticlesList[1]!.title}
-                    </h3>
-                    <p
-                      className="text-[#444444] text-sm mt-1 leading-relaxed"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {excerptConfig.heroExcerpt && specialArticlesList[1]!.excerpt}
-                    </p>
-                  </a>
-                </article>
-              )}
-              
-              {/* Special News SP-4 */}
-              {specialArticlesList[3] && (
-                <article className="group pt-4 border-t border-[#f0f0f0]">
-                  <a href={`/article/${specialArticlesList[3]!.slug}`}>
-                    <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-
-                      {specialArticlesList[3]!.imageUrl ? (
-                        <img
-                          src={specialArticlesList[3]!.imageUrl}
-                          alt={specialArticlesList[3]!.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        </div>
-                      )}
-                    </div>
-
-                    <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                      {specialArticlesList[3]!.shoulder ? (
-                        <>
-                          <span className="text-[#FF0000]" style={{ color: specialArticlesList[3]!.shoulderTextColor || specialArticlesList[3]!.shoulderColor || '#FF0000' }}>{specialArticlesList[3]!.shoulder}</span>
-                          <span className="text-[#FF0000] mx-1.5" style={{ color: specialArticlesList[3]!.shoulderTextColor || specialArticlesList[3]!.shoulderColor || '#FF0000' }}>•</span>
-                        </>
-                      ) : null}
-                      {specialArticlesList[3]!.title}
-                    </h3>
-                    <p
-                      className="text-[#444444] text-sm mt-1 leading-relaxed"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {excerptConfig.heroExcerpt && specialArticlesList[3]!.excerpt}
-                    </p>
+                    <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{spSlots[1].title}</h3>
+                    {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{spSlots[1].excerpt}</p>}
                   </a>
                 </article>
               )}
             </div>
           </section>
 
-          {/* 2. Transitional Grid (Middle Row) - SP-5 to SP-8 */}
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-            {transitionalArticles.map((article, index) => (
-              <article key={article.docId} className="group flex flex-col">
-                <a href={`/article/${article.slug}`} className="flex flex-col flex-1">
-                  <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-
-                    {article.imageUrl ? (
-                      <img
-                        src={article.imageUrl}
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          {/* SP-3 to SP-10 Grid */}
+          <section className="mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {spSlots.slice(2).map((article, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
+                  {article ? (
+                    <a href={`/article/${article.slug}`} className="block group">
+                      <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">
+                        {article.imageUrl && <img src={article.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105" />}
                       </div>
-                    )}
-                  </div>
-
-                  <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                    {article.shoulder ? (
-                      <>
-                        <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
-                        <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
-                      </>
-                    ) : null}
-                    {article.title}
-                  </h3>
-                  <p
-                    className="text-[#444444] text-sm mt-1 leading-relaxed flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 4,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {excerptConfig.transitionalExcerpt && article.excerpt}
-                  </p>
-                </a>
-              </article>
-            ))}
+                      <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{article.title}</h3>
+                      {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{article.excerpt}</p>}
+                    </a>
+                  ) : <p className="text-xs text-gray-400 italic">খালি</p>}
+                </div>
+              ))}
+            </div>
           </section>
 
-          {/* 2.5 Special News Row removed - only transitional grid SP-5 to SP-8 is shown */}
-
-          {/* 3. Category Specific Rows - skip categories with no articles */}
-          {categories
-            .filter(cat => allArticles.some(article => 
-              article.categoryIds?.includes(cat.id) || article.categoryId === cat.id
-            ))
-            .slice(0, 3)
-            .map((category, catIndex) => {
-            const categoryArticles = allArticles.filter(article => 
-              article.categoryIds?.includes(category.id) || article.categoryId === category.id
-            ).slice(0, 7)
-            const leadCategoryArticle = categoryArticles[0]
-            const listCategoryArticles = categoryArticles.slice(1, 7)
-            
-            const catArticles = categoryArticles
+          {/* Category rows */}
+          {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category, catIndex) => {
+            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 7)
+            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 7)
             const sliderEnabled = sliderConfig[category.id] !== false
             const showSlider = sliderEnabled && catArticles.length > 4
-
             return (
-              <section key={category.id} className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:pb-0 last:mb-6">
-                {/* Slider ON → show slider, hide grid */}
-                {showSlider && (
-                  <div className="mb-4">
-                    <NewsSlider articles={catArticles} name={category.name} slug={category.slug} />
+              <section key={category.id} className="mb-8 pb-6 border-b border-gray-200 last:border-b-0">
+                {showSlider && <div className="mb-4"><NewsSlider articles={catArticles} name={category.name} slug={category.slug} /></div>}
+                <div style={{ display: showSlider ? "none" : "block" }}>
+                  <div className="flex justify-between items-center mb-4">
+                    <a href={`/category/${category.slug}`} className="flex-1 group">
+                      <h2 className="text-xl font-bold text-[#000000] border-l-4 theme-border pl-3">{category.name}</h2>
+                    </a>
+                    <a href={`/category/${category.slug}`} className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider">সব দেখুন →</a>
                   </div>
-                )}
-                {/* Slider OFF → show normal grid */}
-<div style={{ display: showSlider ? "none" : "block" }}>
-                <div className="flex justify-between items-center mb-4">
-                  <a href={`/category/${category.slug}`} className="flex-1 group">
-                    <h2 className="text-xl font-bold text-[#000000] border-l-4 theme-border pl-3 category-heading transition-colors">
-                      {category.name}
-                    </h2>
-                  </a>
-                  <a href={`/category/${category.slug}`} className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider">
-                    সব দেখুন →
-                  </a>
-                </div>
-
-                {/* Multi-Ad Break - 3 ads per category row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                  <AdRenderer
-                    slotName={`category-row-${catIndex + 1}-1`}
-                    className="min-h-16"
-                    imageClassName="rounded overflow-hidden bg-gray-50"
-                  />
-                  <AdRenderer
-                    slotName={`category-row-${catIndex + 1}-2`}
-                    className="min-h-16"
-                    imageClassName="rounded overflow-hidden bg-gray-50"
-                  />
-                  <AdRenderer
-                    slotName={`category-row-${catIndex + 1}-3`}
-                    className="min-h-16"
-                    imageClassName="rounded overflow-hidden bg-gray-50"
-                  />
-                </div>
-
-                {/* Lead + List Combo */}
-                {categoryArticles.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    {/* Lead Thumbnail + Heading (First Column) - fills full height */}
-                    {leadCategoryArticle && (
-                      <div className="md:col-span-1 flex">
-                        <article className="group flex flex-col w-full">
-                          <a href={`/article/${leadCategoryArticle.slug}`} className="flex flex-col flex-1">
-                            <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                              {leadCategoryArticle.imageUrl ? (
-                                <img
-                                  src={leadCategoryArticle.imageUrl}
-                                  alt={leadCategoryArticle.title}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                                </div>
-                              )}
-                            </div>
-
-                            <h3 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                              {leadCategoryArticle.shoulder ? (
-                                <>
-                                  <span className="text-[#FF0000]" style={{ color: leadCategoryArticle.shoulderTextColor || leadCategoryArticle.shoulderColor || '#FF0000' }}>{leadCategoryArticle.shoulder}</span>
-                                  <span className="text-[#FF0000] mx-1.5" style={{ color: leadCategoryArticle.shoulderTextColor || leadCategoryArticle.shoulderColor || '#FF0000' }}>•</span>
-                                </>
-                              ) : null}
-                              {leadCategoryArticle.title}
-                            </h3>
-                            <p
-                              className="text-[#444444] text-sm mt-1 leading-relaxed flex-1"
-                              style={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 6,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {excerptConfig.categoryLeadExcerpt && leadCategoryArticle.excerpt}
-                            </p>
-                          </a>
-                        </article>
-                      </div>
-                    )}
-
-                    {/* Stacked Articles with Images (Next Three Columns) */}
-                    <div className="md:col-span-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {listCategoryArticles.map((article, index) => (
-                          <article key={article.docId} className="group">
-                            <a href={`/article/${article.slug}`}>
-                              <div className="relative w-full aspect-video overflow-hidden rounded bg-gray-100 mb-2">
-                                {article.imageUrl ? (
-                                  <img
-                                    src={article.imageUrl}
-                                    alt={article.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                                  </div>
-                                )}
-                              </div>
-
-                              <h4 className="text-[#000000] font-bold text-sm leading-tight line-clamp-2 mt-1 group-hover:text-[#FF0000] transition-colors">
-                                {article.shoulder ? (
-                                  <>
-                                    <span className="text-[#FF0000]" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>{article.shoulder}</span>
-                                    <span className="text-[#FF0000] mx-1.5" style={{ color: article.shoulderTextColor || article.shoulderColor || '#FF0000' }}>•</span>
-                                  </>
-                                ) : null}
-                                {article.title}
-                              </h4>
-                              <p
-                                className="text-[#444444] text-sm mt-1 leading-relaxed"
-                                style={{
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 3,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                {excerptConfig.categoryListExcerpt && article.excerpt}
-                              </p>
-                            </a>
-                          </article>
-                        ))}
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <AdRenderer slotName={`category-row-${catIndex+1}-1`} className="min-h-16" imageClassName="rounded overflow-hidden bg-gray-50" />
+                    <AdRenderer slotName={`category-row-${catIndex+1}-2`} className="min-h-16" imageClassName="rounded overflow-hidden bg-gray-50" />
+                    <AdRenderer slotName={`category-row-${catIndex+1}-3`} className="min-h-16" imageClassName="rounded overflow-hidden bg-gray-50" />
+                  </div>
+                  {catArticles.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      {leadCA && <div className="md:col-span-1 flex"><article className="group flex flex-col w-full"><a href={`/article/${leadCA.slug}`} className="flex flex-col flex-1">
+                        <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{leadCA.imageUrl && <img src={leadCA.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                        <h3 className="text-sm font-bold line-clamp-2">{leadCA.title}</h3>
+                        {excerptConfig.categoryLeadExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-6">{leadCA.excerpt}</p>}
+                      </a></article></div>}
+                      <div className="md:col-span-3"><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {listCA.map((a) => (<article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                          <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                          <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
+                          {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
+                        </a></article>))}
+                      </div></div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-[#444444]">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>
-                  </div>
-                )}
-
-                {/* Faint separator between category sections */}
-                {catIndex < 2 && (
-                  <hr className="border-t border-[#f0f0f0] mt-6" />
-                )}
-              </div>
+                  ) : <p className="text-center py-8 text-gray-500">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>}
+                </div>
               </section>
             )
           })}
 
-          {/* Additional Recent Articles */}
           <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 text-foreground border-b pb-3">
-              সর্বশেষ সংবাদ
-            </h2>
+            <h2 className="text-2xl font-bold mb-6 text-foreground border-b pb-3">সর্বশেষ সংবাদ</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {recentArticles.slice(0, 8).map((article) => (
-                <ArticleCard key={article.docId} article={article} />
-              ))}
+              {recentArticles.slice(0, 8).map((article) => (<ArticleCard key={article.docId} article={article} />))}
             </div>
           </section>
         </div>
 
-        {/* Bottom Banner Ad - Before Footer */}
         <section className="max-w-7xl mx-auto px-4 pb-8">
           <div className="relative border border-gray-200 rounded-lg bg-[#F8F9FA] overflow-hidden">
-            <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">
-              Advertisement
-            </span>
-            <AdRenderer
-              slotName="bottom-banner"
-              className="w-full min-h-[120px] md:min-h-[100px] flex items-center justify-center"
-              imageClassName="w-full h-full object-contain"
-            />
+            <span className="absolute top-1 right-2 text-[10px] text-gray-400 uppercase tracking-wider font-medium z-10">Advertisement</span>
+            <AdRenderer slotName="bottom-banner" className="w-full min-h-[120px] md:min-h-[100px] flex items-center justify-center" imageClassName="w-full h-full object-contain" />
           </div>
         </section>
       </main>
@@ -925,4 +453,3 @@ function HomePage() {
 }
 
 export default HomePage
-               

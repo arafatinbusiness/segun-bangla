@@ -48,8 +48,8 @@ function AdminDashboard() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">ড্যাশবোর্ড</h1>
-          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Loading...</p>
         </div>
       </div>
     )
@@ -58,8 +58,8 @@ function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">ড্যাশবোর্ড</h1>
-        <p className="text-muted-foreground mt-2">আপনার সাইটের পরিসংখ্যান এবং সংক্ষিপ্ত পরিদর্শন</p>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Site statistics and overview</p>
       </div>
 
       {/* Stats Grid */}
@@ -67,7 +67,7 @@ function AdminDashboard() {
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground font-medium">মোট নিবন্ধ</p>
+              <p className="text-sm text-muted-foreground font-medium">Total Articles</p>
               <p className="text-3xl font-bold text-foreground mt-2">{totalArticles}</p>
             </div>
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -77,11 +77,11 @@ function AdminDashboard() {
           <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-green-500" />
-              {publishedCount} প্রকাশিত
+              {publishedCount} Published
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-yellow-500" />
-              {draftCount} খসড়া
+              {draftCount} Draft
             </span>
           </div>
         </Card>
@@ -89,49 +89,49 @@ function AdminDashboard() {
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground font-medium">বিভাগসমূহ</p>
+              <p className="text-sm text-muted-foreground font-medium">Categories</p>
               <p className="text-3xl font-bold text-foreground mt-2">{totalCategories}</p>
             </div>
             <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <Folder className="w-6 h-6 text-blue-500" />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">সক্রিয় বিভাগ</p>
+          <p className="text-xs text-muted-foreground mt-4">Active categories</p>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground font-medium">মোট দর্শন</p>
+              <p className="text-sm text-muted-foreground font-medium">Total Views</p>
               <p className="text-3xl font-bold text-foreground mt-2">{totalViews.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
               <Eye className="w-6 h-6 text-green-500" />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">সমস্ত সময়</p>
+          <p className="text-xs text-muted-foreground mt-4">All time</p>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground font-medium">গড় দর্শন</p>
+              <p className="text-sm text-muted-foreground font-medium">Avg Views</p>
               <p className="text-3xl font-bold text-foreground mt-2">{avgViews}</p>
             </div>
             <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-purple-500" />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">প্রতি নিবন্ধ</p>
+          <p className="text-xs text-muted-foreground mt-4">Per article</p>
         </Card>
       </div>
 
       {/* Recent Articles */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-foreground">সর্বশেষ নিবন্ধ</h2>
+          <h2 className="text-xl font-bold text-foreground">Latest Articles</h2>
           <Link href="/admin/articles" className="text-sm text-primary hover:underline">
-            সব দেখুন →
+            View all →
           </Link>
         </div>
         <Card>
@@ -139,11 +139,11 @@ function AdminDashboard() {
             <table className="w-full">
               <thead className="border-b bg-muted/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">শিরোনাম</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground hidden md:table-cell">বিভাগ</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground hidden md:table-cell">দর্শন</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">অবস্থা</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">পদক্ষেপ</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Title</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground hidden md:table-cell">Category</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground hidden md:table-cell">Views</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -165,23 +165,23 @@ function AdminDashboard() {
                       {article.status === 'published' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          প্রকাশিত
+                          Published
                         </span>
                       ) : article.status === 'draft' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                          খসড়া
+                          Draft
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          নির্ধারিত
+                          Scheduled
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <Link href={`/admin/articles/${article.docId}`} className="text-primary hover:underline">
-                        সম্পাদনা
+                        Edit
                       </Link>
                     </td>
                   </tr>

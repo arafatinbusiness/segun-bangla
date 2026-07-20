@@ -23,7 +23,7 @@ function NewArticlePage() {
         const cats = await getAllCategories()
         setCategories(cats)
       } catch (error) {
-        console.error('ত্রুটি বিভাগ লোডিং:', error)
+        console.error('Error loading categories:', error)
       } finally {
         setLoading(false)
       }
@@ -76,29 +76,29 @@ function NewArticlePage() {
           await autoShiftSlots(targetSlot, articleId)
         }
         
-        alert('নিবন্ধ সফলভাবে তৈরি হয়েছে')
+        alert('Article created successfully')
         router.push('/admin/articles')
       } else {
-        alert('নিবন্ধ তৈরিতে ত্রুটি হয়েছে')
+        alert('Error creating article')
       }
 
     } catch (error) {
-      console.error('ত্রুটি নিবন্ধ তৈরি করছি:', error)
-      alert('নিবন্ধ তৈরিতে ত্রুটি হয়েছে')
+      console.error('Error creating article:', error)
+      alert('Error creating article')
     }
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">নতুন নিবন্ধ তৈরি করুন</h1>
-        <p className="text-muted-foreground mt-2">একটি নতুন নিবন্ধ তৈরি করতে ফর্মটি পূরণ করুন</p>
+        <h1 className="text-3xl font-bold text-foreground">Create New Article</h1>
+        <p className="text-muted-foreground mt-2">Fill in the form to create a new article</p>
       </div>
 
       {!loading ? (
         <ArticleForm categories={categories} onSubmit={handleSubmit} />
       ) : (
-        <div className="text-center text-muted-foreground">লোডিং...</div>
+        <div className="text-center text-muted-foreground">Loading...</div>
       )}
     </div>
   )

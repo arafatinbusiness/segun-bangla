@@ -10,7 +10,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
-import { autoShiftSlots } from '@/lib/services/slot-shift'
+import { autoShiftSlots, reverseShiftSlots, getSlotAssignments } from '@/lib/services/slot-shift'
 import { db } from '@/lib/firebase'
 import type { Category } from '@/lib/types'
 
@@ -95,35 +95,46 @@ function EditArticlePage() {
       } : undefined
       await updateArticle(articleId, articleData, editor)
 
-      // If this article is assigned to a special slot, auto-shift all slots
-      if (data.isLead || data.isSpecial) {
-        const targetSlot = typeof data.isSpecialOrder === 'number' ? data.isSpecialOrder : 0
-        await autoShiftSlots(targetSlot, articleId)
-      } else {
-        // Article is no longer special - remove from slot-assignments if it was there
-        const slotDoc = await getDoc(doc(db, 'settings', 'slot-assignments'))
-        if (slotDoc.exists()) {
-          const currentSlots = slotDoc.data()
-          let updated = false
-          const newSlots = { ...currentSlots }
-          for (const [key, val] of Object.entries(newSlots)) {
-            if (val === articleId) {
-              delete newSlots[key]
-              updated = true
-            }
-          }
-          if (updated) {
-            await setDoc(doc(db, 'settings', 'slot-assignments'), newSlots)
-          }
+      // Check if this article was previously in a slot
+      const slotAssignments = await getSlotAssignments()
+      let foundSlot = -1
+      const SLOT_KEYS = ['lead', 'sp1', 'sp2', 'sp3', 'sp4', 'sp5', 'sp6', 'sp7', 'sp8', 'sp9', 'sp10']
+      for (let i = 0; i < SLOT_KEYS.length; i++) {
+        if (slotAssignments[SLOT_KEYS[i]] === articleId) {
+          foundSlot = i
+          break
         }
       }
 
-      alert('নিবন্ধ সফলভাবে আপডেট হয়েছে')
+      const targetSlot = data.isLead ? 0 : (typeof data.isSpecialOrder === 'number' ? data.isSpecialOrder : -1)
+
+      if (data.isLead || data.isSpecial) {
+        if (targetSlot === foundSlot) {
+          // Article already in this exact slot — no shift needed
+          // Just update its flags in case they changed
+          await updateDoc(doc(db, 'articles', articleId), {
+            isLead: targetSlot === 0,
+            isSpecial: targetSlot !== 0,
+            isSpecialOrder: targetSlot,
+          })
+          // Also update slot-assignments to ensure it's there
+          const newSlots = { ...slotAssignments, [SLOT_KEYS[targetSlot]]: articleId }
+          await setDoc(doc(db, 'settings', 'slot-assignments'), newSlots)
+        } else {
+          // Article is being assigned to a DIFFERENT slot → push/shift down
+          await autoShiftSlots(targetSlot, articleId)
+        }
+      } else if (foundSlot >= 0) {
+        // Article was in a slot but no longer special → remove and shift up
+        await reverseShiftSlots(foundSlot)
+      }
+
+      alert('Article updated successfully')
       router.push('/admin/articles')
 
     } catch (error) {
       console.error('Error updating article:', error)
-      alert('নিবন্ধ আপডেট করতে ত্রুটি হয়েছে')
+      alert('Error updating article')
     }
   }
 
@@ -131,8 +142,8 @@ function EditArticlePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">নিবন্ধ সম্পাদনা</h1>
-          <p className="text-muted-foreground mt-2">লোড হচ্ছে...</p>
+          <h1 className="text-3xl font-bold text-foreground">Edit Article</h1>
+          <p className="text-muted-foreground mt-2">Loading...</p>
         </div>
       </div>
     )
@@ -146,8 +157,8 @@ function EditArticlePage() {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">নিবন্ধ পাওয়া যায়নি</h1>
-            <p className="text-muted-foreground mt-1">এই নিবন্ধটি বিদ্যমান নেই বা সরানো হয়েছে</p>
+            <h1 className="text-3xl font-bold text-foreground">Article Not Found</h1>
+            <p className="text-muted-foreground mt-1">This article does not exist or has been removed</p>
           </div>
         </div>
       </div>
@@ -165,9 +176,9 @@ function EditArticlePage() {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">নিবন্ধ সম্পাদনা</h1>
+          <h1 className="text-3xl font-bold text-foreground">Edit Article</h1>
           <p className="text-muted-foreground mt-1">
-            "{article.title}" সম্পাদনা করুন
+            Editing "{article.title}"
           </p>
         </div>
       </div>

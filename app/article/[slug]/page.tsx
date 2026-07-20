@@ -1,163 +1,64 @@
 import { Metadata } from 'next'
+import { collection, query, where, getDocs } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { ArticleClient } from './article-client'
-
-// Simple in-memory cache for article metadata
-const metaCache = new Map<string, { data: any; timestamp: number }>()
-const CACHE_TTL = 60000 // 1 minute
-
-async function getArticleMeta(slug: string) {
-  // Check cache first
-  const cached = metaCache.get(slug)
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data
-  }
-  
-  try {
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'segun-bangla'
-    
-    let token: string | null = null
-    try {
-      const metadataResponse = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=https://firestore.googleapis.com/', {
-        headers: { 'Metadata-Flavor': 'Google' },
-        signal: AbortSignal.timeout(2000)
-      })
-      if (metadataResponse.ok) {
-        token = await metadataResponse.text()
-      }
-    } catch {
-      // Metadata server not available
-    }
-    
-    let url: string
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    
-    if (token) {
-      url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`
-      headers['Authorization'] = `Bearer ${token}`
-    } else {
-      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAHRITS5jkpb__sa3VSz0N_uMI109F0Wxg'
-      url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
-    }
-    
-    const body = {
-      structuredQuery: {
-        from: [{ collectionId: 'articles' }],
-        where: {
-          fieldFilter: {
-            field: { fieldPath: 'slug' },
-            op: 'EQUAL',
-            value: { stringValue: slug }
-          }
-        },
-        limit: 1
-      }
-    }
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`Firestore API error (${response.status}):`, errorText)
-      return null
-    }
-    
-    const data = await response.json()
-    
-    if (!data || !Array.isArray(data) || data.length === 0 || !data[0].document) {
-      return null
-    }
-    
-    const doc = data[0].document
-    const fields = doc.fields || {}
-    
-    const extractValue = (field: any): any => {
-      if (!field) return null
-      if (field.stringValue !== undefined) return field.stringValue
-      if (field.integerValue !== undefined) return parseInt(field.integerValue)
-      if (field.booleanValue !== undefined) return field.booleanValue
-      if (field.timestampValue !== undefined) return field.timestampValue
-      if (field.doubleValue !== undefined) return field.doubleValue
-      return null
-    }
-    
-    const result = {
-      title: extractValue(fields.title),
-      excerpt: extractValue(fields.excerpt),
-      imageUrl: extractValue(fields.imageUrl),
-      slug: extractValue(fields.slug),
-      publishedAt: extractValue(fields.publishedAt),
-    }
-    // Cache the result
-    metaCache.set(slug, { data: result, timestamp: Date.now() })
-    return result
-  } catch (error) {
-    console.error('Error in getArticleMeta:', error instanceof Error ? error.message : error)
-    return null
-  }
-}
 
 export async function generateMetadata(
   { params }: { params: { slug: string } }
 ): Promise<Metadata> {
   const rawSlug = params.slug
   const slug = rawSlug ? decodeURIComponent(rawSlug) : ''
-  
-  const article = await getArticleMeta(slug)
-  
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://segun-bangla.vercel.app'
-  
-  if (!article) {
+
+  try {
+    // Use Firebase SDK directly — no REST API calls, no quota issues
+    const q = query(
+      collection(db, 'articles'),
+      where('slug', '==', slug),
+      where('status', '==', 'published')
+    )
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return {
+        title: 'সেগুন বাংলা - বাংলাদেশের শীর্ষস্থানীয় সংবাদ পোর্টাল',
+        description: 'সেগুন বাংলায় পান সর্বশেষ বাংলাদেশ এবং আন্তর্জাতিক সংবাদ।',
+      }
+    }
+
+    const articleDoc = snapshot.docs[0]
+    const data = articleDoc.data()
+    const title = `${data.title || 'নিবন্ধ'} - সেগুন বাংলা`
+    const description = data.excerpt || data.title || 'সেগুন বাংলা থেকে পড়ুন'
+    const imageUrl = data.imageUrl || `${siteUrl}/logo.png`
+    const articleUrl = `${siteUrl}/article/${slug}`
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title: data.title || 'সেগুন বাংলা',
+        description,
+        url: articleUrl,
+        type: 'article',
+        siteName: 'সেগুন বাংলা',
+        images: [{ url: imageUrl, width: 1200, height: 630, alt: data.title }],
+        publishedTime: data.publishedAt ? new Date(data.publishedAt).toISOString() : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: data.title || 'সেগুন বাংলা',
+        description,
+        images: [imageUrl],
+      },
+      alternates: { canonical: articleUrl },
+    }
+  } catch (error) {
+    console.error('Error in generateMetadata:', error)
     return {
       title: 'সেগুন বাংলা - বাংলাদেশের শীর্ষস্থানীয় সংবাদ পোর্টাল',
       description: 'সেগুন বাংলায় পান সর্বশেষ বাংলাদেশ এবং আন্তর্জাতিক সংবাদ।',
-      openGraph: {
-        title: 'সেগুন বাংলা',
-        description: 'সেগুন বাংলায় পান সর্বশেষ বাংলাদেশ এবং আন্তর্জাতিক সংবাদ।',
-        url: `${siteUrl}/article/${slug}`,
-        siteName: 'সেগুন বাংলা',
-        images: [{ url: `${siteUrl}/logo.png`, width: 1200, height: 630 }],
-      },
     }
-  }
-
-  const articleUrl = `${siteUrl}/article/${article.slug}`
-  const title = `${article.title} - সেগুন বাংলা`
-  const description = article.excerpt || `${article.title} - সেগুন বাংলা থেকে পড়ুন`
-  const imageUrl = article.imageUrl || `${siteUrl}/logo.png`
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title: article.title,
-      description,
-      url: articleUrl,
-      type: 'article',
-      siteName: 'সেগুন বাংলা',
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: article.title,
-        },
-      ],
-      publishedTime: article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: article.title,
-      description,
-      images: [imageUrl],
-    },
-    alternates: {
-      canonical: articleUrl,
-    },
   }
 }
 

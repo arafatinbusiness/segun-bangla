@@ -21,49 +21,49 @@ import { Button } from '@/components/ui/button'
 
 const navItems = [
   {
-    label: 'ড্যাশবোর্ড',
+    label: 'Dashboard',
     labelEn: 'Dashboard',
     href: '/admin',
     icon: Home,
   },
   {
-    label: 'নিবন্ধ',
+    label: 'Articles',
     labelEn: 'Articles',
     href: '/admin/articles',
     icon: FileText,
   },
   {
-    label: 'বিভাগ',
+    label: 'Categories',
     labelEn: 'Categories',
     href: '/admin/categories',
     icon: Folder,
   },
   {
-    label: 'বিজ্ঞাপন',
+    label: 'Advertisements',
     labelEn: 'Advertisements',
     href: '/admin/advertisements',
     icon: Megaphone,
   },
   {
-    label: 'বিশ্লেষণ',
+    label: 'Analytics',
     labelEn: 'Analytics',
     href: '/admin/analytics',
     icon: BarChart3,
   },
   {
-    label: 'ব্যবহারকারী',
+    label: 'Users',
     labelEn: 'Users',
     href: '/admin/users',
     icon: Users,
   },
   {
-    label: 'সেটিংস',
+    label: 'Settings',
     labelEn: 'Settings',
     href: '/admin/settings',
     icon: Settings,
   },
   {
-    label: 'টুলস',
+    label: 'Tools',
     labelEn: 'Tools',
     href: '/admin/tools',
     icon: Wrench,
