@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Solaiman Lipi - Bengali font for fast article reading */
+@font-face {
+  font-family: 'SolaimanLipi';
+  src: url('/fonts/SolaimanLipi.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -221,8 +230,34 @@
   color: #93c5fd;
 }
 
-/* Article content layout fixes */
+/* Article content layout fixes - Solaiman Lipi for fast Bengali reading */
+/* !important needed to override Tailwind Typography prose default font */
+
+/* Article page: heading, excerpt, shoulder, bullet points - all in SolaimanLipi */
+.article-page h1,
+.article-page .excerpt-text,
 .article-content {
+  font-family: 'SolaimanLipi', 'Noto Sans Bengali', 'Geist', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.article-page h1 {
+  font-size: 28px;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.article-page .excerpt-text {
+  font-size: 19px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.article-content {
+  font-size: 19px;
+  line-height: 1.9;
+  letter-spacing: 0.01em;
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
@@ -231,8 +266,15 @@
 
 .article-content p {
   margin-bottom: 1rem;
-  line-height: 1.8;
+  line-height: 1.9;
+  font-size: 19px;
   max-width: 100%;
+}
+
+/* Also cover the prose wrapper that contains the article body */
+.prose .article-content,
+.prose .article-content * {
+  font-family: 'SolaimanLipi', 'Noto Sans Bengali', 'Geist', sans-serif !important;
 }
 
 .article-content img,

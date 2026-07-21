@@ -116,7 +116,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
       <main className="min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 py-8">
           {/* Article Header */}
-          <article>
+          <article className="article-page">
             <div className="mb-8">
               {/* Category & Subcategory Breadcrumb */}
               {article.categoryIds && article.categoryIds.length > 0 && (
@@ -224,7 +224,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
               </div>
               {/* Excerpt (সংক্ষিপ্ত বর্ণনা) - After ticker */}
               {article.excerpt && (
-                <p className="text-lg mb-6 font-semibold leading-relaxed" style={{ color: article.excerptColor || 'inherit' }}>
+                <p className="text-lg mb-6 font-semibold leading-relaxed excerpt-text" style={{ color: article.excerptColor || 'inherit' }}>
                   {article.excerpt}
                 </p>
               )}
