@@ -37,15 +37,9 @@ function NewArticlePage() {
       // Use first category as primary categoryId for backward compatibility
       let categoryIds = data.categoryIds || []
 
-      // If isSpecial is checked, auto-assign to "special" category
-      if (data.isSpecial) {
-        const specialCat = categories.find(
-          (c) => c.slug === 'special' || c.slug === 'বিশেষ'
-        )
-        if (specialCat?.id && !categoryIds.includes(specialCat.id)) {
-          categoryIds = [...categoryIds, specialCat.id]
-        }
-      }
+      // Note: Do NOT auto-add "স্পেশাল" category. 
+      // Column 1 (special slot) and Column 2 (categories) are independent.
+      // Selecting SP-1 in Column 1 should NOT check "স্পেশাল" in Column 2.
 
       const subcategoryIds = data.subcategoryIds || []
       const primarySubcategoryId = subcategoryIds.length > 0 ? subcategoryIds[0] : data.subcategoryId || ''

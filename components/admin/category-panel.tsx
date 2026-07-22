@@ -19,22 +19,26 @@ interface CategoryPanelProps {
   specialIndex?: number // 0 = lead, 1-9 = special 1-9
 }
 
-// Special article types - matching tool's GRID_POSITIONS
-// slot 0 = lead, slot 1 = SP-1, slot 2 = SP-2, ..., slot 8 = SP-8
+// Special article types - matching homepage layout:
+//   Top: Lead (center) + SP-1 (left) + SP-2 (right)
+//   Row 2: SP-3, SP-4, SP-5, SP-6
+//   Row 3: SP-7, SP-8, SP-9, SP-10
 // "none" means this article is NOT assigned to any special slot (just a regular article)
-const SPECIAL_ITEMS = [
+const SPECIAL_ITEMS: { value: string; label: string; slot: number }[] = [
   { value: 'none', label: '— কোনটি নয় (সাধারণ নিবন্ধ)', slot: -1 },
   { value: 'lead', label: '★ প্রধান নিবন্ধ (লিড)', slot: 0 },
-  { value: 'special-1', label: 'SP-1', slot: 1 },
-  { value: 'special-2', label: 'SP-2', slot: 2 },
+  { value: 'special-1', label: 'SP-1 (লিডের বামে)', slot: 1 },
+  { value: 'special-2', label: 'SP-2 (লিডের ডানে)', slot: 2 },
+  { value: 'special-3', label: '▬▬▬▬ সারি ২ ▬▬▬▬', slot: -2 },
   { value: 'special-3', label: 'SP-3', slot: 3 },
   { value: 'special-4', label: 'SP-4', slot: 4 },
-  { value: 'special-5', label: 'EXTRA-1', slot: 5 },
-  { value: 'special-6', label: 'EXTRA-2', slot: 6 },
-  { value: 'special-7', label: 'SP-5', slot: 7 },
-  { value: 'special-8', label: 'SP-6', slot: 8 },
-  { value: 'special-9', label: 'SP-7', slot: 9 },
-  { value: 'special-10', label: 'SP-8', slot: 10 },
+  { value: 'special-5', label: 'SP-5', slot: 5 },
+  { value: 'special-6', label: 'SP-6', slot: 6 },
+  { value: 'special-7', label: '▬▬▬▬ সারি ৩ ▬▬▬▬', slot: -2 },
+  { value: 'special-7', label: 'SP-7', slot: 7 },
+  { value: 'special-8', label: 'SP-8', slot: 8 },
+  { value: 'special-9', label: 'SP-9', slot: 9 },
+  { value: 'special-10', label: 'SP-10', slot: 10 },
 ]
 
 export function CategoryPanel({
@@ -138,11 +142,19 @@ export function CategoryPanel({
           </div>
           <ScrollArea className="h-[320px]">
             <div className="p-2 space-y-0.5">
-              {SPECIAL_ITEMS.map((item) => {
+              {SPECIAL_ITEMS.map((item, idx) => {
+                if (item.slot === -2) {
+                  return (
+                    <div key={`sep-${idx}`} className="px-2.5 py-1">
+                      <div className="h-px bg-muted-foreground/20" />
+                      <p className="text-[10px] text-muted-foreground/50 text-center mt-0.5">{item.label}</p>
+                    </div>
+                  )
+                }
                 const isSelected = currentSpecial === item.value
                 return (
                   <label
-                    key={item.value}
+                    key={item.value + idx}
                     className={`flex items-center gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-colors ${
                       isSelected
                         ? 'bg-primary/10 border border-primary/30'
@@ -155,7 +167,6 @@ export function CategoryPanel({
                       checked={isSelected}
                       onChange={() => {
                         if (item.value === 'none') {
-                          // "None" selected — clear all special assignments
                           onSpecialChange('none')
                         } else if (item.value === 'lead') {
                           onSpecialChange('lead')
