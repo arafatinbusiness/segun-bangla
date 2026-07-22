@@ -249,7 +249,7 @@ export async function generateAndDownloadSocialCard(
 
   // ─── 3. Branding Strip (between image and footer) ───────────────────────
   const brandingStripTop = headerHeight + imageHeight
-  ctx.fillStyle = '#000000'
+  ctx.fillStyle = '#5C3317'
   ctx.fillRect(0, brandingStripTop, W, brandingStripHeight)
 
   // Load and draw logo centered in the branding strip
