@@ -19,6 +19,18 @@ function createEditEntry(
   }
 }
 
+export async function deleteArticles(articleIds: string[]): Promise<boolean> {
+  try {
+    const { deleteDoc, doc } = await import('firebase/firestore')
+    const promises = articleIds.map((id) => deleteDoc(doc(db, ARTICLES_COLLECTION, id)))
+    await Promise.all(promises)
+    return true
+  } catch (error) {
+    console.error('[v0] Error deleting articles:', error)
+    return false
+  }
+}
+
 export async function createArticle(
   articleData: Partial<Article>,
   editor?: { uid: string; name: string; email: string }

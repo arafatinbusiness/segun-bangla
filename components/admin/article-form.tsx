@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,8 +75,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const doSubmit = useCallback(async () => {
     setSubmitting(true)
     try {
       const cleaned: Record<string, any> = {}
@@ -85,10 +85,31 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         }
       }
       await onSubmit(cleaned as Partial<Article>)
+      toast.success(article ? 'Article updated successfully' : 'Article created successfully')
+    } catch (error) {
+      console.error('Submit error:', error)
+      toast.error('Failed to save article')
     } finally {
       setSubmitting(false)
     }
+  }, [formData, onSubmit, article])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await doSubmit()
   }
+
+  // Ctrl+S to save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (!submitting && !isLoading) doSubmit()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [doSubmit, submitting, isLoading])
 
   const handleFileSelect = useCallback(async (file: File) => {
     const error = validateImageFile(file)
@@ -113,25 +134,40 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
     }
   }, [article])
 
-  const generateSlug = () => {
+  const generateSlug = useCallback(() => {
     if (!formData.title) return
     const slug = generateCleanSlug(formData.title)
     setFormData((prev) => ({ ...prev, slug }))
-  }
+  }, [formData.title])
+
+  const handleImageUrlClick = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text && text.match(/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif|avif|svg|bmp)/i)) {
+        setFormData((prev) => ({ ...prev, imageUrl: text }))
+      } else if (text && text.match(/^https?:\/\//)) {
+        setFormData((prev) => ({ ...prev, imageUrl: text }))
+      }
+    } catch {}
+  }, [])
 
   return (
     <div className="relative">
       {/* Sticky Top Save Bar */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border mb-6 -mx-6 px-6 py-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">
-          {article ? 'Edit Article' : 'New Article'}
-        </h2>
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] border-b border-[#C9A84C]/20 shadow-lg shadow-black/10 mb-6 -mx-6 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-6 bg-[#C9A84C] rounded-full" />
+          <h2 className="text-lg font-semibold text-[#E8D5A3] tracking-tight">
+            {article ? 'Edit Article' : 'New Article'}
+          </h2>
+        </div>
         <div className="flex items-center gap-3">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => window.history.back()}
+            className="border-white/10 text-[#A0A0A0] hover:bg-white/5 hover:text-white hover:border-white/20"
           >
             Cancel
           </Button>
@@ -139,22 +175,22 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             type="submit"
             form="article-form"
             size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-[120px]"
+            className="bg-[#C9A84C] text-[#1a1a1a] hover:bg-[#D4B85A] font-semibold min-w-[120px] shadow-sm shadow-black/20"
             disabled={submitting || isLoading}
           >
             {submitting || isLoading ? (
               <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-[#1a1a1a]/30 border-t-[#1a1a1a] rounded-full animate-spin" />
                 Saving...
               </span>
             ) : (
-              'Save'
+              <span>💾 Save</span>
             )}
           </Button>
         </div>
       </div>
 
-      <Card className="p-6">
+      <Card className="p-6 border-t-4 border-t-[#C9A84C] shadow-sm" style={{ borderTopColor: '#C9A84C' }}>
         <form id="article-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
         <div className="space-y-2">
@@ -379,7 +415,8 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                   type="url"
                   value={formData.imageUrl || ''}
                   onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
+                  onClick={handleImageUrlClick}
+                  placeholder="https://example.com/image.jpg (click to paste)"
                   className="w-full"
                 />
               </div>
@@ -715,10 +752,10 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
         />
 
         {/* Submit Buttons */}
-        <div className="flex gap-4 pt-6 border-t">
+        <div className="flex gap-4 pt-6 border-t border-[#C9A84C]/30">
           <Button
             type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-[140px]"
+            className="bg-[#5C3317] text-white hover:bg-[#8B5E3C] min-w-[140px] shadow-sm shadow-[#5C3317]/20"
             disabled={submitting || isLoading}
           >
             {submitting || isLoading ? (
@@ -727,13 +764,14 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                 Saving...
               </span>
             ) : (
-              'Save Article'
+              <span className="flex items-center gap-1.5">📦 Save Article</span>
             )}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => window.history.back()}
+            className="border-[#8B5E3C]/30 text-[#5C3317] hover:bg-[#8B5E3C]/5"
           >
             Cancel
           </Button>

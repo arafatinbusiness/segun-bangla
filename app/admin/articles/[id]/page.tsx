@@ -9,6 +9,7 @@ import { ArticleForm } from '@/components/admin/article-form'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
+import { toast } from 'sonner'
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore'
 import { autoShiftSlots, reverseShiftSlots, getSlotAssignments } from '@/lib/services/slot-shift'
 import { db } from '@/lib/firebase'
@@ -123,12 +124,12 @@ function EditArticlePage() {
         await reverseShiftSlots(foundSlot)
       }
 
-      alert('Article updated successfully')
+      toast.success('Article updated')
       router.push('/admin/articles')
 
     } catch (error) {
       console.error('Error updating article:', error)
-      alert('Error updating article')
+      toast.error('Error updating article')
     }
   }
 

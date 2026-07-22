@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { getAllCategories } from '@/lib/services/category-queries'
 import { createArticle } from '@/lib/services/article-mutations'
 import { ArticleForm } from '@/components/admin/article-form'
@@ -70,15 +71,14 @@ function NewArticlePage() {
           await autoShiftSlots(targetSlot, articleId)
         }
         
-        alert('Article created successfully')
         router.push('/admin/articles')
       } else {
-        alert('Error creating article')
+        toast.error('Error creating article')
       }
 
     } catch (error) {
       console.error('Error creating article:', error)
-      alert('Error creating article')
+      toast.error('Error creating article')
     }
   }
 
