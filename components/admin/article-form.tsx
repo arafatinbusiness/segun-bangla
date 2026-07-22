@@ -35,8 +35,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
       subcategoryIds: [],
       source: '',
       isLead: false,
-      isSpecial: true,
-      isSpecialOrder: 1,
+      isSpecial: false,
     }
   )
 
