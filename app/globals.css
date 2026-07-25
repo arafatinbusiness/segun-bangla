@@ -200,6 +200,17 @@
   color: var(--theme-primary) !important;
 }
 
+/* Scale up all Tailwind text sizes for better readability with SolaimanLipi */
+.text-xs { font-size: 0.8125rem !important; }    /* 13px (was 12px) */
+.text-sm { font-size: 0.9375rem !important; }    /* 15px (was 14px) */
+.text-base { font-size: 1.125rem !important; }   /* 18px (was 16px) */
+.text-lg { font-size: 1.25rem !important; }      /* 20px (was 18px) */
+.text-xl { font-size: 1.5rem !important; }        /* 24px (was 20px) */
+.text-2xl { font-size: 1.75rem !important; }     /* 28px (was 24px) */
+.text-3xl { font-size: 2rem !important; }         /* 32px (was 30px) */
+.text-4xl { font-size: 2.25rem !important; }      /* 36px (was 36px) - keep */
+.text-6xl { font-size: 3.5rem !important; }       /* 56px (was 60px) - keep */
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -207,8 +218,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'SolaimanLipi', 'Noto Sans Bengali', 'Geist', sans-serif !important;
-    font-size: 24px;
-    line-height: 1.6;
+    font-size: 18px;
+    line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

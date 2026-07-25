@@ -454,15 +454,21 @@ function HomePage() {
                         {excerptConfig.categoryLeadExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-6">{leadCA.excerpt}</p>}
                       </a></article></div>}
                       <div className="md:col-span-3"><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {listCA.slice(0, socialWidget ? 4 : 6).map((a) => (<article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
-                          <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
-                          <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
-                          {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
-                        </a></article>))}
-                        {/* Social widget in last slot if applicable */}
-                        {socialWidget && (
-                          <div className="flex">{socialWidget}</div>
-                        )}
+                        {(() => {
+                          const items: React.ReactNode[] = []
+                          listCA.slice(0, 6).forEach((a, idx) => {
+                            // Insert social widget at position 4 (5th slot)
+                            if (idx === 4 && socialWidget) {
+                              items.push(<div key="social-widget" className="flex">{socialWidget}</div>)
+                            }
+                            items.push(<article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                              <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                              <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
+                              {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
+                            </a></article>)
+                          })
+                          return items
+                        })()}
                       </div></div>
                     </div>
                   ) : <p className="text-center py-8 text-gray-500">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>}
