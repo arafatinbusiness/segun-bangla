@@ -394,7 +394,10 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             </button>
             <button
               type="button"
-              onClick={() => setImageMode('upload')}
+              onClick={() => {
+                setImageMode('upload')
+                setTimeout(() => fileInputRef.current?.click(), 50)
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
                 imageMode === 'upload'
                   ? 'bg-primary text-primary-foreground'
