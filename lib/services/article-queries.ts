@@ -248,22 +248,67 @@ export async function getArticlesByCategoryPaginated(
 
 export async function getArticlesBySubcategory(
   subcategoryId: string,
-  pageSize: number = 12
+  pageSize: number = 12,
+  childSubcategoryIds: string[] = []
 ): Promise<FirestoreArticle[]> {
+  // Combine the main subcategory with all children
+  const allIds = [subcategoryId, ...childSubcategoryIds]
+  
+  // Try array-contains-any first (supports up to 10 values)
+  // This finds articles tagged with ANY of the subcategories in the hierarchy
   try {
-    const q = query(
-      collection(db, ARTICLES_COLLECTION),
-      where('subcategoryId', '==', subcategoryId),
-      where('status', '==', 'published'),
-      where('publishedAt', '<=', Date.now()),
-      orderBy('publishedAt', 'desc'),
-      limit(pageSize)
-    )
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      docId: doc.id,
-    })) as FirestoreArticle[]
+    // Firestore 'in' queries support up to 10 values
+    const batchSize = 10
+    let allArticles: FirestoreArticle[] = []
+    
+    for (let i = 0; i < allIds.length; i += batchSize) {
+      const batch = allIds.slice(i, i + batchSize)
+      const q = query(
+        collection(db, ARTICLES_COLLECTION),
+        where('subcategoryIds', 'array-contains-any', batch),
+        where('status', '==', 'published'),
+        where('publishedAt', '<=', Date.now()),
+        orderBy('publishedAt', 'desc'),
+        limit(pageSize)
+      )
+      const snapshot = await getDocs(q)
+      const articles = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        docId: doc.id,
+      })) as FirestoreArticle[]
+      allArticles = [...allArticles, ...articles]
+    }
+    
+    // Also try single subcategoryId field for backward compatibility
+    try {
+      const legacyQ = query(
+        collection(db, ARTICLES_COLLECTION),
+        where('subcategoryId', 'in', allIds.slice(0, 10)),
+        where('status', '==', 'published'),
+        where('publishedAt', '<=', Date.now()),
+        orderBy('publishedAt', 'desc'),
+        limit(pageSize)
+      )
+      const legacySnapshot = await getDocs(legacyQ)
+      const legacyArticles = legacySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        docId: doc.id,
+      })) as FirestoreArticle[]
+      allArticles = [...allArticles, ...legacyArticles]
+    } catch (e) {
+      // 'subcategoryId' field may not exist or index missing — ignore
+    }
+    
+    // Remove duplicates by docId, sort by publishedAt desc, limit
+    const seen = new Set<string>()
+    const unique = allArticles.filter(a => {
+      if (seen.has(a.docId)) return false
+      seen.add(a.docId)
+      return true
+    })
+    unique.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+    return unique.slice(0, pageSize)
+    
   } catch (error) {
     console.error('[v0] Error fetching articles by subcategory:', error)
     return []

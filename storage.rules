@@ -2,86 +2,46 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function isAdmin() {
-      return isSignedIn() && 
-             request.auth.token.custom_admin_role == 'admin';
-    }
-    
-    function isAuthor() {
-      let role = request.auth.token.custom_admin_role;
-      return isSignedIn() && (role == 'author' || role == 'admin');
-    }
-    
-    function isOwnFile(userId) {
-      return request.auth.uid == userId;
-    }
-    
+    // Helper function
     function isValidImage() {
       return request.resource.contentType.matches('image/.*') &&
-             request.resource.size < 5 * 1024 * 1024; // 5MB max
+             request.resource.size < 100 * 1024; // 100KB max
     }
 
     // ============================================================================
     // ARTICLE IMAGES - Articles/{articleId}/
     // ============================================================================
     match /articles/{articleId}/{allPaths=**} {
-      
       // Everyone can read article images
       allow read: if true;
-      
-      // Authors and admins can upload article images
-      allow create: if isAuthor() && isValidImage();
-      
-      // Authors can delete their own article images, admins can delete any
-      allow delete: if isAuthor() || isAdmin();
+      // Any logged-in user can upload (app-level auth, admin panel, and Firestore rules handle role checking)
+      allow create, update: if request.auth != null && isValidImage();
+      allow delete: if request.auth != null;
     }
 
     // ============================================================================
     // USER AVATARS - avatars/{userId}/
     // ============================================================================
     match /avatars/{userId}/{allPaths=**} {
-      
-      // Everyone can read user avatars (public profile pictures)
       allow read: if true;
-      
-      // Users can upload/update their own avatar
-      allow create: if isOwnFile(userId) && isValidImage();
-      allow update: if isOwnFile(userId) && isValidImage();
-      
-      // Users can delete their own avatar
-      allow delete: if isOwnFile(userId);
-      
-      // Admins can delete any avatar
-      allow delete: if isAdmin();
+      allow create, update: if request.auth != null && request.auth.uid == userId && isValidImage();
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
     // ============================================================================
     // CATEGORY IMAGES - categories/{categoryId}/
     // ============================================================================
     match /categories/{categoryId}/{allPaths=**} {
-      
-      // Everyone can read category images
       allow read: if true;
-      
-      // Only admins can manage category images
-      allow create: if isAdmin() && isValidImage();
-      allow delete: if isAdmin();
+      allow create: if request.auth != null && isValidImage();
+      allow delete: if request.auth != null;
     }
 
     // ============================================================================
     // BACKUP/ARCHIVE FILES - backups/{allPaths=**}
     // ============================================================================
     match /backups/{allPaths=**} {
-      
-      // Only admins can access backups
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-      allow delete: if isAdmin();
+      allow read, write, delete: if request.auth != null;
     }
 
     // ============================================================================

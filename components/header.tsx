@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 
-const DEPLOY_VERSION = 'v26'
+const DEPLOY_VERSION = 'v27'
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'

@@ -498,9 +498,9 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
                     <ImagePlus className="w-10 h-10 mx-auto text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Click to upload image</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Or drag and drop (max 5MB)
-                      </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Or drag and drop (auto-compressed before upload)
+                        </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       JPEG, PNG, WebP, GIF, AVIF

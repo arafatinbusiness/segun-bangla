@@ -1,13 +1,182 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import { getCategoryBySlug, getSubcategoriesByCategory, getAllCategories } from '@/lib/services/categories'
 import { getArticlesBySubcategory } from '@/lib/services/article-queries'
 import { Header } from '@/components/header'
-import { ArticleCard } from '@/components/article-card'
+import { AdRenderer } from '@/components/ad-renderer'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category, Subcategory } from '@/lib/types'
+
+// ─── Utility: Time ago in Bengali ───────────────────────────────────────────
+function timeAgo(timestamp: number): string {
+  const now = Date.now()
+  const diff = now - timestamp
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (minutes < 1) return 'এইমাত্র'
+  if (minutes < 60) return `${minutes} মিনিট আগে`
+  if (hours < 24) return `${hours} ঘন্টা আগে`
+  if (days < 7) return `${days} দিন আগে`
+  return new Date(timestamp).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text
+  return text.slice(0, maxLen).replace(/\s+\S*$/, '') + '...'
+}
+
+// ─── Hero Components (same as category page) ────────────────────────────────
+function HeroMainCard({ article }: { article: FirestoreArticle }) {
+  return (
+    <Link href={`/article/${article.slug}`} className="group block relative w-full h-full min-h-[380px] md:min-h-[520px] rounded-lg overflow-hidden bg-gray-100">
+      {article.imageUrl ? (
+        <Image src={article.imageUrl} alt={article.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 100vw, 50vw" priority />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-5 md:p-7">
+        <h2 className="text-white text-xl md:text-2xl lg:text-3xl font-bold leading-tight line-clamp-3">{article.title}</h2>
+        <p className="text-white/60 text-xs mt-2">{timeAgo(article.publishedAt)}</p>
+      </div>
+    </Link>
+  )
+}
+
+function SecondaryFeatureCard({ article }: { article: FirestoreArticle }) {
+  return (
+    <Link href={`/article/${article.slug}`} className="group block">
+      <div className="relative h-44 md:h-52 w-full rounded-lg overflow-hidden bg-gray-100 mb-3">
+        {article.imageUrl ? (
+          <Image src={article.imageUrl} alt={article.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 100vw, 25vw" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+        )}
+      </div>
+      <span className="text-[#FF0000] text-xs font-bold uppercase tracking-wider">{article.source || 'বিশেষ'}</span>
+      <h3 className="text-[#000000] font-bold text-base md:text-lg leading-snug mt-1.5 line-clamp-2 group-hover:text-[#FF0000] transition-colors">{article.title}</h3>
+      <p className="text-[#444444] text-sm mt-2 line-clamp-2 leading-relaxed">{truncate(article.excerpt, 120)}</p>
+    </Link>
+  )
+}
+
+function SidebarWidget({ articles }: { articles: FirestoreArticle[] }) {
+  const [tab, setTab] = useState<'latest' | 'mostread'>('latest')
+  const sorted = useMemo(() => {
+    if (tab === 'latest') return articles
+    return [...articles].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+  }, [articles, tab])
+  const top5 = sorted.slice(0, 5)
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="flex gap-0 mb-4 border-b border-gray-200">
+        <button onClick={() => setTab('latest')} className={`pb-2 px-3 text-sm font-bold border-b-2 transition-colors ${tab === 'latest' ? 'border-[#FF0000] text-[#000000]' : 'border-transparent text-gray-500 hover:text-[#000000]'}`}>সর্বশেষ</button>
+        <button onClick={() => setTab('mostread')} className={`pb-2 px-3 text-sm font-bold border-b-2 transition-colors ${tab === 'mostread' ? 'border-[#FF0000] text-[#000000]' : 'border-transparent text-gray-500 hover:text-[#000000]'}`}>পঠিত</button>
+      </div>
+      <div className="space-y-3.5">
+        {top5.map((article, idx) => (
+          <Link key={article.docId} href={`/article/${article.slug}`} className="flex gap-3 group">
+            <span className="text-xl font-bold text-gray-300 group-hover:text-[#FF0000]/30 transition-colors leading-none shrink-0 w-7">{String(idx + 1).padStart(2, '0')}</span>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-[#000000] leading-snug line-clamp-2 group-hover:text-[#FF0000] transition-colors">{article.title}</h4>
+              <p className="text-xs text-[#444444] mt-1">{timeAgo(article.publishedAt)}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function GridCard({ article }: { article: FirestoreArticle }) {
+  return (
+    <Link href={`/article/${article.slug}`} className="group block">
+      <div className="relative h-44 w-full rounded-lg overflow-hidden bg-gray-100 mb-3">
+        {article.imageUrl ? (
+          <Image src={article.imageUrl} alt={article.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+        )}
+      </div>
+      <span className="text-[#FF0000] text-xs font-bold uppercase tracking-wider">{article.source || 'বিশেষ'}</span>
+      <h3 className="text-[#000000] font-bold text-base leading-snug mt-1.5 line-clamp-2 group-hover:text-[#FF0000] transition-colors">{article.title}</h3>
+      <p className="text-[#444444] text-sm mt-2 line-clamp-2 leading-relaxed">{truncate(article.excerpt, 100)}</p>
+      <p className="text-xs text-[#444444] mt-3">{timeAgo(article.publishedAt)}</p>
+    </Link>
+  )
+}
+
+function ListRow({ article }: { article: FirestoreArticle }) {
+  return (
+    <Link href={`/article/${article.slug}`} className="group grid grid-cols-4 gap-4 pb-5 border-b border-[#eeeeee] mb-5">
+      <div className="hidden md:block" />
+      <div className="col-span-4 md:col-span-2 flex gap-4">
+        <div className="w-3/5">
+          <h3 className="text-[#000000] font-bold text-lg leading-snug line-clamp-2 group-hover:text-[#FF0000] transition-colors">{article.title}</h3>
+          <p className="text-[#444444] text-sm mt-2 leading-relaxed" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.excerpt}</p>
+          <p className="text-xs text-[#444444] mt-3">{timeAgo(article.publishedAt)}</p>
+        </div>
+        <div className="w-2/5 shrink-0">
+          <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100">
+            {article.imageUrl ? (
+              <Image src={article.imageUrl} alt={article.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="20vw" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="hidden md:block" />
+    </Link>
+  )
+}
+
+function SectionSeparator() { return <hr className="border-t border-gray-200 my-10" /> }
+
+function Pagination({ currentPage, totalPages, onPageChange }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void }) {
+  if (totalPages <= 1) return null
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = []
+    const maxVisible = 7
+    if (totalPages <= maxVisible) { for (let i = 1; i <= totalPages; i++) pages.push(i) }
+    else {
+      pages.push(1)
+      if (currentPage > 3) pages.push('ellipsis')
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (currentPage < totalPages - 2) pages.push('ellipsis')
+      pages.push(totalPages)
+    }
+    return pages
+  }
+  const pageNumbers = getPageNumbers()
+  return (
+    <div className="flex items-center justify-center gap-1.5 mt-10">
+      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="px-3 py-2 text-sm font-bold rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹ পূর্ববর্তী</button>
+      {pageNumbers.map((page, idx) => page === 'ellipsis' ? (<span key={`ellipsis-${idx}`} className="px-2 py-2 text-sm text-gray-400">...</span>) : (
+        <button key={page} onClick={() => onPageChange(page)} className={`min-w-[40px] px-3 py-2 text-sm font-bold rounded-md transition-colors ${page === currentPage ? 'bg-[#FF0000] text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-100'}`}>{page}</button>
+      ))}
+      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="px-3 py-2 text-sm font-bold rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">পরবর্তী ›</button>
+    </div>
+  )
+}
+
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
+const ARTICLES_PER_PAGE = 15
 
 function SubcategoryPage() {
   const params = useParams()
@@ -20,9 +189,10 @@ function SubcategoryPage() {
   const [currentSubcategory, setCurrentSubcategory] = useState<Subcategory | null>(null)
   const [childSubcategories, setChildSubcategories] = useState<Subcategory[]>([])
   const [breadcrumbPath, setBreadcrumbPath] = useState<Subcategory[]>([])
-  const [articles, setArticles] = useState<FirestoreArticle[]>([])
+  const [allArticles, setAllArticles] = useState<FirestoreArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,107 +202,76 @@ function SubcategoryPage() {
           getAllCategories(),
         ])
 
-        if (!categoryData) {
-          setNotFound(true)
-          return
-        }
-
+        if (!categoryData) { setNotFound(true); return }
         setCategory(categoryData)
         setAllCategories(allCategoriesData)
 
         const subcategoriesData = await getSubcategoriesByCategory(categoryData.id)
         setSubcategories(subcategoriesData)
 
-        // If no subslug segments, this is the category page - shouldn't happen but handle gracefully
-        if (!subslug || subslug.length === 0) {
-          setNotFound(true)
-          return
-        }
+        if (!subslug || subslug.length === 0) { setNotFound(true); return }
 
-        // Traverse the hierarchy using parentId to find the deepest subcategory
-        // The URL segments are: /category/slug/level1/level2/level3/...
-        // We need to find the chain: root subcategory → child → grandchild → ...
         const decodedSegments = subslug.map(s => decodeURIComponent(s).trim())
-
-        // Find the first-level subcategory (parentId is null or undefined)
-        let currentLevel: Subcategory[] = subcategoriesData.filter(
-          s => !s.parentId || s.parentId === ''
-        )
-
+        let currentLevel: Subcategory[] = subcategoriesData.filter(s => !s.parentId || s.parentId === '')
         let foundSub: Subcategory | null = null
         const path: Subcategory[] = []
 
         for (let i = 0; i < decodedSegments.length; i++) {
           const segmentSlug = decodedSegments[i]
-          // Try exact match first, then try replacing hyphens with spaces
-          // (since slugs in DB may have spaces but URLs use hyphens)
-          let match = currentLevel.find(
-            s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase() ||
-                 s.slug?.trim().toLowerCase() === segmentSlug.replace(/-/g, ' ').toLowerCase()
-          )
-          // If not found at current level, search ALL subcategories (fallback)
+          let match = currentLevel.find(s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase() || s.slug?.trim().toLowerCase() === segmentSlug.replace(/-/g, ' ').toLowerCase())
           if (!match) {
-            match = subcategoriesData.find(
-              s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase() ||
-                   s.slug?.trim().toLowerCase() === segmentSlug.replace(/-/g, ' ').toLowerCase()
-            )
+            match = subcategoriesData.find(s => s.slug?.trim().toLowerCase() === segmentSlug.toLowerCase() || s.slug?.trim().toLowerCase() === segmentSlug.replace(/-/g, ' ').toLowerCase())
           }
-          if (!match) {
-            console.error('[v0] Subcategory not found at level', i, ':', segmentSlug)
-            console.error('[v0] Available slugs at this level:', currentLevel.map(s => s.slug))
-            console.error('[v0] All slugs:', subcategoriesData.map(s => s.slug))
-            setNotFound(true)
-            return
-          }
+          if (!match) { setNotFound(true); return }
           foundSub = match
           path.push(match)
-          // Get children for next level
           currentLevel = subcategoriesData.filter(s => s.parentId === match.id)
         }
 
-        if (!foundSub) {
-          setNotFound(true)
-          return
-        }
+        if (!foundSub) { setNotFound(true); return }
 
         setCurrentSubcategory(foundSub)
         setBreadcrumbPath(path)
 
-        // Get child subcategories (next level down)
         const children = subcategoriesData.filter(s => s.parentId === foundSub.id)
         setChildSubcategories(children)
 
-        // Get articles for this subcategory
-        const articlesData = await getArticlesBySubcategory(foundSub.id!)
-        setArticles(articlesData)
+        const childIds = subcategoriesData.filter(s => s.parentId === foundSub.id).map(s => s.id!)
+        const grandchildIds = subcategoriesData.filter(s => childIds.includes(s.parentId || '')).map(s => s.id!)
+        const allChildIds = [...childIds, ...grandchildIds]
+
+        const articlesData = await getArticlesBySubcategory(foundSub.id!, 200, allChildIds)
+        setAllArticles(articlesData)
+        setCurrentPage(1)
       } catch (error) {
         console.error('[v0] Error loading subcategory page:', error)
         setNotFound(true)
-      } finally {
-        setLoading(false)
-      }
+      } finally { setLoading(false) }
     }
 
-    if (slug && subslug) {
-      fetchData()
-    }
+    if (slug && subslug) { setAllArticles([]); setCurrentPage(1); fetchData() }
   }, [slug, subslug])
+
+  const totalPages = Math.max(1, Math.ceil(allArticles.length / ARTICLES_PER_PAGE))
+  const paginatedArticles = allArticles.slice(0, currentPage * ARTICLES_PER_PAGE)
+  const heroArticle = paginatedArticles[0] || null
+  const secondaryArticle = paginatedArticles[1] || null
+  const gridArticles = paginatedArticles.slice(2, 5)
+  const listArticles = paginatedArticles.slice(5)
+
+  const handlePageChange = (page: number) => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
   if (loading) {
     return (
       <>
         <Header categories={[]} />
-        <main className="min-h-screen bg-background">
+        <main className="min-h-screen bg-white">
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="animate-pulse space-y-8">
-              <div className="h-8 bg-muted rounded w-1/3"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="space-y-3">
-                    <div className="h-40 bg-muted rounded-lg"></div>
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                  </div>
-                ))}
+              <div className="h-8 bg-gray-200 rounded w-1/3" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 h-[520px] bg-gray-200 rounded-lg" />
+                <div className="h-[520px] bg-gray-200 rounded-lg" />
               </div>
             </div>
           </div>
@@ -145,14 +284,28 @@ function SubcategoryPage() {
     return (
       <>
         <Header categories={allCategories} />
-        <main className="min-h-screen bg-background flex items-center justify-center">
+        <main className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center space-y-4">
-            <h1 className="text-6xl font-bold text-muted-foreground">৪০৪</h1>
-            <p className="text-xl text-muted-foreground">পৃষ্ঠা পাওয়া যায়নি</p>
-            <p className="text-muted-foreground">দুঃখিত, আপনি যে পৃষ্ঠাটি খুঁজছেন তা বিদ্যমান নেই বা স্থানান্তরিত হয়েছে।</p>
-            <a href="/" className="inline-block mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-              হোমে ফিরে যান
-            </a>
+            <h1 className="text-6xl font-bold text-gray-400">৪০৪</h1>
+            <p className="text-xl text-gray-500">পৃষ্ঠা পাওয়া যায়নি</p>
+            <p className="text-gray-500">দুঃখিত, আপনি যে পৃষ্ঠাটি খুঁজছেন তা বিদ্যমান নেই বা স্থানান্তরিত হয়েছে।</p>
+            <a href="/" className="inline-block mt-4 px-6 py-2 bg-[#FF0000] text-white rounded-md hover:bg-red-700">হোমে ফিরে যান</a>
+          </div>
+        </main>
+      </>
+    )
+  }
+
+  if (allArticles.length === 0) {
+    return (
+      <>
+        <Header categories={allCategories} />
+        <main className="min-h-screen bg-white">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-[#000000] mb-2">{currentSubcategory.name}</h1>
+            </div>
+            <div className="text-center py-12"><p className="text-[#444444]">এই উপবিভাগে কোন নিবন্ধ পাওয়া যায়নি।</p></div>
           </div>
         </main>
       </>
@@ -162,7 +315,7 @@ function SubcategoryPage() {
   return (
     <>
       <Header categories={allCategories} />
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="mb-6 text-sm text-muted-foreground">
@@ -170,70 +323,77 @@ function SubcategoryPage() {
             <span className="mx-2">/</span>
             <a href={`/category/${category.slug}`} className="hover:text-primary">{category.name}</a>
             {breadcrumbPath.map((sub, index) => {
-              // Build the URL path up to this level
               const pathSoFar = breadcrumbPath.slice(0, index + 1).map(s => s.slug).join('/')
               const isLast = index === breadcrumbPath.length - 1
               return (
                 <span key={sub.id}>
                   <span className="mx-2">/</span>
-                  {isLast ? (
-                    <span className="text-foreground font-medium">{sub.name}</span>
-                  ) : (
-                    <a href={`/category/${category.slug}/${pathSoFar}`} className="hover:text-primary">
-                      {sub.name}
-                    </a>
-                  )}
+                  {isLast ? <span className="text-foreground font-medium">{sub.name}</span> : <a href={`/category/${category.slug}/${pathSoFar}`} className="hover:text-primary">{sub.name}</a>}
                 </span>
               )
             })}
           </div>
 
           {/* Subcategory Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2 text-foreground">
-              {currentSubcategory.name}
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              {category.name} এর অধীনে {currentSubcategory.name}
-            </p>
+          <div className="mb-8 flex items-center gap-3">
+            <img src="/favicon.png" alt="" className="w-8 h-8 rounded-full object-cover" />
+            <h1 className="text-4xl font-bold text-[#000000]">{currentSubcategory.name}</h1>
           </div>
 
-          {/* Child Subcategories (next level down) */}
+          {/* Child Subcategory Pills */}
           {childSubcategories.length > 0 && (
             <div className="mb-8">
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                <a
-                  href={`/category/${category.slug}/${subslug?.join('/')}`}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded whitespace-nowrap"
-                >
-                  সব
-                </a>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <a href={`/category/${category.slug}/${subslug?.join('/')}`} className="px-4 py-2 bg-[#FF0000] text-white rounded-full whitespace-nowrap text-sm font-bold">সব</a>
                 {childSubcategories.map((child) => (
-                  <a
-                    key={child.id}
-                    href={`/category/${category.slug}/${subslug?.join('/')}/${child.slug}`}
-                    className="px-4 py-2 bg-muted text-muted-foreground rounded whitespace-nowrap hover:bg-muted/80"
-                  >
-                    {child.name}
-                  </a>
+                  <a key={child.id} href={`/category/${category.slug}/${subslug?.join('/')}/${child.slug}`} className="px-4 py-2 bg-gray-100 text-[#444444] rounded-full whitespace-nowrap text-sm hover:bg-gray-200 transition-colors">{child.name}</a>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Articles Grid */}
-          {articles.length > 0 ? (
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {articles.map((article) => (
-                  <ArticleCard key={article.docId} article={article} />
-                ))}
-              </div>
+          {/* Hero Grid (same as category page) */}
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <div className="lg:col-span-2">{heroArticle && <HeroMainCard article={heroArticle} />}</div>
+            <div className="flex flex-col gap-6">
+              {secondaryArticle && <SecondaryFeatureCard article={secondaryArticle} />}
+              <AdRenderer slotName="category-sidebar-top" className="w-full rounded-lg overflow-hidden bg-gray-50" />
+              <SidebarWidget articles={allArticles} />
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">এই উপবিভাগে কোন নিবন্ধ পাওয়া যায়নি।</p>
-            </div>
+          </section>
+
+          {/* Middle Grid */}
+          {gridArticles.length > 0 && (
+            <>
+              <SectionSeparator />
+              <section className="mb-10">
+                <h2 className="text-xl font-bold text-[#000000] mb-6 border-l-4 border-[#FF0000] pl-3">আরও খবর</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {gridArticles.map((article) => (<GridCard key={article.docId} article={article} />))}
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* List Section */}
+          {listArticles.length > 0 && (
+            <>
+              <SectionSeparator />
+              <section className="mb-10">
+                <h2 className="text-xl font-bold text-[#000000] mb-6 border-l-4 border-[#FF0000] pl-3">আরও সংবাদ</h2>
+                <div className="space-y-0">
+                  {listArticles.map((article, idx) => (
+                    <div key={article.docId}>
+                      <ListRow article={article} />
+                      {(idx + 1) % 4 === 0 && (
+                        <div className="my-8"><AdRenderer slotName="category-list-inline" className="w-full rounded-lg overflow-hidden bg-gray-50" /></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+              </section>
+            </>
           )}
         </div>
       </main>

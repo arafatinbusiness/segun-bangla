@@ -495,8 +495,9 @@ function CategoryPage() {
       <main className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* ── Category Header ─────────────────────────────────────────────── */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-[#000000] mb-2">{category.name}</h1>
+          <div className="mb-8 flex items-center gap-3">
+            <img src="/favicon.png" alt="" className="w-8 h-8 rounded-full object-cover" />
+            <h1 className="text-4xl font-bold text-[#000000]">{category.name}</h1>
           </div>
 
           {/* ── Subcategory Pills ──────────────────────────────────────────── */}
@@ -509,7 +510,7 @@ function CategoryPage() {
                 >
                   সব
                 </Link>
-                {subcategories.slice(0, 12).map((sub) => (
+                {subcategories.filter(s => !s.parentId || s.parentId === '').slice(0, 12).map((sub) => (
                   <Link
                     key={sub.id}
                     href={`/category/${category.slug}/${sub.slug}`}

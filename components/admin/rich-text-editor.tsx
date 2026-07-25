@@ -27,7 +27,11 @@ import {
   Table,
   Superscript,
   Subscript,
+  Upload,
+  ImagePlus,
+  X,
 } from 'lucide-react'
+import { uploadArticleImage, validateImageFile } from '@/lib/services/image-upload'
 
 interface RichTextEditorProps {
   value: string
@@ -442,10 +446,17 @@ export function RichTextEditor({
 
   // Image with size options
   const [showImageInput, setShowImageInput] = useState(false)
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url')
   const [imageUrl, setImageUrl] = useState('')
   const [imageSize, setImageSize] = useState<'landscape' | 'portrait' | 'square' | 'full'>('landscape')
   const [imageCaption, setImageCaption] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageUploadProgress, setImageUploadProgress] = useState(0)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+  const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imageUrlInputRef = useRef<HTMLInputElement>(null)
+  const imageFileInputRef = useRef<HTMLInputElement>(null)
+  const uploadedImageUrlRef = useRef('')
 
   const imageSizeOptions: { value: typeof imageSize; label: string; icon: string; desc: string }[] = [
     { value: 'landscape', label: 'ল্যান্ডস্কেপ', icon: '▬', desc: '১৬:৯ - প্রশস্ত ছবির জন্য (ডিফল্ট)' },
@@ -457,6 +468,13 @@ export function RichTextEditor({
   const handleImageClick = useCallback(() => {
     setImageUrl('')
     setImageSize('landscape')
+    setImageMode('url')
+    setImageCaption('')
+    setUploadingImage(false)
+    setImageUploadProgress(0)
+    setImageUploadError(null)
+    setIsDraggingImage(false)
+    uploadedImageUrlRef.current = ''
     setShowImageInput(true)
     setTimeout(() => imageUrlInputRef.current?.focus(), 50)
   }, [])
@@ -491,6 +509,31 @@ export function RichTextEditor({
     setImageCaption('')
     toast.success('ছবি যুক্ত করা হয়েছে')
   }, [imageUrl, imageSize, imageCaption, insertHTML])
+
+  const handleUploadImageFile = useCallback(async (file: File) => {
+    const error = validateImageFile(file)
+    if (error) {
+      setImageUploadError(error)
+      return
+    }
+    setImageUploadError(null)
+    setUploadingImage(true)
+    setImageUploadProgress(0)
+    try {
+      const articleId = 'editor-' + Date.now()
+      const downloadUrl = await uploadArticleImage(file, articleId, (progress) => {
+        setImageUploadProgress(progress)
+      })
+      uploadedImageUrlRef.current = downloadUrl
+      setImageUrl(downloadUrl)
+      setImageUploadProgress(100)
+    } catch (err) {
+      console.error('[RichTextEditor] Upload failed:', err)
+      setImageUploadError('ছবি আপলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।')
+    } finally {
+      setUploadingImage(false)
+    }
+  }, [])
 
   // Table
   const handleTable = useCallback(() => {
@@ -1138,20 +1181,121 @@ export function RichTextEditor({
 
       {/* Image Input Popup */}
       {showImageInput && (
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-muted/50 border-b border-border">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">ছবির URL:</span>
-          <input
-            ref={imageUrlInputRef}
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleImageSubmit()
-              if (e.key === 'Escape') { setShowImageInput(false); setImageUrl(''); setImageCaption('') }
-            }}
-            placeholder="https://example.com/image.jpg"
-            className="flex-1 min-w-[180px] px-2 py-1 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+        <div className="flex flex-wrap items-start gap-2 px-3 py-2 bg-muted/50 border-b border-border">
+          {/* Mode Tabs */}
+          <div className="flex gap-1 w-full mb-1">
+            <button
+              type="button"
+              onClick={() => setImageMode('url')}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors ${
+                imageMode === 'url'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground border border-border hover:bg-muted'
+              }`}
+            >
+              <Link className="w-3 h-3" />
+              URL লিংক
+            </button>
+            <button
+              type="button"
+              onClick={() => setImageMode('upload')}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors ${
+                imageMode === 'upload'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground border border-border hover:bg-muted'
+              }`}
+            >
+              <Upload className="w-3 h-3" />
+              আপলোড
+            </button>
+          </div>
+
+          {imageMode === 'url' ? (
+            <>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">ছবির URL:</span>
+              <input
+                ref={imageUrlInputRef}
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleImageSubmit()
+                  if (e.key === 'Escape') { setShowImageInput(false); setImageUrl(''); setImageCaption('') }
+                }}
+                placeholder="https://example.com/image.jpg"
+                className="flex-1 min-w-[180px] px-2 py-1 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </>
+          ) : (
+            <div className="w-full space-y-2">
+              {uploadingImage ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-primary animate-pulse" />
+                    <span className="text-xs font-medium">সংকুচিত & আপলোড হচ্ছে...</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5">
+                    <div
+                      className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${imageUploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">{imageUploadProgress}%</p>
+                </div>
+              ) : imageUrl ? (
+                <div className="relative inline-block">
+                  <img
+                    src={imageUrl}
+                    alt="Uploaded"
+                    className="max-h-24 rounded object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setImageUrl(''); uploadedImageUrlRef.current = '' }}
+                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5 shadow"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                    isDraggingImage
+                      ? 'border-primary bg-primary/5'
+                      : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                  }`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDraggingImage(true) }}
+                  onDragLeave={() => setIsDraggingImage(false)}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setIsDraggingImage(false)
+                    const file = e.dataTransfer.files[0]
+                    if (file) handleUploadImageFile(file)
+                  }}
+                  onClick={() => imageFileInputRef.current?.click()}
+                >
+                  <input
+                    ref={imageFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUploadImageFile(file)
+                    }}
+                  />
+                  <ImagePlus className="w-6 h-6 mx-auto text-muted-foreground" />
+                  <p className="text-xs font-medium mt-1">ক্লিক করে ছবি নির্বাচন করুন</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">অথবা ড্র্যাগ & ড্রপ (স্বয়ংক্রিয়ভাবে সংকুচিত হবে)</p>
+                </div>
+              )}
+              {imageUploadError && (
+                <p className="text-xs text-destructive">{imageUploadError}</p>
+              )}
+            </div>
+          )}
+
+          {/* Common controls: size, caption, buttons */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground whitespace-nowrap">সাইজ:</span>
             <div className="flex gap-1">
@@ -1183,19 +1327,20 @@ export function RichTextEditor({
                 if (e.key === 'Escape') { setShowImageInput(false); setImageUrl(''); setImageCaption('') }
               }}
               placeholder="ছবির নিচে ক্যাপশন (ঐচ্ছিক)"
-              className="w-[200px] px-2 py-1 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-[180px] px-2 py-1 text-sm rounded border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <button
             type="button"
             onClick={handleImageSubmit}
-            className="px-3 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={!imageUrl || uploadingImage}
+            className="px-3 py-1 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             যোগ করুন
           </button>
           <button
             type="button"
-            onClick={() => { setShowImageInput(false); setImageUrl(''); setImageCaption('') }}
+            onClick={() => { setShowImageInput(false); setImageUrl(''); setImageCaption(''); uploadedImageUrlRef.current = '' }}
             className="px-2 py-1 text-xs rounded text-muted-foreground hover:text-foreground"
           >
             বাতিল
