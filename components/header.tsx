@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 
-const DEPLOY_VERSION = 'v27'
+const DEPLOY_VERSION = 'v28'
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'
@@ -125,8 +125,8 @@ export function Header({ categories }: HeaderProps) {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-center py-2">
-            <a href="/"><img src="/logo.png" alt="সেগুন বাংলা" className="w-auto object-contain h-10" /></a>
+          <div className="flex items-center justify-center py-3">
+            <a href="/"><img src="/logo.png" alt="সেগুন বাংলা" className="w-auto object-contain h-14" /></a>
           </div>
       </div>
       
@@ -135,20 +135,20 @@ export function Header({ categories }: HeaderProps) {
       <div className="hidden md:block border-t border-[#E8E8E8]">
         <div className="max-w-7xl mx-auto px-4">
           <nav className="flex items-center justify-center gap-0">
-            <Link href="/search" className="relative flex items-center gap-1 px-4 py-3 text-base font-bold transition-colors duration-150 whitespace-nowrap text-[#8B0000] hover:text-[#1A1A1A]">সর্বশেষ</Link>
+            <Link href="/search" className="relative flex items-center gap-1 px-4 py-3 text-lg font-bold transition-colors duration-150 whitespace-nowrap text-[#8B0000] hover:text-[#1A1A1A]">সর্বশেষ</Link>
             {visibleCategories.map(category => (
               <Link key={category.id} href={`/category/${category.slug}`}
-                className={`relative flex items-center gap-1 px-4 py-3 text-base font-bold transition-colors duration-150 whitespace-nowrap ${activeCategory === category.id ? 'text-[#8B0000]' : 'text-[#1A1A1A] hover:text-[#8B0000]'}`}
+                className={`relative flex items-center gap-1 px-4 py-3 text-lg font-bold transition-colors duration-150 whitespace-nowrap ${activeCategory === category.id ? 'text-[#8B0000]' : 'text-[#1A1A1A] hover:text-[#8B0000]'}`}
                 onMouseEnter={() => handleMouseEnter(category.id)} onMouseLeave={handleMouseLeave}>
-                {category.name}<ChevronDown className="w-3 h-3 opacity-50" />
+                {category.name}<ChevronDown className="w-4 h-4 opacity-50" />
               </Link>
             ))}
             <button onClick={() => setMobileMenuOpen(true)}
-              className="flex items-center gap-1 px-4 py-3 text-base font-bold text-[#8B0000] hover:text-[#1A1A1A] transition-colors duration-150 whitespace-nowrap">সব দেখুন</button>
+              className="flex items-center gap-1 px-4 py-3 text-lg font-bold text-[#8B0000] hover:text-[#1A1A1A] transition-colors duration-150 whitespace-nowrap">সব দেখুন</button>
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#E8E8E8]">
-              <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Search size={16} /></Link>
-              <a href="https://youtube.com" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Youtube size={16} /></a>
-              <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Facebook size={16} /></a>
+              <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Search size={20} /></Link>
+              <a href="https://youtube.com" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Youtube size={20} /></a>
+              <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Facebook size={20} /></a>
             </div>
           </nav>
         </div>

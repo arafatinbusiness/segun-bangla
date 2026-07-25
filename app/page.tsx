@@ -396,6 +396,41 @@ function HomePage() {
             const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 7)
             const sliderEnabled = sliderConfig[category.id] !== false
             const showSlider = sliderEnabled && catArticles.length > 4
+            
+            // Social widgets for specific categories
+            const socialWidget = (() => {
+              const name = category.name?.toLowerCase() || category.slug?.toLowerCase() || ''
+              if (name.includes('রাজনীতি') || name.includes('রাজনীতি') || name === 'politics' || name === 'rajniti') {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full p-3 bg-gradient-to-b from-blue-50 to-white rounded-lg border border-blue-100">
+                    <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </div>
+                    <p className="text-[11px] font-bold text-center text-gray-800 mb-2 leading-tight">Facebook Page</p>
+                    <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" rel="noopener noreferrer"
+                      className="px-4 py-1.5 bg-[#1877F2] text-white text-[10px] font-bold rounded-full hover:bg-[#1664D9] transition-colors">
+                      ফলো করুন
+                    </a>
+                  </div>
+                )
+              }
+              if (name.includes('আন্তর্জাতিক') || name.includes('আন্তর্জাতিক') || name === 'international' || name === 'বিশ্ব') {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full p-3 bg-gradient-to-b from-red-50 to-white rounded-lg border border-red-100">
+                    <div className="w-10 h-10 rounded-full bg-[#FF0000] flex items-center justify-center mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    </div>
+                    <p className="text-[11px] font-bold text-center text-gray-800 mb-2 leading-tight">YouTube Channel</p>
+                    <a href="https://youtube.com/@madhoprachodarshon?si=vIdLQInH0_OLMS4y" target="_blank" rel="noopener noreferrer"
+                      className="px-4 py-1.5 bg-[#FF0000] text-white text-[10px] font-bold rounded-full hover:bg-[#CC0000] transition-colors">
+                      সাবস্ক্রাইব
+                    </a>
+                  </div>
+                )
+              }
+              return null
+            })()
+
             return (
               <section key={category.id} className="mb-8 pb-6 border-b border-gray-200 last:border-b-0">
                 {showSlider && <div className="mb-4"><NewsSlider articles={catArticles} name={category.name} slug={category.slug} /></div>}
@@ -419,11 +454,15 @@ function HomePage() {
                         {excerptConfig.categoryLeadExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-6">{leadCA.excerpt}</p>}
                       </a></article></div>}
                       <div className="md:col-span-3"><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {listCA.map((a) => (<article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                        {listCA.slice(0, socialWidget ? 4 : 6).map((a) => (<article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
                           <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
                           <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
                           {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
                         </a></article>))}
+                        {/* Social widget in last slot if applicable */}
+                        {socialWidget && (
+                          <div className="flex">{socialWidget}</div>
+                        )}
                       </div></div>
                     </div>
                   ) : <p className="text-center py-8 text-gray-500">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>}
