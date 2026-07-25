@@ -392,8 +392,8 @@ function HomePage() {
 
           {/* Category rows */}
           {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category, catIndex) => {
-            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 8)
-            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 8)
+            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 7)
+            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 7)
             const sliderEnabled = sliderConfig[category.id] !== false
             const showSlider = sliderEnabled && catArticles.length > 4
             
@@ -454,21 +454,33 @@ function HomePage() {
                         {excerptConfig.categoryLeadExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-6">{leadCA.excerpt}</p>}
                       </a></article></div>}
                       <div className="md:col-span-3"><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {(() => {
-                          const items: React.ReactNode[] = []
-                          listCA.slice(0, 6).forEach((a, idx) => {
-                            // Insert social widget at position 4 (5th slot)
-                            if (idx === 4 && socialWidget) {
-                              items.push(<div key="social-widget" className="flex">{socialWidget}</div>)
-                            }
-                            items.push(<article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                        {socialWidget ? (
+                          <>
+                            {listCA.slice(0, 4).map((a) => (
+                              <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                                <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                                <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
+                                {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
+                              </a></article>
+                            ))}
+                            <div className="flex w-full">{socialWidget}</div>
+                            {listCA.slice(5, 6).map((a) => (
+                              <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                                <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                                <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
+                                {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
+                              </a></article>
+                            ))}
+                          </>
+                        ) : (
+                          listCA.slice(0, 6).map((a) => (
+                            <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
                               <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
                               <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
                               {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
-                            </a></article>)
-                          })
-                          return items
-                        })()}
+                            </a></article>
+                          ))
+                        )}
                       </div></div>
                     </div>
                   ) : <p className="text-center py-8 text-gray-500">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>}
