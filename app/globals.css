@@ -278,6 +278,10 @@
   word-wrap: break-word;
   word-break: break-word;
   max-width: 100%;
+  text-align: justify;
+  -webkit-text-align-last: left;
+  -moz-text-align-last: left;
+  text-align-last: left;
 }
 
 .article-content p {
@@ -285,6 +289,7 @@
   line-height: 1.9;
   font-size: 19px;
   max-width: 100%;
+  text-align: justify;
 }
 
 /* Also cover the prose wrapper that contains the article body */
@@ -338,16 +343,6 @@
   white-space: nowrap;
 }
 
-/* Fix for justified text - prevent bad spacing in Bengali text */
-/* Override justify to left for better Bengali readability */
-.article-content p[style*="text-align: justify"],
-.article-content p[style*="text-align:justify"],
-.article-content p[style*="text-align:justify "],
-.article-content p[style*="text-align: justify "] {
-  text-align: left !important;
-  text-align-last: left !important;
-  -webkit-text-align-last: left !important;
-}
 
 /* Image captions in article content (figure/figcaption from rich text editor) */
 .article-content figure {
