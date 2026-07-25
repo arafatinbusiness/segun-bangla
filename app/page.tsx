@@ -392,8 +392,8 @@ function HomePage() {
 
           {/* Category rows */}
           {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category, catIndex) => {
-            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 7)
-            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 7)
+            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 8)
+            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 8)
             const sliderEnabled = sliderConfig[category.id] !== false
             const showSlider = sliderEnabled && catArticles.length > 4
             
@@ -437,7 +437,7 @@ function HomePage() {
                 <div style={{ display: showSlider ? "none" : "block" }}>
                   <div className="flex justify-between items-center mb-4">
                     <a href={`/category/${category.slug}`} className="flex-1 group">
-                      <h2 className="text-xl font-bold text-[#000000] border-l-4 theme-border pl-3">{category.name}</h2>
+                      <h2 className="text-2xl font-bold text-[#000000] border-l-4 theme-border pl-3">{category.name}</h2>
                     </a>
                     <a href={`/category/${category.slug}`} className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider">সব দেখুন →</a>
                   </div>
