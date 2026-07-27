@@ -80,7 +80,7 @@ export function Header({ categories }: HeaderProps) {
 
   const handleMouseEnter = (categoryId: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => setActiveCategory(categoryId), 200)
+    timeoutRef.current = setTimeout(() => setActiveCategory(categoryId), 1000)
   }
 
   const handleMouseLeave = () => {
@@ -174,53 +174,53 @@ export function Header({ categories }: HeaderProps) {
         <div className="max-w-7xl mx-auto px-4">
           <div className="w-full"><div className="h-[2px] bg-[#1A1A1A]" /><div className="h-[2px]" /><div className="h-[1px] bg-[#1A1A1A]" /></div>
         </div>
-      </div>
 
-      {/* Mega Menu */}
-      {activeCategory && activeCategoryData && (
-        <div ref={megaMenuRef} className="absolute left-0 right-0 bg-white shadow-lg border-b border-[#E8E8E8] z-50"
-          onMouseEnter={handleMegaMenuEnter} onMouseLeave={handleMegaMenuLeave}>
-          <div className="max-w-7xl mx-auto px-4 py-6">
-            <div className="grid grid-cols-12 gap-8">
-              <div className="col-span-3">
-                <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">বিভাগ</p>
-                <div className="space-y-2">
-                  {activeSubs.length > 0 ? activeSubs.map(sub => (
-                    <Link key={sub.id} href={`/category/${activeCategoryData.slug}/${sub.slug}`}
-                      className="block text-sm text-[#1A1A1A] hover:text-[#8B0000] transition-colors py-0.5">{sub.name}</Link>
-                  )) : <p className="text-sm text-[#888]">কোন উপবিভাগ নেই</p>}
-                </div>
-              </div>
-              {activeChildSubs.length > 0 && (
+        {/* Mega Menu — inside sticky container so it always positions relative to nav */}
+        {activeCategory && activeCategoryData && (
+          <div ref={megaMenuRef} className="absolute left-0 right-0 top-full bg-white shadow-lg border-b border-[#E8E8E8] z-50"
+            onMouseEnter={handleMegaMenuEnter} onMouseLeave={handleMegaMenuLeave}>
+            <div className="max-w-7xl mx-auto px-4 py-6">
+              <div className="grid grid-cols-12 gap-8">
                 <div className="col-span-3">
-                  <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">আরও পড়ুন</p>
+                  <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">বিভাগ</p>
                   <div className="space-y-2">
-                    {activeChildSubs.map(sub => (
+                    {activeSubs.length > 0 ? activeSubs.map(sub => (
                       <Link key={sub.id} href={`/category/${activeCategoryData.slug}/${sub.slug}`}
                         className="block text-sm text-[#1A1A1A] hover:text-[#8B0000] transition-colors py-0.5">{sub.name}</Link>
-                    ))}
+                    )) : <p className="text-sm text-[#888]">কোন উপবিভাগ নেই</p>}
                   </div>
                 </div>
-              )}
-              <div className="col-span-6">
-                <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">শীর্ষ সংবাদ</p>
-                <div className="space-y-3">
-                  {activeTopStories.length > 0 ? activeTopStories.slice(0, 4).map(article => (
-                    <Link key={article.docId} href={`/article/${article.slug}`} className="flex items-start gap-3 group">
-                      <div className="w-16 h-12 rounded overflow-hidden bg-gray-100 shrink-0">
-                        <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-[#1A1A1A] group-hover:text-[#8B0000] transition-colors line-clamp-2 leading-snug">{article.title}</p>
-                      </div>
-                    </Link>
-                  )) : <p className="text-sm text-[#888]">কোন শীর্ষ সংবাদ নেই</p>}
+                {activeChildSubs.length > 0 && (
+                  <div className="col-span-3">
+                    <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">আরও পড়ুন</p>
+                    <div className="space-y-2">
+                      {activeChildSubs.map(sub => (
+                        <Link key={sub.id} href={`/category/${activeCategoryData.slug}/${sub.slug}`}
+                          className="block text-sm text-[#1A1A1A] hover:text-[#8B0000] transition-colors py-0.5">{sub.name}</Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="col-span-6">
+                  <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">শীর্ষ সংবাদ</p>
+                  <div className="space-y-3">
+                    {activeTopStories.length > 0 ? activeTopStories.slice(0, 4).map(article => (
+                      <Link key={article.docId} href={`/article/${article.slug}`} className="flex items-start gap-3 group">
+                        <div className="w-16 h-12 rounded overflow-hidden bg-gray-100 shrink-0">
+                          <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-[#1A1A1A] group-hover:text-[#8B0000] transition-colors line-clamp-2 leading-snug">{article.title}</p>
+                        </div>
+                      </Link>
+                    )) : <p className="text-sm text-[#888]">কোন শীর্ষ সংবাদ নেই</p>}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Mobile */}
       <div className="md:hidden border-t border-[#E8E8E8]">

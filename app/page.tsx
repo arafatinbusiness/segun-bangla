@@ -500,7 +500,7 @@ function HomePage() {
             })()
 
             return (
-              <section key={category.id} className="mb-8 pb-6 border-b border-gray-200 last:border-b-0">
+              <section key={category.id} className={`mb-8 pb-6 border-b border-gray-200 last:border-b-0 ${catIndex === 0 ? 'pt-16' : ''}`}>
                 {showSlider && <div className="mb-4"><NewsSlider articles={catArticles} name={category.name} slug={category.slug} /></div>}
                 <div style={{ display: showSlider ? "none" : "block" }}>
                   <div className="flex justify-between items-center mb-4">
