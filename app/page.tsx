@@ -27,8 +27,51 @@ const DEFAULT_EXCERPT: ExcerptConfig = {
   extraLineClamp: 6, extraFontSize: 'text-sm', extraHeadingLineClamp: 2, extraAutoProportion: false,
 }
 
+interface TypographyConfig {
+  menuFontSize: number; menuFontSizeMobile: number; menuFontWeight: 'normal' | 'bold'
+  leadTitleFontSize: number; leadTitleFontSizeMobile: number
+  leadExcerptFontSize: number; leadExcerptFontSizeMobile: number
+  sideSlotTitleFontSize: number; sideSlotTitleFontSizeMobile: number
+  sideSlotExcerptFontSize: number; sideSlotExcerptFontSizeMobile: number
+  gridSlotTitleFontSize: number; gridSlotTitleFontSizeMobile: number
+  gridSlotExcerptFontSize: number; gridSlotExcerptFontSizeMobile: number
+  categoryRowHeadingSize: number; categoryRowHeadingSizeMobile: number
+  categoryLeadArticleTitleSize: number; categoryLeadArticleTitleSizeMobile: number
+  categoryArticleTitleSize: number; categoryArticleTitleSizeMobile: number
+  categoryArticleExcerptSize: number; categoryArticleExcerptSizeMobile: number
+  recentHeadingSize: number; recentHeadingSizeMobile: number
+  recentArticleTitleSize: number; recentArticleTitleSizeMobile: number
+  socialWidgetFontSize: number; socialWidgetFontSizeMobile: number
+}
+const DEFAULT_TYPOGRAPHY: TypographyConfig = {
+  menuFontSize: 16, menuFontSizeMobile: 14, menuFontWeight: 'bold',
+  leadTitleFontSize: 22, leadTitleFontSizeMobile: 18,
+  leadExcerptFontSize: 14, leadExcerptFontSizeMobile: 12,
+  sideSlotTitleFontSize: 14, sideSlotTitleFontSizeMobile: 12,
+  sideSlotExcerptFontSize: 12, sideSlotExcerptFontSizeMobile: 10,
+  gridSlotTitleFontSize: 14, gridSlotTitleFontSizeMobile: 12,
+  gridSlotExcerptFontSize: 12, gridSlotExcerptFontSizeMobile: 10,
+  categoryRowHeadingSize: 24, categoryRowHeadingSizeMobile: 18,
+  categoryLeadArticleTitleSize: 14, categoryLeadArticleTitleSizeMobile: 12,
+  categoryArticleTitleSize: 14, categoryArticleTitleSizeMobile: 12,
+  categoryArticleExcerptSize: 12, categoryArticleExcerptSizeMobile: 10,
+  recentHeadingSize: 22, recentHeadingSizeMobile: 17,
+  recentArticleTitleSize: 14, recentArticleTitleSizeMobile: 12,
+  socialWidgetFontSize: 13, socialWidgetFontSizeMobile: 11,
+}
+
 function HomePage() {
   const { template } = useTheme()
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const t = (desktop: number, mobile: number) => isMobile ? mobile : desktop
+
   const [leadArticles, setLeadArticles] = useState<FirestoreArticle[]>([])
   const [featuredArticles, setFeaturedArticles] = useState<FirestoreArticle[]>([])
   const [specialArticles, setSpecialArticles] = useState<FirestoreArticle[]>([])
@@ -38,6 +81,7 @@ function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [excerptConfig, setExcerptConfig] = useState<ExcerptConfig>(DEFAULT_EXCERPT)
+  const [typography, setTypography] = useState<TypographyConfig>(DEFAULT_TYPOGRAPHY)
   const [sliderConfig, setSliderConfig] = useState<Record<string, boolean>>({})
   const [homeSlots, setHomeSlots] = useState<(FirestoreArticle | null)[]>(new Array(11).fill(null))
 
@@ -47,7 +91,7 @@ function HomePage() {
         const slotAssignments = await getSlotAssignments()
         const SLOT_KEYS = ['lead', 'sp1', 'sp2', 'sp3', 'sp4', 'sp5', 'sp6', 'sp7', 'sp8', 'sp9', 'sp10']
 
-        const [leadData, featuredData, specialData, recentData, allData, categoriesData, excerptSnap, sliderSnap] = await Promise.all([
+        const [leadData, featuredData, specialData, recentData, allData, categoriesData, excerptSnap, sliderSnap, typographySnap] = await Promise.all([
           getLeadArticles(1),
           getFeaturedArticles(5).catch(() => []),
           getSpecialArticles(50),
@@ -56,6 +100,7 @@ function HomePage() {
           getAllCategories(),
           getDoc(doc(db, 'settings', 'homepage-excerpts')).catch(() => null),
           getDoc(doc(db, 'settings', 'category-sliders')).catch(() => null),
+          getDoc(doc(db, 'settings', 'typography')).catch(() => null),
         ])
         setLeadArticles(leadData || [])
         setFeaturedArticles(featuredData || [])
@@ -65,6 +110,7 @@ function HomePage() {
         setCategories(categoriesData || [])
         if (excerptSnap?.exists()) setExcerptConfig({ ...DEFAULT_EXCERPT, ...excerptSnap.data() as Partial<ExcerptConfig> })
         if (sliderSnap?.exists()) setSliderConfig(sliderSnap.data() as Record<string, boolean>)
+        if (typographySnap?.exists()) setTypography({ ...DEFAULT_TYPOGRAPHY, ...typographySnap.data() as Partial<TypographyConfig> })
 
         // Build slots from slot-assignments (single source of truth)
         const slots: (FirestoreArticle | null)[] = new Array(11).fill(null)
@@ -334,8 +380,8 @@ function HomePage() {
                     <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">
                       {spSlots[0].imageUrl && <img src={spSlots[0].imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105" />}
                     </div>
-                    <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{spSlots[0].title}</h3>
-                    {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{spSlots[0].excerpt}</p>}
+                    <h3 className="font-bold leading-tight line-clamp-2 group-hover:text-red-600" style={{ fontSize: t(typography.sideSlotTitleFontSize, typography.sideSlotTitleFontSizeMobile) }}>{spSlots[0].title}</h3>
+                    {excerptConfig.heroExcerpt && <p className="text-gray-500 mt-1 line-clamp-3" style={{ fontSize: t(typography.sideSlotExcerptFontSize, typography.sideSlotExcerptFontSizeMobile) }}>{spSlots[0].excerpt}</p>}
                   </a>
                 </article>
               )}
@@ -345,8 +391,8 @@ function HomePage() {
               {mainArticle ? (
                 <article className="group text-center">
                   <a href={`/article/${mainArticle.slug}`}>
-                    <h1 className="text-xl md:text-2xl font-bold text-foreground mb-3 leading-tight">{mainArticle.title}</h1>
-                    {excerptConfig.leadExcerpt && <p className="text-sm text-foreground mb-4 line-clamp-2 max-w-lg mx-auto">{mainArticle.excerpt}</p>}
+                    <h1 className="font-bold text-foreground mb-3 leading-tight" style={{ fontSize: t(typography.leadTitleFontSize, typography.leadTitleFontSizeMobile) }}>{mainArticle.title}</h1>
+                    {excerptConfig.leadExcerpt && <p className="text-foreground mb-4 line-clamp-2 max-w-lg mx-auto" style={{ fontSize: t(typography.leadExcerptFontSize, typography.leadExcerptFontSizeMobile) }}>{mainArticle.excerpt}</p>}
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                       {mainArticle.imageUrl && <img src={mainArticle.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
                     </div>
@@ -363,8 +409,8 @@ function HomePage() {
                     <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">
                       {spSlots[1].imageUrl && <img src={spSlots[1].imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105" />}
                     </div>
-                    <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{spSlots[1].title}</h3>
-                    {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{spSlots[1].excerpt}</p>}
+                    <h3 className="font-bold leading-tight line-clamp-2 group-hover:text-red-600" style={{ fontSize: t(typography.sideSlotTitleFontSize, typography.sideSlotTitleFontSizeMobile) }}>{spSlots[1].title}</h3>
+                    {excerptConfig.heroExcerpt && <p className="text-gray-500 mt-1 line-clamp-3" style={{ fontSize: t(typography.sideSlotExcerptFontSize, typography.sideSlotExcerptFontSizeMobile) }}>{spSlots[1].excerpt}</p>}
                   </a>
                 </article>
               )}
@@ -381,8 +427,8 @@ function HomePage() {
                       <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">
                         {article.imageUrl && <img src={article.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105" />}
                       </div>
-                      <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-red-600">{article.title}</h3>
-                      {excerptConfig.heroExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{article.excerpt}</p>}
+                      <h3 className="font-bold leading-tight line-clamp-2 group-hover:text-red-600" style={{ fontSize: t(typography.gridSlotTitleFontSize, typography.gridSlotTitleFontSizeMobile) }}>{article.title}</h3>
+                      {excerptConfig.heroExcerpt && <p className="text-gray-500 mt-1 line-clamp-2" style={{ fontSize: t(typography.gridSlotExcerptFontSize, typography.gridSlotExcerptFontSizeMobile) }}>{article.excerpt}</p>}
                     </a>
                   ) : null}
                 </div>
@@ -392,38 +438,60 @@ function HomePage() {
 
           {/* Category rows */}
           {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category, catIndex) => {
-            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 7)
-            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 7)
+            const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 8)
+            const leadCA = catArticles[0]; const listCA = catArticles.slice(1, 8)
             const sliderEnabled = sliderConfig[category.id] !== false
             const showSlider = sliderEnabled && catArticles.length > 4
             
-            // Social widgets for specific categories
+            // Social widgets for specific categories - full card design
             const socialWidget = (() => {
               const name = category.name?.toLowerCase() || category.slug?.toLowerCase() || ''
               if (name.includes('রাজনীতি') || name.includes('রাজনীতি') || name === 'politics' || name === 'rajniti') {
                 return (
-                  <div className="flex flex-col items-center justify-center h-full p-3 bg-gradient-to-b from-blue-50 to-white rounded-lg border border-blue-100">
-                    <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                    </div>
-                    <p className="text-[11px] font-bold text-center text-gray-800 mb-2 leading-tight">Facebook Page</p>
-                    <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" rel="noopener noreferrer"
-                      className="px-4 py-1.5 bg-[#1877F2] text-white text-[10px] font-bold rounded-full hover:bg-[#1664D9] transition-colors">
-                      ফলো করুন
+                  <div className="relative w-full h-full overflow-hidden rounded-lg bg-gradient-to-br from-[#1877F2] to-[#0C5BCC] shadow-md group cursor-pointer">
+                    <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" rel="noopener noreferrer" className="block h-full">
+                      {/* Decorative circles */}
+                      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10"></div>
+                      <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5"></div>
+                      <div className="absolute top-1/3 right-2 w-8 h-8 rounded-full bg-white/8"></div>
+                      {/* Content */}
+                      <div className="relative z-10 flex flex-col items-center justify-center h-full p-4 text-white">
+                        {/* Large icon */}
+                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-2 backdrop-blur-sm">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </div>
+                        <p className="font-bold text-center leading-tight mb-1" style={{ fontSize: t(typography.socialWidgetFontSize, typography.socialWidgetFontSizeMobile) }}>আমাদের Facebook<br/>পেজটি ফলো করুন</p>
+                        <p className="text-white/70 mb-2 text-center" style={{ fontSize: t(typography.socialWidgetFontSize - 2, typography.socialWidgetFontSizeMobile - 2) }}>সর্বশেষ রাজনীতি খবর পান</p>
+                        <span className="inline-flex items-center gap-1 px-5 py-1.5 bg-white text-[#1877F2] text-[11px] font-bold rounded-full hover:bg-gray-100 transition-all shadow-sm">
+                          ফলো করুন
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </span>
+                      </div>
                     </a>
                   </div>
                 )
               }
               if (name.includes('আন্তর্জাতিক') || name.includes('আন্তর্জাতিক') || name === 'international' || name === 'বিশ্ব') {
                 return (
-                  <div className="flex flex-col items-center justify-center h-full p-3 bg-gradient-to-b from-red-50 to-white rounded-lg border border-red-100">
-                    <div className="w-10 h-10 rounded-full bg-[#FF0000] flex items-center justify-center mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                    </div>
-                    <p className="text-[11px] font-bold text-center text-gray-800 mb-2 leading-tight">YouTube Channel</p>
-                    <a href="https://youtube.com/@madhoprachodarshon?si=vIdLQInH0_OLMS4y" target="_blank" rel="noopener noreferrer"
-                      className="px-4 py-1.5 bg-[#FF0000] text-white text-[10px] font-bold rounded-full hover:bg-[#CC0000] transition-colors">
-                      সাবস্ক্রাইব
+                  <div className="relative w-full h-full overflow-hidden rounded-lg bg-gradient-to-br from-[#FF0000] to-[#CC0000] shadow-md group cursor-pointer">
+                    <a href="https://youtube.com/@madhoprachodarshon?si=vIdLQInH0_OLMS4y" target="_blank" rel="noopener noreferrer" className="block h-full">
+                      {/* Decorative circles */}
+                      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10"></div>
+                      <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5"></div>
+                      <div className="absolute top-1/3 right-2 w-8 h-8 rounded-full bg-white/8"></div>
+                      {/* Content */}
+                      <div className="relative z-10 flex flex-col items-center justify-center h-full p-4 text-white">
+                        {/* Play button icon */}
+                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-2 backdrop-blur-sm">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </div>
+                        <p className="font-bold text-center leading-tight mb-1" style={{ fontSize: t(typography.socialWidgetFontSize, typography.socialWidgetFontSizeMobile) }}>আমাদের YouTube<br/>চ্যানেল সাবস্ক্রাইব</p>
+                        <p className="text-white/70 mb-2 text-center" style={{ fontSize: t(typography.socialWidgetFontSize - 2, typography.socialWidgetFontSizeMobile - 2) }}>আন্তর্জাতিক ভিডিও দেখুন</p>
+                        <span className="inline-flex items-center gap-1 px-5 py-1.5 bg-white text-[#FF0000] text-[11px] font-bold rounded-full hover:bg-gray-100 transition-all shadow-sm">
+                          সাবস্ক্রাইব
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </span>
+                      </div>
                     </a>
                   </div>
                 )
@@ -437,7 +505,7 @@ function HomePage() {
                 <div style={{ display: showSlider ? "none" : "block" }}>
                   <div className="flex justify-between items-center mb-4">
                     <a href={`/category/${category.slug}`} className="flex-1 group">
-                      <h2 className="text-2xl font-bold text-[#000000] border-l-4 theme-border pl-3">{category.name}</h2>
+                      <h2 className="font-bold text-[#000000] border-l-4 theme-border pl-3" style={{ fontSize: t(typography.categoryRowHeadingSize, typography.categoryRowHeadingSizeMobile) }}>{category.name}</h2>
                     </a>
                     <a href={`/category/${category.slug}`} className="text-[#FF0000] hover:underline text-xs font-bold ml-4 whitespace-nowrap uppercase tracking-wider">সব দেখুন →</a>
                   </div>
@@ -448,40 +516,50 @@ function HomePage() {
                   </div>
                   {catArticles.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                      {leadCA && <div className="md:col-span-1 flex"><article className="group flex flex-col w-full"><a href={`/article/${leadCA.slug}`} className="flex flex-col flex-1">
-                        <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{leadCA.imageUrl && <img src={leadCA.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
-                        <h3 className="text-sm font-bold line-clamp-2">{leadCA.title}</h3>
-                        {excerptConfig.categoryLeadExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-6">{leadCA.excerpt}</p>}
-                      </a></article></div>}
-                      <div className="md:col-span-3"><div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {socialWidget ? (
-                          <>
-                            {listCA.slice(0, 4).map((a) => (
-                              <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
-                                <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
-                                <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
-                                {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
-                              </a></article>
-                            ))}
-                            <div className="flex w-full">{socialWidget}</div>
-                            {listCA.slice(5, 6).map((a) => (
-                              <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
-                                <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
-                                <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
-                                {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
-                              </a></article>
-                            ))}
-                          </>
-                        ) : (
-                          listCA.slice(0, 6).map((a) => (
+                      {/* 8 total slots: Row 1 = A1|A2|A3|A4, Row 2 = A5|SOCIAL(slot6)|A6|A7 */}
+                      {socialWidget ? (
+                        <>
+                          {/* Row 1: 4 articles */}
+                          {listCA.slice(0, 4).map((a) => (
                             <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
                               <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
-                              <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
-                              {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
+                              <h4 className="font-bold line-clamp-2" style={{ fontSize: t(typography.categoryArticleTitleSize, typography.categoryArticleTitleSizeMobile) }}>{a.title}</h4>
+                              {excerptConfig.categoryListExcerpt && <p className="text-gray-500 mt-1 line-clamp-3" style={{ fontSize: t(typography.categoryArticleExcerptSize, typography.categoryArticleExcerptSizeMobile) }}>{a.excerpt}</p>}
                             </a></article>
-                          ))
-                        )}
-                      </div></div>
+                          ))}
+                          {/* Row 2: SOCIAL (slot 5) | A5 | A6 | A7 */}
+                          {socialWidget}
+                          {listCA[4] && (
+                            <article key={listCA[4].docId} className="group"><a href={`/article/${listCA[4].slug}`}>
+                              <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{listCA[4].imageUrl && <img src={listCA[4].imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                              <h4 className="font-bold line-clamp-2" style={{ fontSize: t(typography.categoryArticleTitleSize, typography.categoryArticleTitleSizeMobile) }}>{listCA[4].title}</h4>
+                              {excerptConfig.categoryListExcerpt && <p className="text-gray-500 mt-1 line-clamp-3" style={{ fontSize: t(typography.categoryArticleExcerptSize, typography.categoryArticleExcerptSizeMobile) }}>{listCA[4].excerpt}</p>}
+                            </a></article>
+                          )}
+                          {listCA[5] && (
+                            <article key={listCA[5].docId} className="group"><a href={`/article/${listCA[5].slug}`}>
+                              <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{listCA[5].imageUrl && <img src={listCA[5].imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                              <h4 className="font-bold line-clamp-2" style={{ fontSize: t(typography.categoryArticleTitleSize, typography.categoryArticleTitleSizeMobile) }}>{listCA[5].title}</h4>
+                              {excerptConfig.categoryListExcerpt && <p className="text-gray-500 mt-1 line-clamp-3" style={{ fontSize: t(typography.categoryArticleExcerptSize, typography.categoryArticleExcerptSizeMobile) }}>{listCA[5].excerpt}</p>}
+                            </a></article>
+                          )}
+                          {listCA[6] && (
+                            <article key={listCA[6].docId} className="group"><a href={`/article/${listCA[6].slug}`}>
+                              <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{listCA[6].imageUrl && <img src={listCA[6].imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                              <h4 className="font-bold line-clamp-2" style={{ fontSize: t(typography.categoryArticleTitleSize, typography.categoryArticleTitleSizeMobile) }}>{listCA[6].title}</h4>
+                              {excerptConfig.categoryListExcerpt && <p className="text-gray-500 mt-1 line-clamp-3" style={{ fontSize: t(typography.categoryArticleExcerptSize, typography.categoryArticleExcerptSizeMobile) }}>{listCA[6].excerpt}</p>}
+                            </a></article>
+                          )}
+                        </>
+                      ) : (
+                        listCA.slice(0, 8).map((a) => (
+                          <article key={a.docId} className="group"><a href={`/article/${a.slug}`}>
+                            <div className="aspect-video bg-gray-100 mb-2 rounded overflow-hidden">{a.imageUrl && <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />}</div>
+                            <h4 className="text-sm font-bold line-clamp-2">{a.title}</h4>
+                            {excerptConfig.categoryListExcerpt && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{a.excerpt}</p>}
+                          </a></article>
+                        ))
+                      )}
                     </div>
                   ) : <p className="text-center py-8 text-gray-500">এই ক্যাটাগরিতে কোন নিবন্ধ পাওয়া যায়নি।</p>}
                 </div>
@@ -490,7 +568,7 @@ function HomePage() {
           })}
 
           <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 text-foreground border-b pb-3">সর্বশেষ সংবাদ</h2>
+            <h2 className="font-bold mb-6 text-foreground border-b pb-3" style={{ fontSize: t(typography.recentHeadingSize, typography.recentHeadingSizeMobile) }}>সর্বশেষ সংবাদ</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {recentArticles.slice(0, 8).map((article) => (<ArticleCard key={article.docId} article={article} />))}
             </div>

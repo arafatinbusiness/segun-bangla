@@ -1,7 +1,7 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { Wrench, ArrowUpDown, Eye, Palette, SlidersHorizontal } from 'lucide-react'
+import { Wrench, ArrowUpDown, Eye, Palette, SlidersHorizontal, Type } from 'lucide-react'
 import Link from 'next/link'
 
 const toolItems = [
@@ -31,6 +31,13 @@ const toolItems = [
     description: 'Enable/disable excerpts on homepage sections',
     href: '/admin/tools/excerpt-settings',
     icon: Eye,
+    status: 'available' as const,
+  },
+  {
+    label: 'Typography',
+    description: 'Custom font sizes for menu, hero, slots, categories (12-40px)',
+    href: '/admin/tools/typography-settings',
+    icon: Type,
     status: 'available' as const,
   },
 ]

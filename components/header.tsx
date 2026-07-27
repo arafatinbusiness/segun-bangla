@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 
-const DEPLOY_VERSION = 'v28'
+const DEPLOY_VERSION = 'v29'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/auth-context'
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'
@@ -15,6 +17,33 @@ interface HeaderProps {
 }
 
 export function Header({ categories }: HeaderProps) {
+  const [isMobile, setIsMobile] = useState(false)
+  const [menuFontSize, setMenuFontSize] = useState(16)
+  const [menuFontWeight, setMenuFontWeight] = useState<'normal' | 'bold'>('bold')
+  const [logoHeight, setLogoHeight] = useState(56)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  useEffect(() => {
+    import('firebase/firestore').then(({ doc, getDoc }) => {
+      import('@/lib/firebase').then(({ db }) => {
+        getDoc(doc(db, 'settings', 'typography')).then(snap => {
+          if (snap.exists()) {
+            const data = snap.data()
+            const d = data.menuFontSize || 16
+            const m = data.menuFontSizeMobile || 14
+            setMenuFontSize(isMobile ? m : d)
+            setMenuFontWeight(data.menuFontWeight || 'bold')
+            setLogoHeight(isMobile ? (data.logoHeightMobile || 40) : (data.logoHeight || 56))
+          }
+        }).catch(() => {})
+      })
+    }).catch(() => {})
+  }, [isMobile])
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [currentDate, setCurrentDate] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -24,30 +53,12 @@ export function Header({ categories }: HeaderProps) {
   const megaMenuRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const topSectionRef = useRef<HTMLDivElement>(null)
+  const dateBarRef = useRef<HTMLDivElement>(null)
   const { isAuthenticated, profile } = useAuth()
 
-  // সমাধান: hysteresis + DOM মিউটেশন — ১৫০px এ hide, ৮০px এ show
-  // থ্রেশহোল্ড ক্রস করলেই একবার DOM পরিবর্তন, কোন ভাইব্রেশন নেই
-  useEffect(() => {
-    const el = topSectionRef.current
-    if (!el) return
-    
-    let hidden = window.scrollY > 150
-    el.style.display = hidden ? 'none' : ''
-    
-    const handleScroll = () => {
-      const y = window.scrollY
-      let shouldHide = hidden
-      if (!hidden && y > 150) shouldHide = true
-      if (hidden && y < 80) shouldHide = false
-      if (shouldHide !== hidden) {
-        hidden = shouldHide
-        el.style.display = hidden ? 'none' : ''
-      }
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  // Pure CSS sticky behavior — like Prothom Alo, zero vibration
+  // Logo/date bar = normal flow (scrolls away naturally).
+  // Nav bar below = sticky top-0 (stays at top when logo scrolls past).
 
   useEffect(() => {
     if (!activeCategory) return
@@ -100,63 +111,69 @@ export function Header({ categories }: HeaderProps) {
   const visibleCategories = specialCategory ? [specialCategory, ...otherCategories.slice(0, 8)] : otherCategories.slice(0, 9)
 
   return (
-    <header className="sticky top-0 z-50 bg-white">
-      {/* টপ বার + লোগো — display: none হলে লেআউট থেকে চলে যায়, নেভি স্বাভাবিকভাবে উপরে চলে আসে */}
-      <div ref={topSectionRef} className="bg-white">
-          <div className="bg-[#1A1A1A] text-white text-sm">
-            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-8">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-white/70">{currentDate}</span>
-                <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-1.5 py-0.5 rounded">{DEPLOY_VERSION}</span>
-              </div>
-              <div className="flex gap-4 items-center text-xs">
-                {isAuthenticated ? (
-                  <>
-                    <span className="text-white/70">{profile?.displayName}</span>
-                    <Link href="/profile" className="hover:text-white flex items-center gap-1 text-white/70"><User size={14} /> প্রোফাইল</Link>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="hover:text-white text-white/70">লগইন</Link>
-                    <Link href="/register" className="hover:text-white text-white/70">নিবন্ধন</Link>
-                  </>
-                )}
-                <a href="#" className="hover:text-white text-white/70">সাবস্ক্রাইব</a>
-              </div>
+    <>
+      {/* Logo + date bar — normal flow, scrolls away naturally like Prothom Alo */}
+      <div ref={dateBarRef} className="bg-white">
+        <div className="bg-[#1A1A1A] text-white text-sm">
+          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-8">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/70">{currentDate}</span>
+              <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-1.5 py-0.5 rounded">{DEPLOY_VERSION}</span>
+            </div>
+            <div className="flex gap-4 items-center text-xs">
+              {isAuthenticated ? (
+                <>
+                  <span className="text-white/70">{profile?.displayName}</span>
+                  <Link href="/profile" className="hover:text-white flex items-center gap-1 text-white/70"><User size={14} /> প্রোফাইল</Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="hover:text-white text-white/70">লগইন</Link>
+                  <Link href="/register" className="hover:text-white text-white/70">নিবন্ধন</Link>
+                </>
+              )}
+              <a href="#" className="hover:text-white text-white/70">সাবস্ক্রাইব</a>
             </div>
           </div>
-          <div className="flex items-center justify-center py-3">
-            <a href="/"><img src="/logo.png" alt="সেগুন বাংলা" className="w-auto object-contain h-14" /></a>
-          </div>
-      </div>
-      
+        </div>
 
-      {/* Navigation Bar */}
-      <div className="hidden md:block border-t border-[#E8E8E8]">
-        <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex items-center justify-center gap-0">
-            <Link href="/search" className="relative flex items-center gap-1 px-4 py-3 text-lg font-bold transition-colors duration-150 whitespace-nowrap text-[#8B0000] hover:text-[#1A1A1A]">সর্বশেষ</Link>
-            {visibleCategories.map(category => (
-              <Link key={category.id} href={`/category/${category.slug}`}
-                className={`relative flex items-center gap-1 px-4 py-3 text-lg font-bold transition-colors duration-150 whitespace-nowrap ${activeCategory === category.id ? 'text-[#8B0000]' : 'text-[#1A1A1A] hover:text-[#8B0000]'}`}
-                onMouseEnter={() => handleMouseEnter(category.id)} onMouseLeave={handleMouseLeave}>
-                {category.name}<ChevronDown className="w-4 h-4 opacity-50" />
-              </Link>
-            ))}
-            <button onClick={() => setMobileMenuOpen(true)}
-              className="flex items-center gap-1 px-4 py-3 text-lg font-bold text-[#8B0000] hover:text-[#1A1A1A] transition-colors duration-150 whitespace-nowrap">সব দেখুন</button>
-            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#E8E8E8]">
-              <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Search size={20} /></Link>
-              <a href="https://youtube.com" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Youtube size={20} /></a>
-              <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Facebook size={20} /></a>
-            </div>
-          </nav>
+        {/* Logo */}
+        <div className="flex items-center justify-center py-3">
+          <a href="/"><img src="/logo.png" alt="সেগুন বাংলা" className="w-auto object-contain" style={{ height: logoHeight }} /></a>
         </div>
       </div>
 
-      {/* Double Border */}
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="w-full"><div className="h-[2px] bg-[#1A1A1A]" /><div className="h-[2px]" /><div className="h-[1px] bg-[#1A1A1A]" /></div>
+      {/* Nav bar — independently sticky, stays at top when logo scrolls past */}
+      <div className="sticky top-0 z-50 bg-white">
+        <div className="hidden md:block border-t border-[#E8E8E8]">
+          <div className="max-w-7xl mx-auto px-4">
+            <nav className="flex items-center justify-center gap-0">
+              <Link href="/search" className="relative flex items-center gap-1 px-4 py-3 transition-colors duration-150 whitespace-nowrap text-[#8B0000] hover:text-[#1A1A1A]"
+                style={{ fontSize: menuFontSize, fontWeight: menuFontWeight }}>সর্বশেষ</Link>
+              {visibleCategories.map(category => (
+                <Link key={category.id} href={`/category/${category.slug}`}
+                  className={`relative flex items-center gap-1 px-4 py-3 transition-colors duration-150 whitespace-nowrap ${activeCategory === category.id ? 'text-[#8B0000]' : 'text-[#1A1A1A] hover:text-[#8B0000]'}`}
+                  style={{ fontSize: menuFontSize, fontWeight: menuFontWeight }}
+                  onMouseEnter={() => handleMouseEnter(category.id)} onMouseLeave={handleMouseLeave}>
+                  {category.name}<ChevronDown className="w-4 h-4 opacity-50" />
+                </Link>
+              ))}
+              <button onClick={() => setMobileMenuOpen(true)}
+                className="flex items-center gap-1 px-4 py-3 transition-colors duration-150 whitespace-nowrap text-[#8B0000] hover:text-[#1A1A1A]"
+                style={{ fontSize: menuFontSize, fontWeight: menuFontWeight }}>সব দেখুন</button>
+              <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#E8E8E8]">
+                <Link href="/search" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Search size={20} /></Link>
+                <a href="https://youtube.com" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Youtube size={20} /></a>
+                <a href="https://www.facebook.com/profile.php?id=61589151984086" target="_blank" className="text-[#1A1A1A] hover:text-[#8B0000] transition-colors"><Facebook size={20} /></a>
+              </div>
+            </nav>
+          </div>
+        </div>
+
+        {/* Double Border */}
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="w-full"><div className="h-[2px] bg-[#1A1A1A]" /><div className="h-[2px]" /><div className="h-[1px] bg-[#1A1A1A]" /></div>
+        </div>
       </div>
 
       {/* Mega Menu */}
@@ -174,15 +191,17 @@ export function Header({ categories }: HeaderProps) {
                   )) : <p className="text-sm text-[#888]">কোন উপবিভাগ নেই</p>}
                 </div>
               </div>
-              <div className="col-span-3">
-                <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">আরও পড়ুন</p>
-                <div className="space-y-2">
-                  {activeChildSubs.length > 0 ? activeChildSubs.map(sub => (
-                    <Link key={sub.id} href={`/category/${activeCategoryData.slug}/${sub.slug}`}
-                      className="block text-sm text-[#1A1A1A] hover:text-[#8B0000] transition-colors py-0.5">{sub.name}</Link>
-                  )) : <p className="text-sm text-[#888]">কোন উপ-উপবিভাগ নেই</p>}
+              {activeChildSubs.length > 0 && (
+                <div className="col-span-3">
+                  <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">আরও পড়ুন</p>
+                  <div className="space-y-2">
+                    {activeChildSubs.map(sub => (
+                      <Link key={sub.id} href={`/category/${activeCategoryData.slug}/${sub.slug}`}
+                        className="block text-sm text-[#1A1A1A] hover:text-[#8B0000] transition-colors py-0.5">{sub.name}</Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="col-span-6">
                 <p className="text-[10px] font-semibold text-[#888] uppercase tracking-widest mb-4">শীর্ষ সংবাদ</p>
                 <div className="space-y-3">
@@ -247,6 +266,6 @@ export function Header({ categories }: HeaderProps) {
           </div>
         </div>
       )}
-    </header>
+    </>
   )
 }
