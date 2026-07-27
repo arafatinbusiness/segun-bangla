@@ -38,6 +38,7 @@ interface RichTextEditorProps {
   onChange: (html: string) => void
   placeholder?: string
   minHeight?: string
+  articleId?: string
 }
 
 type HeadingLevel = 'h1' | 'h2' | 'h3'
@@ -47,6 +48,7 @@ export function RichTextEditor({
   onChange,
   placeholder = 'নিবন্ধের সম্পূর্ণ বিষয়বস্তু লিখুন...',
   minHeight = '500px',
+  articleId,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const [isMounted, setIsMounted] = useState(false)
@@ -520,8 +522,8 @@ export function RichTextEditor({
     setUploadingImage(true)
     setImageUploadProgress(0)
     try {
-      const articleId = 'editor-' + Date.now()
-      const downloadUrl = await uploadArticleImage(file, articleId, (progress) => {
+      const id = articleId || 'editor-' + Date.now()
+      const downloadUrl = await uploadArticleImage(file, id, (progress) => {
         setImageUploadProgress(progress)
       })
       uploadedImageUrlRef.current = downloadUrl
@@ -533,7 +535,7 @@ export function RichTextEditor({
     } finally {
       setUploadingImage(false)
     }
-  }, [])
+  }, [articleId])
 
   // Table
   const handleTable = useCallback(() => {

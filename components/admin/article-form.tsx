@@ -372,6 +372,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
             value={formData.content || ''}
             onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
             minHeight="500px"
+            articleId={article?.id}
           />
         </div>
 
