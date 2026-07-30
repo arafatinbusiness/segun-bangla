@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 
-const DEPLOY_VERSION = 'v29also collection
-'
+const DEPLOY_VERSION = ''
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/lib/auth-context'
