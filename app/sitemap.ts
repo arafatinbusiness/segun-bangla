@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { getAllCategories } from '@/lib/services/categories'
 import { getAllArticles } from '@/lib/services/articles'
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.segunbangla.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrls: MetadataRoute.Sitemap = [

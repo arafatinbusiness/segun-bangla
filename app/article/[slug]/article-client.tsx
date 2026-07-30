@@ -110,10 +110,52 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
     day: 'numeric',
   })
 
+  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.segunbangla.com'
+  const articleUrl = typeof window !== 'undefined' ? window.location.href : `${siteUrl}/article/${slug}`
+
+  // NewsArticle JSON-LD
+  const newsArticleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    description: article.excerpt || article.title,
+    image: article.imageUrl || `${siteUrl}/logo.png`,
+    datePublished: article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined,
+    dateModified: article.updatedAt ? new Date(article.updatedAt).toISOString() : undefined,
+    author: [{
+      '@type': 'Person',
+      name: article.reporterName || article.source || 'সেগুন বাংলা',
+    }],
+    publisher: {
+      '@type': 'Organization',
+      name: 'সেগুন বাংলা',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteUrl}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': articleUrl,
+    },
+    articleSection: article.categoryIds?.map(id => {
+      const cat = categories.find(c => c.id === id)
+      return cat?.name
+    }).filter(Boolean).join(', '),
+    keywords: article.tags?.join(', '),
+    wordCount: article.content ? Math.floor(article.content.replace(/<[^>]*>/g, '').split(/\s+/).length) : 0,
+    inLanguage: 'bn-BD',
+    locationCreated: 'Bangladesh',
+  }
+
   return (
     <>
       <Header categories={categories} />
       <main className="min-h-screen bg-background">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleJsonLd) }}
+        />
         <div className="max-w-5xl mx-auto px-4 py-8">
           {/* Article Header */}
           <article className="article-page">

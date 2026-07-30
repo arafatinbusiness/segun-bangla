@@ -1,5 +1,15 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+
+export const metadata: Metadata = {
+  title: 'পৃষ্ঠা পাওয়া যায়নি - সেগুন বাংলা',
+  description: 'দুঃখিত, আপনি যে পৃষ্ঠাটি খুঁজছেন তা বিদ্যমান নেই বা স্থানান্তরিত হয়েছে। সেগুন বাংলার হোমপেজে ফিরে যান।',
+  robots: {
+    index: false,
+    follow: true,
+  },
+}
 
 export default function NotFound() {
   return (

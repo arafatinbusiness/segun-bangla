@@ -29,7 +29,7 @@ export async function sendWelcomeEmail(
           আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। আপনি এখন সেগুন বাংলা পোর্টালের সমস্ত বৈশিষ্ট্য ব্যবহার করতে পারেন।
         </p>
         <div style="margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'}/profile" 
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.segunbangla.com'}/profile"
              style="background-color: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
             আপনার প্রোফাইল দেখুন
           </a>
@@ -115,7 +115,7 @@ export async function sendSubscriptionConfirmationEmail(
           আপনি এখন এই বিভাগের সমস্ত নতুন নিবন্ধের জন্য ইমেইল বিজ্ঞপ্তি পাবেন।
         </p>
         <div style="margin: 30px 0;">
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'}/category/${category.toLowerCase()}" 
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.segunbangla.com'}/category/${category.toLowerCase()}"
              style="background-color: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
             বিভাগ দেখুন
           </a>

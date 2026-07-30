@@ -312,10 +312,34 @@ function SubcategoryPage() {
     )
   }
 
+  const siteUrlCtx = typeof window !== 'undefined' ? window.location.origin : 'https://www.segunbangla.com'
+  const subcategoryUrl = `${siteUrlCtx}/category/${category.slug}/${subslug?.join('/')}`
+
+  const breadcrumbItems = [
+    { '@type': 'ListItem', position: 1, name: 'হোম', item: siteUrlCtx },
+    { '@type': 'ListItem', position: 2, name: category.name, item: `${siteUrlCtx}/category/${category.slug}` },
+    ...breadcrumbPath.map((sub, index) => ({
+      '@type': 'ListItem' as const,
+      position: index + 3,
+      name: sub.name,
+      item: `${siteUrlCtx}/category/${category.slug}/${breadcrumbPath.slice(0, index + 1).map(s => s.slug).join('/')}`,
+    })),
+  ]
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbItems,
+  }
+
   return (
     <>
       <Header categories={allCategories} />
       <main className="min-h-screen bg-white">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="mb-6 text-sm text-muted-foreground">

@@ -489,10 +489,26 @@ function CategoryPage() {
     )
   }
 
+  const siteUrlCtx = typeof window !== 'undefined' ? window.location.origin : 'https://www.segunbangla.com'
+  const categoryUrl = `${siteUrlCtx}/category/${category.slug}`
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'হোম', item: siteUrlCtx },
+      { '@type': 'ListItem', position: 2, name: category.name, item: categoryUrl },
+    ],
+  }
+
   return (
     <>
       <Header categories={allCategories} />
       <main className="min-h-screen bg-white">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* ── Category Header ─────────────────────────────────────────────── */}
           <div className="mb-8 flex items-center gap-3">

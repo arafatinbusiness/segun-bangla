@@ -1,4 +1,4 @@
-# Robots.txt for Segun Bangla News Portal
+# Robots.txt for Segun Bangla (segunbangla.com)
 # https://www.robotstxt.org/
 
 # Allow all bots by default
@@ -8,7 +8,10 @@ Allow: /
 # Disallow admin and private areas
 Disallow: /admin/
 Disallow: /profile/
+Disallow: /login/
+Disallow: /register/
 Disallow: /api/
+Disallow: /search/
 Disallow: /*.json$
 
 # Specific rules for common crawlers
@@ -31,4 +34,4 @@ Allow: /category/
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://www.segunbangla.com/sitemap.xml
