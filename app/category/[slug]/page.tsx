@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { getCategoryBySlug, getSubcategoriesByCategory, getAllCategories } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'
 
@@ -48,13 +47,10 @@ function HeroMainCard({ article }: { article: FirestoreArticle }) {
   return (
     <Link href={`/article/${article.slug}`} className="group block relative w-full h-full min-h-[380px] md:min-h-[520px] rounded-lg overflow-hidden bg-gray-100">
       {article.imageUrl ? (
-        <Image
+        <img
           src={article.imageUrl}
           alt={article.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center text-gray-300">
@@ -80,12 +76,10 @@ function SecondaryFeatureCard({ article }: { article: FirestoreArticle }) {
     <Link href={`/article/${article.slug}`} className="group block">
       <div className="relative h-44 md:h-52 w-full rounded-lg overflow-hidden bg-gray-100 mb-3">
         {article.imageUrl ? (
-          <Image
+          <img
             src={article.imageUrl}
             alt={article.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 768px) 100vw, 25vw"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -181,12 +175,10 @@ function GridCard({ article }: { article: FirestoreArticle }) {
       {/* ইমেজ (উপরে) */}
       <div className="relative h-44 w-full rounded-lg overflow-hidden bg-gray-100 mb-3">
         {article.imageUrl ? (
-          <Image
+          <img
             src={article.imageUrl}
             alt={article.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -245,12 +237,10 @@ function ListRow({ article }: { article: FirestoreArticle }) {
         <div className="w-2/5 shrink-0">
           <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100">
             {article.imageUrl ? (
-              <Image
+              <img
                 src={article.imageUrl}
                 alt={article.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="20vw"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-300">

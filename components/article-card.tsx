@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import type { FirestoreArticle } from '@/lib/types'
 
 interface ArticleCardProps {
@@ -20,12 +19,10 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
         <Link href={`/article/${article.slug}`}>
           <div className="relative h-48 md:h-64 w-full overflow-hidden rounded-lg bg-muted mb-4">
             {article.imageUrl ? (
-              <Image
+              <img
                 src={article.imageUrl}
                 alt={article.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
@@ -50,12 +47,10 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
         <Link href={`/article/${article.slug}`} className="flex-shrink-0">
           <div className="relative h-20 w-24 md:h-24 md:w-32 rounded overflow-hidden bg-muted">
             {article.imageUrl ? (
-              <Image
+              <img
                 src={article.imageUrl}
                 alt={article.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="128px"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
@@ -81,19 +76,17 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
   const cardImageAspect = article.imageSize === 'portrait' ? 'aspect-[3/4]' :
     article.imageSize === 'square' ? 'aspect-square' : 'aspect-video'
   const imageFocusStyle = article.imageFocus?.replace(/-/g, ' ') || 'center'
-  
+
   return (
     <article className="group">
       <Link href={`/article/${article.slug}`}>
         <div className={`relative w-full ${cardImageAspect} overflow-hidden rounded bg-gray-100 mb-2`}>
           {article.imageUrl ? (
-            <Image
+            <img
               src={article.imageUrl}
               alt={article.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               style={{ objectPosition: imageFocusStyle }}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">

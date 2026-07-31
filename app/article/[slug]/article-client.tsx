@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import Image from 'next/image'
 import { getArticleBySlug, getRecentArticles } from '@/lib/services/article-queries'
 import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
 import { Header } from '@/components/header'
@@ -242,12 +241,11 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                 {/* Left: Source Logo + Name + Date */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-muted border shrink-0 flex items-center justify-center">
-                    <Image
+                    <img
                       src="/favicon.png"
                       alt="সেগুন বাংলা"
-                      width={40}
-                      height={40}
                       className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png' }}
                     />
                   </div>
                   <div className="flex flex-col">
@@ -322,13 +320,10 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                     article.imageSize === 'square' ? 'aspect-square' :
                     article.imageSize === 'full' ? '' : 'aspect-video'
                   }`}>
-                    <Image
+                    <img
                       src={article.imageUrl}
                       alt={article.title}
-                      fill
-                      priority
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 1024px"
-                      className="object-cover"
+                      className="w-full h-full object-cover"
                       style={{ objectPosition: article.imageFocus?.replace(/-/g, ' ') || 'center' }}
                     />
                   </div>

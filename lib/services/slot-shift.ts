@@ -56,7 +56,7 @@ export async function autoShiftSlots(targetSlot: number, newArticleId: string): 
   }
 
   const newSlots: Record<string, string> = {}
-  for (let i = 0; i < TOTAL_SLOTS; i++) { if (newOrder[i]) newSlots[SLOT_KEYS[i]] = newOrder[i] as string }
+  for (let i = 0; i < TOTAL_SLOTS; i++) { if (newOrder[i]) newSlots[SLOT_KEYS[i]] = newOrder[i] }
 
   const oldIds: string[] = oldOrder.filter((id): id is string => !!id)
   const newIds: string[] = newOrder.filter((id): id is string => !!id)
@@ -88,7 +88,7 @@ export async function reverseShiftSlots(removedSlot: number): Promise<void> {
     if (oldOrder[oldIdx] && oldOrder[oldIdx] !== removedId) { newOrder[newIdx] = oldOrder[oldIdx]; newIdx++ }
   }
   const newSlots: Record<string, string> = {}
-  for (let i = 0; i < TOTAL_SLOTS; i++) { if (newOrder[i]) newSlots[SLOT_KEYS[i]] = newOrder[i] as string }
+  for (let i = 0; i < TOTAL_SLOTS; i++) { if (newOrder[i]) newSlots[SLOT_KEYS[i]] = newOrder[i] }
   await setDoc(doc(db, 'settings', 'slot-assignments'), newSlots)
   for (let i = 0; i < TOTAL_SLOTS; i++) {
     const id = newOrder[i]

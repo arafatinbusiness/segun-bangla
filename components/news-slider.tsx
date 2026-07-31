@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import Image from 'next/image'
 import type { FirestoreArticle } from '@/lib/types'
 
 interface Props { articles: FirestoreArticle[]; name: string; slug: string }
@@ -74,14 +73,7 @@ export function NewsSlider({ articles, name, slug }: Props) {
               <a href={`/article/${a.slug}`} className="block group bg-[#F0F6FF] rounded-lg overflow-hidden hover:shadow-md transition-shadow h-full">
                 <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
                   {a.imageUrl ? (
-                    <Image
-                      src={a.imageUrl}
-                      alt={a.title}
-                      fill
-                      sizes="(max-width: 640px) 130px, (max-width: 1024px) 150px, 165px"
-                      className="object-cover group-hover:scale-105 transition duration-300"
-                      loading="lazy"
-                    />
+                    <img src={a.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-300">
                       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>

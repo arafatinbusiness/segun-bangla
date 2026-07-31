@@ -1,8 +1,12 @@
 import type { Metadata, Viewport } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth-context'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
+
+const _geist = Geist({ subsets: ["latin"] });
+const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.segunbangla.com'
 const siteName = 'সেগুন বাংলা'
@@ -155,14 +159,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        {/* DNS prefetch + preconnect for faster connections */}
+        {/* DNS prefetch for performance */}
         <link rel="dns-prefetch" href={siteUrl} />
         <link rel="preconnect" href={siteUrl} />
-        <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
-        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
-        {/* Preload critical resources */}
-        <link rel="preload" href="/logo.png" as="image" />
-        <link rel="preload" href="/fonts/SolaimanLipi.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <meta name="geo.country" content="BD" />
         <meta name="geo.placename" content="Bangladesh" />
       </head>
