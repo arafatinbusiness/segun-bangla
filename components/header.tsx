@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
-import { User, Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
+import { Search, Youtube, Facebook, ChevronDown } from 'lucide-react'
 
 const DEPLOY_VERSION = ''
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { useAuth } from '@/lib/auth-context'
+// Auth removed from public header
 import { getSubcategoriesByCategory } from '@/lib/services/categories'
 import { getArticlesByCategory } from '@/lib/services/article-queries'
 import type { Category, Subcategory, FirestoreArticle } from '@/lib/types'
@@ -54,7 +54,6 @@ export function Header({ categories }: HeaderProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const topSectionRef = useRef<HTMLDivElement>(null)
   const dateBarRef = useRef<HTMLDivElement>(null)
-  const { isAuthenticated, profile } = useAuth()
 
   // Pure CSS sticky behavior — like Prothom Alo, zero vibration
   // Logo/date bar = normal flow (scrolls away naturally).
@@ -121,18 +120,7 @@ export function Header({ categories }: HeaderProps) {
               <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-1.5 py-0.5 rounded">{DEPLOY_VERSION}</span>
             </div>
             <div className="flex gap-4 items-center text-xs">
-              {isAuthenticated ? (
-                <>
-                  <span className="text-white/70">{profile?.displayName}</span>
-                  <Link href="/profile" className="hover:text-white flex items-center gap-1 text-white/70"><User size={14} /> প্রোফাইল</Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" className="hover:text-white text-white/70">লগইন</Link>
-                  <Link href="/register" className="hover:text-white text-white/70">নিবন্ধন</Link>
-                </>
-              )}
-              <a href="#" className="hover:text-white text-white/70">সাবস্ক্রাইব</a>
+              <span className="text-[10px] font-bold text-yellow-300 bg-yellow-900/30 px-2 py-0.5 rounded border border-yellow-600/40">পরীক্ষামূলক</span>
             </div>
           </div>
         </div>
