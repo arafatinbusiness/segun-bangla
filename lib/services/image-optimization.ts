@@ -5,7 +5,7 @@
  */
 
 export interface ImageOptimizationConfig {
-  quality: number // 1-100, default 75
+  quality?: number // 1-100, default 75
   width?: number
   height?: number
   format?: 'webp' | 'jpeg' | 'png' | 'avif'

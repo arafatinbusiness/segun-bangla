@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getLeadArticles, getFeaturedArticles, getSpecialArticles, getRecentArticles, getAllArticles } from '@/lib/services/article-queries'
@@ -10,11 +11,19 @@ import { getAllCategories } from '@/lib/services/categories'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ArticleCard } from '@/components/article-card'
-import { AdRenderer } from '@/components/ad-renderer'
-import { NewsSlider } from '@/components/news-slider'
 import { useTheme } from '@/components/theme-provider'
 import type { FirestoreArticle } from '@/lib/types'
 import type { Category } from '@/lib/types'
+
+// Dynamically load heavy components to reduce initial bundle size
+const AdRenderer = dynamic(() => import('@/components/ad-renderer').then(m => m.AdRenderer), {
+  ssr: false,
+  loading: () => null,
+})
+const NewsSlider = dynamic(() => import('@/components/news-slider').then(m => m.NewsSlider), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-32" />,
+})
 
 interface ExcerptConfig {
   heroExcerpt: boolean; leadExcerpt: boolean; transitionalExcerpt: boolean
@@ -96,7 +105,7 @@ function HomePage() {
           getFeaturedArticles(5).catch(() => []),
           getSpecialArticles(50),
           getRecentArticles(10).catch(() => []),
-          getAllArticles(200).catch(() => []),
+          getAllArticles(80).catch(() => []),
           getAllCategories(),
           getDoc(doc(db, 'settings', 'homepage-excerpts')).catch(() => null),
           getDoc(doc(db, 'settings', 'category-sliders')).catch(() => null),

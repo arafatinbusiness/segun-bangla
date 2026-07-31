@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import { getArticleBySlug, getRecentArticles } from '@/lib/services/article-queries'
 import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
 import { Header } from '@/components/header'
@@ -160,21 +161,36 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
           {/* Article Header */}
           <article className="article-page">
             <div className="mb-8">
-              {/* Category Breadcrumb (no subcategories) */}
-              {article.categoryIds && article.categoryIds.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+              {/* Category + Subcategory Breadcrumb */}
+              {(article.categoryIds && article.categoryIds.length > 0) && (
+                <div className="flex flex-wrap items-center gap-2 mb-4">
                   {article.categoryIds.map((catId, idx) => {
                     const cat = categories.find(c => c.id === catId)
                     if (!cat) return null
+                    const relatedSubs = subcategories.filter(s => s.categoryId === catId)
+                    const articleSubs = (article.subcategoryIds || [])
+                      .map(subId => relatedSubs.find(s => s.id === subId))
+                      .filter((s): s is Subcategory => Boolean(s))
                     return (
-                      <span key={catId} className="flex items-center gap-2">
-                        {idx > 0 && <span className="text-muted-foreground/40">|</span>}
+                      <span key={catId} className="flex flex-wrap items-center gap-2">
+                        {idx > 0 && <span className="text-muted-foreground/40 text-lg">|</span>}
                         <a
                           href={`/category/${cat.slug}`}
-                          className="text-[#FF0000] text-xs font-bold uppercase tracking-wider hover:underline"
+                          className="inline-block text-[#FF0000] text-base font-extrabold uppercase tracking-wide hover:underline hover:text-[#CC0000] transition-colors px-3 py-1 rounded-md bg-red-50 hover:bg-red-100"
                         >
                           {cat.name}
                         </a>
+                        {articleSubs.length > 0 && articleSubs.map((sub) => (
+                          <span key={sub.id} className="flex items-center gap-2">
+                            <span className="text-muted-foreground/40 text-lg">/</span>
+                            <a
+                              href={`/category/${cat.slug}/${sub.slug}`}
+                              className="inline-block text-base font-bold text-[#8B0000] hover:text-[#FF0000] transition-colors px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200"
+                            >
+                              {sub.name}
+                            </a>
+                          </span>
+                        ))}
                       </span>
                     )
                   })}
@@ -226,11 +242,12 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                 {/* Left: Source Logo + Name + Date */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-muted border shrink-0 flex items-center justify-center">
-                    <img
+                    <Image
                       src="/favicon.png"
                       alt="সেগুন বাংলা"
+                      width={40}
+                      height={40}
                       className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png' }}
                     />
                   </div>
                   <div className="flex flex-col">
@@ -305,10 +322,13 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                     article.imageSize === 'square' ? 'aspect-square' :
                     article.imageSize === 'full' ? '' : 'aspect-video'
                   }`}>
-                    <img
+                    <Image
                       src={article.imageUrl}
                       alt={article.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      priority
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 1024px"
+                      className="object-cover"
                       style={{ objectPosition: article.imageFocus?.replace(/-/g, ' ') || 'center' }}
                     />
                   </div>
