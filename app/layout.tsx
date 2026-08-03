@@ -164,6 +164,18 @@ export default function RootLayout({
         <link rel="preconnect" href={siteUrl} />
         <meta name="geo.country" content="BD" />
         <meta name="geo.placename" content="Bangladesh" />
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-71ES9GL54Y" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-71ES9GL54Y');
+            `,
+          }}
+        />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <AuthProvider>
