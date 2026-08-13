@@ -58,7 +58,6 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
               </div>
             )}
           </div>
-
         </Link>
         <div className="flex-1 flex flex-col justify-between">
           <Link href={`/article/${article.slug}`}>
@@ -72,7 +71,6 @@ export function ArticleCard({ article, variant = 'default' }: ArticleCardProps) 
     )
   }
 
-  // Default card
   const cardImageAspect = article.imageSize === 'portrait' ? 'aspect-[3/4]' :
     article.imageSize === 'square' ? 'aspect-square' : 'aspect-video'
   const imageFocusStyle = article.imageFocus?.replace(/-/g, ' ') || 'center'

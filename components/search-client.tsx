@@ -20,7 +20,7 @@ export function SearchClient({ categories, initialQuery, allArticles }: SearchCl
     initialQuery ? { query: initialQuery, sortBy: 'recent', category: 'all', dateRange: 'all' } : null
   )
 
-  // প্রাথমিক সার্চ বা URL থেকে কুয়েরি থাকলে ফিল্টার রান করা
+  // প্রাথমিক সার্চ বা URL থেকে কুয়েরি থাকলে ফিল্টার রান করা
   useEffect(() => {
     if (initialQuery) {
       handleSearch({
@@ -50,22 +50,24 @@ export function SearchClient({ categories, initialQuery, allArticles }: SearchCl
         )
       }
 
-      // ২. ক্যাটাগরি ফিল্টার
-      if (filters.category && filters.category !== 'all') {
+      // ২. ক্যাটাগরি ফিল্টার (undefined হ্যান্ডেল করার জন্য 'all' ফলব্যাক দেওয়া হয়েছে)
+      const selectedCategory = filters.category ?? 'all'
+      if (selectedCategory !== 'all') {
         filtered = filtered.filter(
           (article) =>
-            article.categoryId === filters.category ||
-            article.categoryIds?.includes(filters.category)
+            article.categoryId === selectedCategory ||
+            article.categoryIds?.includes(selectedCategory)
         )
       }
 
-      // ৩. তারিখ বা সময়কাল ফিল্টার
-      if (filters.dateRange && filters.dateRange !== 'all') {
+      // ৩. তারিখ বা সময়কাল ফিল্টার
+      const selectedDateRange = filters.dateRange ?? 'all'
+      if (selectedDateRange !== 'all') {
         const now = Date.now()
         let limitTime = now
-        if (filters.dateRange === 'week') limitTime = now - 7 * 24 * 60 * 60 * 1000
-        else if (filters.dateRange === 'month') limitTime = now - 30 * 24 * 60 * 60 * 1000
-        else if (filters.dateRange === 'year') limitTime = now - 365 * 24 * 60 * 60 * 1000
+        if (selectedDateRange === 'week') limitTime = now - 7 * 24 * 60 * 60 * 1000
+        else if (selectedDateRange === 'month') limitTime = now - 30 * 24 * 60 * 60 * 1000
+        else if (selectedDateRange === 'year') limitTime = now - 365 * 24 * 60 * 60 * 1000
 
         filtered = filtered.filter((article) => {
           const pubTime =
@@ -76,8 +78,9 @@ export function SearchClient({ categories, initialQuery, allArticles }: SearchCl
         })
       }
 
-      // ৪. সর্টিং (জনপ্রিয় বা সাম্প্রতিক)
-      if (filters.sortBy === 'popular') {
+      // ৪. সর্টিং (জনপ্রিয় বা সাম্প্রতিক)
+      const selectedSort = filters.sortBy ?? 'recent'
+      if (selectedSort === 'popular') {
         filtered.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
       } else {
         filtered.sort((a, b) => {
@@ -90,12 +93,12 @@ export function SearchClient({ categories, initialQuery, allArticles }: SearchCl
       setResults(filtered)
       setAppliedFilters(filters)
 
-      // URL আপডেট করা (ফুল পেজ রিলোড ছাড়া)
+      // URL আপডেট করা (ফুল পেজ রিলোড ছাড়া)
       const params = new URLSearchParams()
       if (filters.query) params.set('q', filters.query)
-      if (filters.category && filters.category !== 'all') params.set('category', filters.category)
-      if (filters.sortBy && filters.sortBy !== 'recent') params.set('sort', filters.sortBy)
-      if (filters.dateRange && filters.dateRange !== 'all') params.set('date', filters.dateRange)
+      if (selectedCategory !== 'all') params.set('category', selectedCategory)
+      if (selectedSort !== 'recent') params.set('sort', selectedSort)
+      if (selectedDateRange !== 'all') params.set('date', selectedDateRange)
 
       router.push(`/search?${params.toString()}`, { scroll: false })
     } catch (error) {
@@ -140,7 +143,7 @@ export function SearchClient({ categories, initialQuery, allArticles }: SearchCl
               কোনো নিবন্ধ পাওয়া যায়নি।
             </p>
             <p className="text-muted-foreground text-sm">
-              অন্য কোনো শব্দ বা প্রথম দিককার পুরোনো কিওয়ার্ড দিয়ে চেষ্টা করুন।
+              অন্য কোনো শব্দ বা প্রথম দিককার পুরোনো কিওয়ার্ড দিয়ে চেষ্টা করুন।
             </p>
           </div>
         )}
