@@ -31,7 +31,19 @@ function ArticlesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+const [searchQuery, setSearchQuery] = useState('')
+const [debouncedSearch, setDebouncedSearch] = useState('')
+
+// টাইপ করার সময় একটু বিরতি দেওয়ার জন্য (Debounce)
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(searchQuery)
+    setCurrentPage(1)
+    setPageCursors([null])
+  }, 400)
+
+  return () => clearTimeout(timer)
+}, [searchQuery])
 
   const [deleting, setDeleting] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -42,7 +54,7 @@ function ArticlesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageCursors, setPageCursors] = useState<any[]>([null])
 
-  const fetchData = useCallback(async (page: number) => {
+const fetchData = useCallback(async (page: number, currentSearch: string) => {
     if (page === 1) {
       setLoading(true)
     } else {
@@ -52,7 +64,7 @@ function ArticlesPage() {
       const cursor = pageCursors[page - 1] || null
       const [categoriesData, result] = await Promise.all([
         getAllCategories(),
-        getAdminArticles(PAGE_SIZE, cursor),
+        getAdminArticles(PAGE_SIZE, cursor, currentSearch),
       ])
       setCategories(categoriesData)
       setArticles(result.articles)
@@ -67,8 +79,8 @@ function ArticlesPage() {
   }, [pageCursors])
 
   useEffect(() => {
-    fetchData(currentPage)
-  }, [currentPage, fetchData])
+    fetchData(currentPage, debouncedSearch)
+  }, [currentPage, debouncedSearch, fetchData])
 
   const getCategoryNames = (article: FirestoreArticle): string => {
     const ids = article.categoryIds || (article.categoryId ? [article.categoryId] : [])
@@ -78,10 +90,7 @@ function ArticlesPage() {
     }).join(', ')
   }
 
-  const filteredArticles = articles.filter((article) => {
-    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
-  })
+const filteredArticles = articles
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -259,36 +268,36 @@ function ArticlesPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                         </Link>
-                        {article.editHistory && article.editHistory.length > 0 && (
-                          <div className="relative group">
-                            <button className="p-2 text-muted-foreground/60 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950" title="History">
-                              <History className="w-4 h-4" />
-                            </button>
-                            <div className="absolute right-0 top-full mt-1 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                              <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                                <h4 className="text-sm font-semibold text-foreground">Edit History</h4>
-                              </div>
-                              <div className="max-h-60 overflow-y-auto">
-                                {[...article.editHistory].reverse().map((entry, idx) => (
-                                  <div key={idx} className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
-                                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
-                                      entry.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                      entry.action === 'published' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                      entry.action === 'updated' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                                      'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                                    }`}>
-                                      {entry.action === 'created' ? 'Created' : entry.action === 'published' ? 'Published' : entry.action === 'updated' ? 'Updated' : 'Unpublished'}
-                                    </span>
-                                    <p className="text-xs text-foreground mt-1">{entry.editorName}</p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      {new Date(entry.timestamp).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
+              {article.editHistory && article.editHistory.length > 0 && (
+  <div className="relative">
+    <button className="p-2 text-muted-foreground/60 hover:text-amber-600 transition-colors rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950 peer" title="History">
+      <History className="w-4 h-4" />
+    </button>
+    <div className="absolute right-0 top-full mt-1 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-150 z-50 pointer-events-none peer-hover:pointer-events-auto hover:pointer-events-auto">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+        <h4 className="text-sm font-semibold text-foreground">Edit History</h4>
+      </div>
+      <div className="max-h-60 overflow-y-auto">
+        {[...article.editHistory].reverse().map((entry, idx) => (
+          <div key={idx} className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
+            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+              entry.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+              entry.action === 'published' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+              entry.action === 'updated' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+              'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+            }`}>
+              {entry.action === 'created' ? 'Created' : entry.action === 'published' ? 'Published' : entry.action === 'updated' ? 'Updated' : 'Unpublished'}
+            </span>
+            <p className="text-xs text-foreground mt-1">{entry.editorName}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {new Date(entry.timestamp).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <button className="p-2 text-muted-foreground/60 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-950" title="Delete">

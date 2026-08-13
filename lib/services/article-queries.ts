@@ -388,24 +388,52 @@ export async function getAllArticles(limitCount: number = 1000): Promise<Firesto
 
 export async function getAdminArticles(
   limitCount: number = 20,
-  lastDoc?: any
+  lastDoc?: any,
+  searchTerm?: string
 ): Promise<{ articles: FirestoreArticle[]; lastVisible: any; hasMore: boolean }> {
   try {
     let q
-    if (lastDoc) {
-      q = query(
-        collection(db, ARTICLES_COLLECTION),
-        orderBy('updatedAt', 'desc'),
-        startAfter(lastDoc),
-        limit(limitCount)
-      )
+    const collectionRef = collection(db, ARTICLES_COLLECTION)
+
+    if (searchTerm && searchTerm.trim() !== '') {
+      const lowerSearch = searchTerm.trim().toLowerCase()
+      const endText = lowerSearch + '\uf8ff'
+
+      if (lastDoc) {
+        q = query(
+          collectionRef,
+          orderBy('title'),
+          where('title', '>=', lowerSearch),
+          where('title', '<=', endText),
+          startAfter(lastDoc),
+          limit(limitCount)
+        )
+      } else {
+        q = query(
+          collectionRef,
+          orderBy('title'),
+          where('title', '>=', lowerSearch),
+          where('title', '<=', endText),
+          limit(limitCount)
+        )
+      }
     } else {
-      q = query(
-        collection(db, ARTICLES_COLLECTION),
-        orderBy('updatedAt', 'desc'),
-        limit(limitCount)
-      )
+      if (lastDoc) {
+        q = query(
+          collectionRef,
+          orderBy('updatedAt', 'desc'),
+          startAfter(lastDoc),
+          limit(limitCount)
+        )
+      } else {
+        q = query(
+          collectionRef,
+          orderBy('updatedAt', 'desc'),
+          limit(limitCount)
+        )
+      }
     }
+
     const snapshot = await getDocs(q)
     const articles = snapshot.docs.map((doc) => ({
       ...doc.data(),
