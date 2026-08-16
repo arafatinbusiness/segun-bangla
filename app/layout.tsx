@@ -10,28 +10,25 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.segunbangla.com'
 const siteName = 'সেগুন বাংলা'
-const siteDescription = 'সেগুন বাংলায় পান সর্বশেষ বাংলাদেশ এবং আন্তর্জাতিক সংবাদ। রাজনীতি, ক্রীড়া, বিনোদন, ব্যবসা, চাকরি, আবহাওয়া, খেলাধুলা এবং প্রযুক্তির খবর পড়ুন।'
+const siteDescription = 'বাংলা নিউজ, গালফ নিউজ ও বিশ্ব সংবাদ এর সর্বশেষ আপডেট। বাংলাদেশ, মধ্যপ্রাচ্য ও আন্তর্জাতিক রাজনীতি, অর্থনীতি, বিনোদন এবং প্রযুক্তির খবরের নির্ভরযোগ্য উৎস।'
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteName} - বাংলাদেশের শীর্ষস্থানীয় সংবাদ পোর্টাল`,
+    default: `${siteName} - বাংলা নিউজ | Gulf News | World News Bangla`,
     template: `%s - ${siteName}`,
   },
   description: siteDescription,
   generator: 'Next.js',
   keywords: [
+    'বাংলা নিউজ',
+    'gulf news',
+    'world news bangla',
     'সেগুন বাংলা',
     'bangla news',
     'বাংলা খবর',
     'আজকের খবর',
     'bangladesh news',
-    'বাংলাদেশের খবর',
-    'খবর',
-    'khobor',
-    'আবহাওয়ার খবর',
-    'চাকরির খবর',
-    'পে স্কেল',
-    'খেলার খবর',
+    'মধ্যপ্রাচ্যের খবর',
     'আন্তর্জাতিক খবর',
     'রাজনীতি',
     'ক্রীড়া',
@@ -39,7 +36,6 @@ export const metadata: Metadata = {
     'ব্রেকিং নিউজ',
     'live news',
     'today news',
-    'latest news bangladesh',
   ],
   authors: [
     {
@@ -93,7 +89,7 @@ export const metadata: Metadata = {
   },
   category: 'news',
   other: {
-    'fb:app_id': '', // Add Facebook app ID if you have one
+    'fb:app_id': '',
   },
 }
 
@@ -119,10 +115,7 @@ export default function RootLayout({
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     sameAs: [
-      // Add social media URLs when available
-      // 'https://facebook.com/...',
-      // 'https://youtube.com/...',
-      // 'https://twitter.com/...',
+      'https://www.facebook.com/profile.php?id=61589151984086',
     ],
     description: siteDescription,
     foundingDate: '2024',
@@ -159,12 +152,10 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        {/* DNS prefetch for performance */}
         <link rel="dns-prefetch" href={siteUrl} />
         <link rel="preconnect" href={siteUrl} />
         <meta name="geo.country" content="BD" />
         <meta name="geo.placename" content="Bangladesh" />
-        {/* Google Analytics */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-71ES9GL54Y" />
         <script
           dangerouslySetInnerHTML={{
