@@ -142,7 +142,7 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="bn" className="bg-background">
+    <html lang="bn" className="bg-background" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
