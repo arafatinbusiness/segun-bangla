@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   getOptimizedImageUrl,
   getThumbnailImage,
@@ -49,7 +49,7 @@ export function OptimizedImage({
   }
 
   // Generate blur placeholder on mount if enabled
-  React.useEffect(() => {
+  useEffect(() => {
     if (blurPlaceholder && !blurUrl) {
       generateBlurPlaceholder(src).then(setBlurUrl)
     }

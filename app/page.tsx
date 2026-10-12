@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react'
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { getLeadArticles, getFeaturedArticles, getSpecialArticles, getRecentArticles, getAllArticles } from '@/lib/services/article-queries'
+import { getLeadArticles, getFeaturedArticles, getSpecialArticles, getRecentArticles, getAllArticles, getArticlesByCategory } from '@/lib/services/article-queries'
+import { logCategoryDiagnostics } from '@/lib/services/category-diagnostics'
 import { getSlotAssignments } from '@/lib/services/slot-shift'
 import { getAllCategories } from '@/lib/services/categories'
 import { Header } from '@/components/header'
@@ -84,6 +85,7 @@ function HomePage() {
   const [typography, setTypography] = useState<TypographyConfig>(DEFAULT_TYPOGRAPHY)
   const [sliderConfig, setSliderConfig] = useState<Record<string, boolean>>({})
   const [homeSlots, setHomeSlots] = useState<(FirestoreArticle | null)[]>(new Array(11).fill(null))
+  const [categoryArticlesMap, setCategoryArticlesMap] = useState<Record<string, FirestoreArticle[]>>({})
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,6 +125,56 @@ function HomePage() {
           }
         }
         setHomeSlots(slots)
+
+        // Dedicated category article fetch & auto-heal:
+        // Generic getAllArticles(200) only holds recent articles across all categories combined.
+        // Over weeks/months, older articles in dedicated rows (like Jatiyo & Rajniti) get pushed
+        // past the 200 cutoff by other categories, causing missing slots in the row.
+        // Querying specifically per category ensures all 7 article slots + 1 social card are always filled.
+        const catMap: Record<string, FirestoreArticle[]> = {}
+        const topCategories = (categoriesData || []).slice(0, 6)
+
+        await Promise.all(
+          topCategories.map(async (cat) => {
+            const matchedFromGenericPool = (allData || []).filter(
+              a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id
+            )
+
+            const isKeyCategory =
+              cat.name?.includes('জাতীয়') ||
+              cat.name?.includes('জাতীয়') ||
+              cat.name?.includes('রাজনীতি') ||
+              cat.slug === 'national' ||
+              cat.slug === 'jatiyo' ||
+              cat.slug === 'politics' ||
+              cat.slug === 'rajniti'
+
+            if (isKeyCategory || matchedFromGenericPool.length < 8) {
+              try {
+                const directCategoryArticles = await getArticlesByCategory(cat.id, 8)
+                if (directCategoryArticles && directCategoryArticles.length > 0) {
+                  catMap[cat.id] = directCategoryArticles
+                  logCategoryDiagnostics(
+                    cat.name,
+                    cat.id,
+                    directCategoryArticles,
+                    allData?.length || 0,
+                    directCategoryArticles.length
+                  )
+                } else {
+                  catMap[cat.id] = matchedFromGenericPool
+                  logCategoryDiagnostics(cat.name, cat.id, matchedFromGenericPool, allData?.length || 0)
+                }
+              } catch (err) {
+                console.error(`[Diagnostics] Error fetching articles for ${cat.name}:`, err)
+                catMap[cat.id] = matchedFromGenericPool
+              }
+            } else {
+              catMap[cat.id] = matchedFromGenericPool
+            }
+          })
+        )
+        setCategoryArticlesMap(catMap)
       } catch (error) {
         console.error('[v0] Error loading home page:', error)
         setError(true)
@@ -247,8 +299,8 @@ function HomePage() {
               </div>
             </div>
             <div className="mt-6 pt-4 border-t border-gray-200">
-              {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((cat, ci) => {
-                const arts = allArticles.filter(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id).slice(0, 7)
+              {categories.filter(cat => (categoryArticlesMap[cat.id]?.length || 0) > 0 || allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((cat, ci) => {
+                const arts = (categoryArticlesMap[cat.id] || allArticles.filter(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 7)
                 const lead = arts[0]; const list = arts.slice(1, 7)
                 if (arts.length === 0) return null
                 return (
@@ -329,8 +381,8 @@ function HomePage() {
                 </div>
               </section>
             )}
-            {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category) => {
-              const catArticles = allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id).slice(0, 5)
+            {categories.filter(cat => (categoryArticlesMap[cat.id]?.length || 0) > 0 || allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category) => {
+              const catArticles = (categoryArticlesMap[category.id] || allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id)).slice(0, 5)
               if (catArticles.length === 0) return null
               return (
                 <section key={category.id} className="mb-6 border-t border-gray-200 pt-4">
@@ -435,22 +487,8 @@ return (
           </section>
 
 {/* Category rows */}
-          {categories.filter(cat => allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category, catIndex) => {
-            
-           // Detailed debugging for each article matching this category
-            const catArticles = allArticles.filter(a => {
-              const isMatch = a.categoryIds?.includes(category.id) || a.categoryId === category.id;
-              
-              // Jodi Jatiyo ba Rajniti hoy, tahole log kore dekhbo keno match korche ba korche na
-              if (category.name.includes('জাতীয়') || category.name.includes('জাতীয়') || category.name.includes('রাজনীতি')) {
-                console.log(`[Category: ${category.name}] Article: "${a.title?.substring(0, 20)}..." | Match: ${isMatch} | Article CatID:`, a.categoryId, '| Article CatIDs:', a.categoryIds, '| Target ID:', category.id);
-              }
-              
-              return isMatch;
-            });
-
-            console.log(`===> Final Matched for ${category.name}: ${catArticles.length} articles`);
-
+          {categories.filter(cat => (categoryArticlesMap[cat.id]?.length || 0) > 0 || allArticles.some(a => a.categoryIds?.includes(cat.id) || a.categoryId === cat.id)).slice(0, 3).map((category, catIndex) => {
+            const catArticles = categoryArticlesMap[category.id] || allArticles.filter(a => a.categoryIds?.includes(category.id) || a.categoryId === category.id)
             const listCA = catArticles.slice(0, 8)
             const sliderEnabled = sliderConfig[category.id] !== false
             const showSlider = sliderEnabled && catArticles.length > 4

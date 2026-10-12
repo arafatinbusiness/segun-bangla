@@ -16,6 +16,7 @@ import {
   Megaphone,
   Wrench,
   ChevronRight,
+  Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -54,6 +55,11 @@ const navItems = [
     label: 'Settings',
     href: '/admin/settings',
     icon: Settings,
+  },
+  {
+    label: 'Diagnostics',
+    href: '/admin/diagnostics',
+    icon: Activity,
   },
   {
     label: 'Tools',

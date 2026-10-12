@@ -160,7 +160,9 @@ export async function getArticlesByCategory(
   pageSize: number = 12,
   pageNumber: number = 0
 ): Promise<FirestoreArticle[]> {
-  // Try array-contains first (new format), fallback to single categoryId (old format)
+  const articlesMap = new Map<string, FirestoreArticle>()
+
+  // 1. Try array-contains query first (new format supporting multiple categories)
   try {
     const q = query(
       collection(db, ARTICLES_COLLECTION),
@@ -171,36 +173,44 @@ export async function getArticlesByCategory(
       limit(pageSize)
     )
     const snapshot = await getDocs(q)
-    if (!snapshot.empty) {
-      return snapshot.docs.map((doc) => ({
+    snapshot.docs.forEach((doc) => {
+      articlesMap.set(doc.id, {
         ...doc.data(),
         docId: doc.id,
-      })) as FirestoreArticle[]
-    }
+      } as FirestoreArticle)
+    })
   } catch (e) {
-    // array-contains query may fail if index doesn't exist - fall through to fallback
     console.warn('[v0] categoryIds query failed, trying categoryId fallback:', e)
   }
 
-  // Fallback: try single categoryId for backward compatibility
-  try {
-    const fallbackQ = query(
-      collection(db, ARTICLES_COLLECTION),
-      where('categoryId', '==', categoryId),
-      where('status', '==', 'published'),
-      where('publishedAt', '<=', Date.now()),
-      orderBy('publishedAt', 'desc'),
-      limit(pageSize)
-    )
-    const fallbackSnapshot = await getDocs(fallbackQ)
-    return fallbackSnapshot.docs.map((doc) => ({
-      ...doc.data(),
-      docId: doc.id,
-    })) as FirestoreArticle[]
-  } catch (error) {
-    console.error('[v0] Error fetching articles by category (fallback):', error)
-    return []
+  // 2. If we haven't reached pageSize, also query by single categoryId to catch legacy articles
+  if (articlesMap.size < pageSize) {
+    try {
+      const fallbackQ = query(
+        collection(db, ARTICLES_COLLECTION),
+        where('categoryId', '==', categoryId),
+        where('status', '==', 'published'),
+        where('publishedAt', '<=', Date.now()),
+        orderBy('publishedAt', 'desc'),
+        limit(pageSize)
+      )
+      const fallbackSnapshot = await getDocs(fallbackQ)
+      fallbackSnapshot.docs.forEach((doc) => {
+        if (!articlesMap.has(doc.id)) {
+          articlesMap.set(doc.id, {
+            ...doc.data(),
+            docId: doc.id,
+          } as FirestoreArticle)
+        }
+      })
+    } catch (error) {
+      console.error('[v0] Error fetching articles by category (fallback):', error)
+    }
   }
+
+  const combined = Array.from(articlesMap.values())
+  combined.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0))
+  return combined.slice(0, pageSize)
 }
 
 
