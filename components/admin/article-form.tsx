@@ -11,7 +11,7 @@ import { SlugInput } from '@/components/ui/slug-input'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { generateCleanSlug } from '@/lib/slug-utils'
 import { uploadArticleImage, validateImageFile } from '@/lib/services/image-upload'
-import { ImagePlus, Upload, X, Link as LinkIcon } from 'lucide-react'
+import { ImagePlus, Upload, X, Link as LinkIcon, ChevronDown } from 'lucide-react'
 import { CategoryPanel } from '@/components/admin/category-panel'
 import type { Article, Category } from '@/lib/types'
 
@@ -46,6 +46,7 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [bulletPointsOpen, setBulletPointsOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -299,69 +300,98 @@ export function ArticleForm({ article, categories, onSubmit, isLoading }: Articl
           </div>
         </div>
 
-        {/* Bullet Points */}
-        <div className="space-y-2">
-          <Label className="text-foreground font-semibold">Bullet Points <span className="text-xs text-muted-foreground font-normal">(key points under title, max 10)</span></Label>
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <div className="flex items-center gap-1" title="Font color">
-              <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.bulletColor || '#374151' }} />
-              <input
-                type="color"
-                value={formData.bulletColor || '#374151'}
-                onChange={(e) => setFormData((prev) => ({ ...prev, bulletColor: e.target.value }))}
-                className="w-0 h-0 opacity-0 absolute pointer-events-none"
-                id="bulletColor"
-              />
-              <label htmlFor="bulletColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Color</label>
+        {/* Bullet Points (collapsible, collapsed by default) */}
+        <div className="rounded-lg border border-border bg-muted/20">
+          <button
+            type="button"
+            onClick={() => setBulletPointsOpen((prev) => !prev)}
+            aria-expanded={bulletPointsOpen}
+            aria-controls="bullet-points-section"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/40 transition-colors rounded-lg"
+          >
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-foreground">Bullet Points</span>
+              <span className="text-xs text-muted-foreground font-normal">(key points under title, max 10)</span>
+              {(() => {
+                const filledCount = (formData.bulletPoints || []).filter((b) => b.trim()).length
+                return filledCount > 0 ? (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    {filledCount} added
+                  </span>
+                ) : null
+              })()}
             </div>
-            <select
-              value={formData.bulletFontSize || 'sm'}
-              onChange={(e) => setFormData((prev) => ({ ...prev, bulletFontSize: e.target.value }))}
-              className="h-6 text-[10px] rounded border bg-background px-1 cursor-pointer"
-              title="Font size"
-            >
-              <option value="xs">XS</option>
-              <option value="sm">S</option>
-              <option value="base">M</option>
-              <option value="lg">L</option>
-              <option value="xl">XL</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            {(formData.bulletPoints?.length ? formData.bulletPoints : ['', '', '']).slice(0, 10).map((point, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground shrink-0 w-4">{idx + 1}.</span>
-                <Input
-                  value={point}
-                  onChange={(e) => {
-                    const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
-                    while (current.length <= idx) current.push('')
-                    current[idx] = e.target.value
-                    const cleaned = current.filter((p, i) => p.trim() || i < 3 || i < current.length - 1)
-                    setFormData((prev) => ({ ...prev, bulletPoints: cleaned }))
-                  }}
-                  placeholder={`Point ${idx + 1}`}
-                  className="w-full text-sm"
-                />
+            <ChevronDown
+              className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                bulletPointsOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {bulletPointsOpen && (
+            <div id="bullet-points-section" className="px-4 pb-4 pt-2 border-t border-border/60 space-y-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-1" title="Font color">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: formData.bulletColor || '#374151' }} />
+                  <input
+                    type="color"
+                    value={formData.bulletColor || '#374151'}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, bulletColor: e.target.value }))}
+                    className="w-0 h-0 opacity-0 absolute pointer-events-none"
+                    id="bulletColor"
+                  />
+                  <label htmlFor="bulletColor" className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">Color</label>
+                </div>
+                <select
+                  value={formData.bulletFontSize || 'sm'}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, bulletFontSize: e.target.value }))}
+                  className="h-6 text-[10px] rounded border bg-background px-1 cursor-pointer"
+                  title="Font size"
+                >
+                  <option value="xs">XS</option>
+                  <option value="sm">S</option>
+                  <option value="base">M</option>
+                  <option value="lg">L</option>
+                  <option value="xl">XL</option>
+                </select>
               </div>
-            ))}
-          </div>
-          {(formData.bulletPoints?.length || 3) < 10 && (
-            <button
-              type="button"
-              onClick={() => {
-                const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
-                current.push('')
-                setFormData((prev) => ({ ...prev, bulletPoints: current }))
-              }}
-              className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 mt-1"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Add more points ({formData.bulletPoints?.length || 3}/10)
-            </button>
+              <div className="space-y-1.5">
+                {(formData.bulletPoints?.length ? formData.bulletPoints : ['', '', '']).slice(0, 10).map((point, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground shrink-0 w-4">{idx + 1}.</span>
+                    <Input
+                      value={point}
+                      onChange={(e) => {
+                        const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
+                        while (current.length <= idx) current.push('')
+                        current[idx] = e.target.value
+                        const cleaned = current.filter((p, i) => p.trim() || i < 3 || i < current.length - 1)
+                        setFormData((prev) => ({ ...prev, bulletPoints: cleaned }))
+                      }}
+                      placeholder={`Point ${idx + 1}`}
+                      className="w-full text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+              {(formData.bulletPoints?.length || 3) < 10 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = formData.bulletPoints?.length ? [...formData.bulletPoints] : ['', '', '']
+                    current.push('')
+                    setFormData((prev) => ({ ...prev, bulletPoints: current }))
+                  }}
+                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 mt-1"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add more points ({formData.bulletPoints?.length || 3}/10)
+                </button>
+              )}
+            </div>
           )}
         </div>
 

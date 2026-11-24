@@ -258,21 +258,29 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.article-page h1 {
-  font-size: 28px;
+.article-page h1,
+.article-page .article-title {
+  font-size: 2.75rem;
   line-height: 1.35;
   letter-spacing: 0.01em;
 }
 
+@media (min-width: 768px) {
+  .article-page h1,
+  .article-page .article-title {
+    font-size: 3.5rem;
+  }
+}
+
 .article-page .excerpt-text {
-  font-size: 19px;
-  line-height: 1.7;
+  font-size: 38px;
+  line-height: 1.65;
   letter-spacing: 0.01em;
 }
 
 .article-content {
-  font-size: 19px;
-  line-height: 1.9;
+  font-size: 38px;
+  line-height: 1.85;
   letter-spacing: 0.01em;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -284,10 +292,37 @@
   text-align-last: left;
 }
 
+.article-content p,
+.article-content div,
+.article-content li,
+.article-content blockquote,
+.article-content td,
+.article-content th {
+  font-size: 38px;
+  line-height: 1.85;
+}
+
+.article-content span {
+  font-size: inherit !important;
+}
+
+.article-content h1 {
+  font-size: 3.5rem !important;
+  line-height: 1.35;
+}
+
+.article-content h2 {
+  font-size: 3rem !important;
+  line-height: 1.4;
+}
+
+.article-content h3 {
+  font-size: 2.625rem !important;
+  line-height: 1.45;
+}
+
 .article-content p {
-  margin-bottom: 1rem;
-  line-height: 1.9;
-  font-size: 19px;
+  margin-bottom: 1.25rem;
   max-width: 100%;
   text-align: justify;
 }

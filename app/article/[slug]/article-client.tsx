@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { getArticleBySlug, getRecentArticles } from '@/lib/services/article-queries'
 import { getAllCategories, getSubcategoriesByCategory } from '@/lib/services/categories'
 import { Header } from '@/components/header'
+import { Footer } from '@/components/footer'
 import { ArticleCard } from '@/components/article-card'
 import { SocialShare } from '@/components/social-share'
 import type { FirestoreArticle, Category, Subcategory } from '@/lib/types'
@@ -82,6 +83,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
             </div>
           </div>
         </main>
+        <Footer />
       </>
     )
   }
@@ -100,6 +102,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
             </a>
           </div>
         </main>
+        <Footer />
       </>
     )
   }
@@ -214,7 +217,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                   </span>
                 </div>
               )}
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground leading-tight">
+              <h1 className="article-title font-bold mb-4 text-foreground leading-tight">
                 {article.title}
               </h1>
               {/* Bullet Points - Right after title (plain, no background/bar) */}
@@ -224,11 +227,11 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                     {article.bulletPoints.filter(b => b.trim()).map((point, idx) => (
                       <li key={idx} style={{
                         color: article.bulletColor || '#374151',
-                        fontSize: article.bulletFontSize === 'xs' ? '0.75rem' :
-                                  article.bulletFontSize === 'sm' ? '0.875rem' :
-                                  article.bulletFontSize === 'base' ? '1rem' :
-                                  article.bulletFontSize === 'lg' ? '1.125rem' :
-                                  article.bulletFontSize === 'xl' ? '1.25rem' : '0.875rem',
+                        fontSize: article.bulletFontSize === 'xs' ? '1.5rem' :
+                                  article.bulletFontSize === 'sm' ? '1.75rem' :
+                                  article.bulletFontSize === 'base' ? '2rem' :
+                                  article.bulletFontSize === 'lg' ? '2.25rem' :
+                                  article.bulletFontSize === 'xl' ? '2.5rem' : '1.75rem',
                       }}>
                         {point}
                       </li>
@@ -301,7 +304,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
               </div>
               {/* Excerpt (সংক্ষিপ্ত বর্ণনা) - After ticker */}
               {article.excerpt && (
-                <p className="text-lg mb-6 font-semibold leading-relaxed excerpt-text" style={{ color: article.excerptColor || 'inherit' }}>
+                <p className="mb-6 font-semibold leading-relaxed excerpt-text" style={{ color: article.excerptColor || 'inherit' }}>
                   {article.excerpt}
                 </p>
               )}
@@ -343,10 +346,8 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
             {/* Article Content - Fixed Grid Layout */}
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1 min-w-0">
-                <div className="prose prose-sm max-w-none">
-                  <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed article-content">
-                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                  </div>
+                <div className="prose max-w-none dark:prose-invert leading-relaxed article-content">
+                  <div dangerouslySetInnerHTML={{ __html: article.content }} />
                 </div>
 
                 {/* Tags */}
@@ -395,6 +396,7 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
           </article>
         </div>
       </main>
+      <Footer />
     </>
   )
 }
