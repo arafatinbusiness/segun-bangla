@@ -227,11 +227,11 @@ export function ArticleClient({ initialSlug }: ArticleClientProps) {
                     {article.bulletPoints.filter(b => b.trim()).map((point, idx) => (
                       <li key={idx} style={{
                         color: article.bulletColor || '#374151',
-                        fontSize: article.bulletFontSize === 'xs' ? '1.5rem' :
-                                  article.bulletFontSize === 'sm' ? '1.75rem' :
-                                  article.bulletFontSize === 'base' ? '2rem' :
-                                  article.bulletFontSize === 'lg' ? '2.25rem' :
-                                  article.bulletFontSize === 'xl' ? '2.5rem' : '1.75rem',
+                        fontSize: article.bulletFontSize === 'xs' ? '1.25rem' :
+                                  article.bulletFontSize === 'sm' ? '1.5rem' :
+                                  article.bulletFontSize === 'base' ? '1.75rem' :
+                                  article.bulletFontSize === 'lg' ? '2rem' :
+                                  article.bulletFontSize === 'xl' ? '2.25rem' : '1.5rem',
                       }}>
                         {point}
                       </li>
